@@ -16,6 +16,25 @@ automatically by many HTTP servers. In detail, that means that `GET` on a direct
 
 Absolute URLs containing a protocol and domain are ignored, as are relative URLs containing `..` path elements.
 
+## Installation
+
+To build the binary:
+
+```bash
+make
+```
+
+The binary can also be installed with `go get`:
+```bash
+go get github.com/sapcc/swift-drive-autopilot
+```
+
+To build the Docker container:
+
+```bash
+make && docker build .
+```
+
 ## Usage
 
 Call with the path to a configuration file, that should look like this:
