@@ -1,0 +1,5 @@
+swift-http-import
+.golangvend-cache/
+
+# for my own testing
+test.yaml
