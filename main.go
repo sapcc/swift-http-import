@@ -20,9 +20,10 @@
 package main
 
 import (
-	"context"
 	"os"
 	"sync"
+
+	"golang.org/x/net/context"
 
 	"github.com/ncw/swift"
 )

@@ -20,11 +20,12 @@
 package main
 
 import (
-	"context"
 	"os"
 	"os/signal"
 	"sync"
 	"syscall"
+
+	"golang.org/x/net/context"
 
 	"github.com/ncw/swift"
 )
