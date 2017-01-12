@@ -32,7 +32,7 @@ go get github.com/sapcc/swift-drive-autopilot
 To build the Docker container:
 
 ```bash
-make && docker build .
+make GOFLAGS="-ldflags '-w -linkmode external -extldflags -static'" && docker build .
 ```
 
 ## Usage
