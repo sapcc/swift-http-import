@@ -22,6 +22,7 @@ package main
 import (
 	"os"
 	"sync"
+	"time"
 
 	"golang.org/x/net/context"
 
@@ -29,6 +30,8 @@ import (
 )
 
 func main() {
+	startTime := time.Now()
+
 	//read configuration
 	config, errs := ReadConfiguration()
 	if len(errs) > 0 {
@@ -61,6 +64,8 @@ func main() {
 		Context:         context.Background(),
 		SwiftConnection: &conn,
 	})
+
+	Log(LogInfo, "finished in %s", time.Since(startTime).String())
 }
 
 //PrepareTargets ensures that all the target containers exist.
