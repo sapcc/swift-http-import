@@ -21,7 +21,6 @@ package main
 
 import (
 	"log"
-	"net/http"
 	"path/filepath"
 	"strings"
 
@@ -75,7 +74,7 @@ func (f File) NeedsTransfer(conn *swift.Connection) bool {
 	}
 
 	//query the file metadata at the source
-	response, err := http.Head(f.SourceURL())
+	response, err := f.Job.Client.Head(f.SourceURL())
 	if err != nil {
 		log.Printf("skipping %s: HEAD failed: %s", f.SourceURL(), err.Error())
 		//if HEAD does not work, we don't expect GET to work, so skip this
@@ -101,7 +100,7 @@ func (f File) PerformTransfer(conn *swift.Connection) bool {
 	Log(LogDebug, "transferring %s", f.SourceURL())
 
 	//retrieve file from source
-	response, err := http.Get(f.SourceURL())
+	response, err := f.Job.Client.Get(f.SourceURL())
 	if err != nil {
 		log.Printf("skipping %s: GET failed: %s", f.SourceURL(), err.Error())
 		return false

@@ -20,6 +20,10 @@
 package main
 
 import (
+	"crypto/tls"
+	"crypto/x509"
+	"io/ioutil"
+	"net/http"
 	"os"
 	"sync"
 	"time"
@@ -57,6 +61,7 @@ func main() {
 		Log(LogFatal, err.Error())
 	}
 	PrepareTargets(&conn, config)
+	PrepareClients(config)
 
 	//start workers
 	Run(&SharedState{
@@ -92,4 +97,39 @@ func PrepareTargets(conn *swift.Connection, config *Configuration) {
 	}
 
 	wg.Wait()
+}
+
+//PrepareClients ensure http client SSL setup
+func PrepareClients(config *Configuration) {
+	for _, job := range config.Jobs {
+		if job.CertFile != "" {
+			// Load client cert
+			cert, err := tls.LoadX509KeyPair(job.CertFile, job.KeyFile)
+			if err != nil {
+				Log(LogFatal, "client certificate could not be loaded: %s", err.Error())
+			}
+			Log(LogDebug, "Certificate %s loaded", job.CertFile)
+
+			// Load CA cert
+			caCert, err := ioutil.ReadFile(job.CaFile)
+			if err != nil {
+				Log(LogFatal, "ca could not be loaded: %s", err.Error())
+			}
+			Log(LogDebug, "CA %s loaded", job.CaFile)
+			caCertPool := x509.NewCertPool()
+			caCertPool.AppendCertsFromPEM(caCert)
+
+			// Setup HTTPS client
+			tlsConfig := &tls.Config{
+				Certificates: []tls.Certificate{cert},
+				RootCAs:      caCertPool,
+			}
+			tlsConfig.BuildNameToCertificate()
+
+			transport := &http.Transport{TLSClientConfig: tlsConfig}
+			job.Client = &http.Client{Transport: transport}
+		} else {
+			job.Client = http.DefaultClient
+		}
+	}
 }
