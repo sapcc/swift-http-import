@@ -134,7 +134,9 @@ func PrepareClients(config *Configuration) {
 
 		if job.ClientCertificatePath != "" || job.ServerCAPath != "" {
 			tlsConfig.BuildNameToCertificate()
-			transport := &http.Transport{TLSClientConfig: tlsConfig}
+			// Overriding the transport for TLS, requires also Proxy to be set from ENV,
+			// otherwise a set proxy will get lost
+			transport := &http.Transport{TLSClientConfig: tlsConfig, Proxy: http.ProxyFromEnvironment}
 			job.HttpClient = &http.Client{Transport: transport}
 		} else {
 			job.HttpClient = http.DefaultClient
