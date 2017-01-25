@@ -136,6 +136,8 @@ func PrepareClients(config *Configuration) {
 			tlsConfig.BuildNameToCertificate()
 			transport := &http.Transport{TLSClientConfig: tlsConfig}
 			job.HttpClient = &http.Client{Transport: transport}
+		} else {
+			job.HttpClient = http.DefaultClient
 		}
 	}
 }
