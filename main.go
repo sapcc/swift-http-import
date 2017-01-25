@@ -99,37 +99,43 @@ func PrepareTargets(conn *swift.Connection, config *Configuration) {
 	wg.Wait()
 }
 
-//PrepareClients ensure http client SSL setup
+//PrepareClients ensure http client SSL and or CA support setup
 func PrepareClients(config *Configuration) {
 	for _, job := range config.Jobs {
-		if job.CertFile != "" {
+		tlsConfig := &tls.Config{}
+
+		if job.ClientCertificatePath != "" {
 			// Load client cert
-			cert, err := tls.LoadX509KeyPair(job.CertFile, job.KeyFile)
+			clientCertificate, err := tls.LoadX509KeyPair(job.ClientCertificatePath, job.ClientCertificateKeyPath)
 			if err != nil {
 				Log(LogFatal, "client certificate could not be loaded: %s", err.Error())
 			}
-			Log(LogDebug, "Certificate %s loaded", job.CertFile)
 
-			// Load CA cert
-			caCert, err := ioutil.ReadFile(job.CaFile)
-			if err != nil {
-				Log(LogFatal, "ca could not be loaded: %s", err.Error())
-			}
-			Log(LogDebug, "CA %s loaded", job.CaFile)
-			caCertPool := x509.NewCertPool()
-			caCertPool.AppendCertsFromPEM(caCert)
+			Log(LogDebug, "Client certificate %s loaded", job.ClientCertificatePath)
 
 			// Setup HTTPS client
-			tlsConfig := &tls.Config{
-				Certificates: []tls.Certificate{cert},
-				RootCAs:      caCertPool,
+			tlsConfig.Certificates = []tls.Certificate{clientCertificate}
+		}
+		if job.ServerCAPath != "" {
+			// Load server CA cert
+			serverCA, err := ioutil.ReadFile(job.ServerCAPath)
+			if err != nil {
+				Log(LogFatal, "Server CA could not be loaded: %s", err.Error())
 			}
-			tlsConfig.BuildNameToCertificate()
 
+			certPool := x509.NewCertPool()
+			certPool.AppendCertsFromPEM(serverCA)
+
+			Log(LogDebug, "Server CA %s loaded", job.ServerCAPath)
+
+			// Setup HTTPS client
+			tlsConfig.RootCAs = certPool
+		}
+
+		if job.ClientCertificatePath != "" || job.ServerCAPath != "" {
+			tlsConfig.BuildNameToCertificate()
 			transport := &http.Transport{TLSClientConfig: tlsConfig}
-			job.Client = &http.Client{Transport: transport}
-		} else {
-			job.Client = http.DefaultClient
+			job.HttpClient = &http.Client{Transport: transport}
 		}
 	}
 }

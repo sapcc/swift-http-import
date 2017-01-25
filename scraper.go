@@ -86,7 +86,7 @@ func (s *Scraper) Next() []File {
 	//retrieve directory listing
 	//TODO: This should send "Accept: text/html", but at least Apache and nginx
 	//don't care about the Accept header, anyway, as far as my testing showed.
-	response, err := directory.Job.Client.Get(directory.SourceURL())
+	response, err := directory.Job.HttpClient.Get(directory.SourceURL())
 	if err != nil {
 		Log(LogError, "skipping %s: GET failed: %s", directory.SourceURL(), err.Error())
 		return nil
