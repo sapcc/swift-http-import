@@ -26,7 +26,7 @@ make
 
 The binary can also be installed with `go get`:
 ```bash
-go get github.com/sapcc/swift-drive-autopilot
+go get github.com/sapcc/swift-http-import
 ```
 
 To build the Docker container:
@@ -67,6 +67,17 @@ would be synced to the `mirror` container as
 ```
 ubuntu-repos/pool/main/p/pam/pam_1.1.8.orig.tar.gz
 ```
+
+There is also support for SSL client based authentication against the source. Hereby the server CA is optional.
+```yaml
+jobs:
+  - from: http://de.archive.ubuntu.com/ubuntu/
+    to:   mirror/ubuntu-repos
+    cert: /path/to/client.pem
+    key:  /path/to/client-key.pem
+    ca:   /path/to/server-ca.pem
+```
+
 
 ## Log output
 

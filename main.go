@@ -20,6 +20,10 @@
 package main
 
 import (
+	"crypto/tls"
+	"crypto/x509"
+	"io/ioutil"
+	"net/http"
 	"os"
 	"sync"
 	"time"
@@ -57,6 +61,7 @@ func main() {
 		Log(LogFatal, err.Error())
 	}
 	PrepareTargets(&conn, config)
+	PrepareClients(config)
 
 	//start workers
 	Run(&SharedState{
@@ -92,4 +97,49 @@ func PrepareTargets(conn *swift.Connection, config *Configuration) {
 	}
 
 	wg.Wait()
+}
+
+//PrepareClients ensure http client SSL and or CA support setup
+func PrepareClients(config *Configuration) {
+	for _, job := range config.Jobs {
+		tlsConfig := &tls.Config{}
+
+		if job.ClientCertificatePath != "" {
+			// Load client cert
+			clientCertificate, err := tls.LoadX509KeyPair(job.ClientCertificatePath, job.ClientCertificateKeyPath)
+			if err != nil {
+				Log(LogFatal, "client certificate could not be loaded: %s", err.Error())
+			}
+
+			Log(LogDebug, "Client certificate %s loaded", job.ClientCertificatePath)
+
+			// Setup HTTPS client
+			tlsConfig.Certificates = []tls.Certificate{clientCertificate}
+		}
+		if job.ServerCAPath != "" {
+			// Load server CA cert
+			serverCA, err := ioutil.ReadFile(job.ServerCAPath)
+			if err != nil {
+				Log(LogFatal, "Server CA could not be loaded: %s", err.Error())
+			}
+
+			certPool := x509.NewCertPool()
+			certPool.AppendCertsFromPEM(serverCA)
+
+			Log(LogDebug, "Server CA %s loaded", job.ServerCAPath)
+
+			// Setup HTTPS client
+			tlsConfig.RootCAs = certPool
+		}
+
+		if job.ClientCertificatePath != "" || job.ServerCAPath != "" {
+			tlsConfig.BuildNameToCertificate()
+			// Overriding the transport for TLS, requires also Proxy to be set from ENV,
+			// otherwise a set proxy will get lost
+			transport := &http.Transport{TLSClientConfig: tlsConfig, Proxy: http.ProxyFromEnvironment}
+			job.HttpClient = &http.Client{Transport: transport}
+		} else {
+			job.HttpClient = http.DefaultClient
+		}
+	}
 }

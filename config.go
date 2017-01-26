@@ -23,6 +23,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"strings"
 
@@ -31,9 +32,13 @@ import (
 
 //Job describes a single mirroring job.
 type Job struct {
-	SourceRootURL   string `yaml:"from"`
-	TargetContainer string `yaml:"to"`
-	TargetPrefix    string `yaml:"-"`
+	SourceRootURL            string `yaml:"from"`
+	TargetContainer          string `yaml:"to"`
+	TargetPrefix             string `yaml:"-"`
+	ClientCertificatePath    string `yaml:"cert"`
+	ClientCertificateKeyPath string `yaml:"key"`
+	ServerCAPath             string `yaml:"ca"`
+	HttpClient               *http.Client
 }
 
 //Configuration contains the contents of the configuration file.
@@ -111,6 +116,15 @@ func (cfg Configuration) Validate() []error {
 		}
 		if job.TargetContainer == "" {
 			result = append(result, fmt.Errorf("missing value for swift.jobs[%d].to", idx))
+		}
+		// If one of the following is set, the other one needs also to be set
+		if job.ClientCertificatePath != "" || job.ClientCertificateKeyPath != "" {
+			if job.ClientCertificatePath == "" {
+				result = append(result, fmt.Errorf("missing value for swift.jobs[%d].cert", idx))
+			}
+			if job.ClientCertificateKeyPath == "" {
+				result = append(result, fmt.Errorf("missing value for swift.jobs[%d].key", idx))
+			}
 		}
 	}
 
