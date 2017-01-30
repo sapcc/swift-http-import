@@ -141,22 +141,6 @@ func (s *Scraper) Next() []File {
 				if strings.HasPrefix(href, "/") {
 					continue
 				}
-
-				//I've seen some quirky webserver that includes the current directory's name in the href, e.g.
-				//
-				//     <h1>Index for /foo/bar</h1>
-				//     ...
-				//     <a href="bar/qux.txt">link goes to /foo/bar/qux.txt, NOT to /foo/bar/bar/qux.txt
-				//
-				//To work with such a source, skip a number of leading path
-				//elements (in this case, one element) if configured thusly.
-				if cnt := directory.Job.SkipLeadingPathElementsCount; cnt > 0 {
-					elements := strings.SplitN(href, "/", int(cnt+1))
-					if len(elements) == int(cnt+1) {
-						href = elements[cnt]
-					}
-				}
-
 				//links with ".." path elements cannot be guaranteed to be pointing to a
 				//resource below this directory, so skip them as well (this assumes that
 				//the sender did already clean his relative links so that no ".." appears
