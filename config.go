@@ -39,6 +39,8 @@ type Job struct {
 	ClientCertificateKeyPath string `yaml:"key"`
 	ServerCAPath             string `yaml:"ca"`
 	HTTPClient               *http.Client
+	//undocumented "features" for quirky sources
+	SkipLeadingPathElementsCount uint `yaml:"skip_leading_path_elements_count"`
 }
 
 //Configuration contains the contents of the configuration file.
