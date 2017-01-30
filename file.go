@@ -74,7 +74,7 @@ func (f File) NeedsTransfer(conn *swift.Connection) bool {
 	}
 
 	//query the file metadata at the source
-	response, err := f.Job.HttpClient.Head(f.SourceURL())
+	response, err := f.Job.HTTPClient.Head(f.SourceURL())
 	if err != nil {
 		log.Printf("skipping %s: HEAD failed: %s", f.SourceURL(), err.Error())
 		//if HEAD does not work, we don't expect GET to work, so skip this
@@ -100,7 +100,7 @@ func (f File) PerformTransfer(conn *swift.Connection) bool {
 	Log(LogDebug, "transferring %s", f.SourceURL())
 
 	//retrieve file from source
-	response, err := f.Job.HttpClient.Get(f.SourceURL())
+	response, err := f.Job.HTTPClient.Get(f.SourceURL())
 	if err != nil {
 		log.Printf("skipping %s: GET failed: %s", f.SourceURL(), err.Error())
 		return false

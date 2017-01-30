@@ -38,7 +38,7 @@ type Job struct {
 	ClientCertificatePath    string `yaml:"cert"`
 	ClientCertificateKeyPath string `yaml:"key"`
 	ServerCAPath             string `yaml:"ca"`
-	HttpClient               *http.Client
+	HTTPClient               *http.Client
 }
 
 //Configuration contains the contents of the configuration file.

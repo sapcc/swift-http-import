@@ -137,9 +137,9 @@ func PrepareClients(config *Configuration) {
 			// Overriding the transport for TLS, requires also Proxy to be set from ENV,
 			// otherwise a set proxy will get lost
 			transport := &http.Transport{TLSClientConfig: tlsConfig, Proxy: http.ProxyFromEnvironment}
-			job.HttpClient = &http.Client{Transport: transport}
+			job.HTTPClient = &http.Client{Transport: transport}
 		} else {
-			job.HttpClient = http.DefaultClient
+			job.HTTPClient = http.DefaultClient
 		}
 	}
 }
