@@ -36,7 +36,15 @@ type Directory struct {
 
 //SourceURL returns the URL of this directory at its source.
 func (d Directory) SourceURL() string {
-	return URLPathJoin(d.Job.SourceRootURL, d.Path)
+	url := URLPathJoin(d.Job.SourceRootURL, d.Path)
+	//to get a well-formatted directory listing, the directory URL must have a
+	//trailing slash (most web servers automatically redirect from the URL
+	//without trailing slash to the URL with trailing slash; others show a
+	//slightly different directory listing that we cannot parse correctly)
+	if !strings.HasSuffix(url, "/") {
+		url += "/"
+	}
+	return url
 }
 
 //Scraper describes the state of the scraper thread.
