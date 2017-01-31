@@ -106,9 +106,6 @@ func (cfg Configuration) Validate() []error {
 	if cfg.Swift.Password == "" {
 		result = append(result, errors.New("missing value for swift.password"))
 	}
-	if cfg.Swift.RegionName == "" {
-		result = append(result, errors.New("missing value for swift.region_name"))
-	}
 
 	for idx, job := range cfg.Jobs {
 		if job.SourceRootURL == "" {
