@@ -20,7 +20,6 @@
 package main
 
 import (
-	"log"
 	"net/http"
 	"path/filepath"
 	"strings"
@@ -79,7 +78,7 @@ func (f File) PerformTransfer(conn *swift.Connection) TransferResult {
 			//log all other errors and skip the file (we don't want to waste
 			//bandwidth downloading stuff if there is reasonable doubt that we will
 			//not be able to upload it to Swift)
-			log.Printf("skipping %s: HEAD %s/%s failed: %s",
+			Log(LogError, "skipping %s: HEAD %s/%s failed: %s",
 				f.SourceURL(),
 				f.Job.TargetContainer, f.TargetObjectName(),
 				err.Error(),
@@ -92,7 +91,7 @@ func (f File) PerformTransfer(conn *swift.Connection) TransferResult {
 	//Last-Modified where possible
 	req, err := http.NewRequest("GET", f.SourceURL(), nil)
 	if err != nil {
-		log.Printf("skipping %s: GET failed: %s", f.SourceURL(), err.Error())
+		Log(LogError, "skipping %s: GET failed: %s", f.SourceURL(), err.Error())
 		return TransferFailed
 	}
 	metadata := headers.ObjectMetadata()
@@ -106,7 +105,7 @@ func (f File) PerformTransfer(conn *swift.Connection) TransferResult {
 	//retrieve file from source
 	response, err := f.Job.HTTPClient.Do(req)
 	if err != nil {
-		log.Printf("skipping %s: GET failed: %s", f.SourceURL(), err.Error())
+		Log(LogError, "skipping %s: GET failed: %s", f.SourceURL(), err.Error())
 		return TransferFailed
 	}
 	defer response.Body.Close()
@@ -135,7 +134,7 @@ func (f File) PerformTransfer(conn *swift.Connection) TransferResult {
 		metadata.ObjectHeaders(),
 	)
 	if err != nil {
-		log.Printf("PUT %s/%s failed: %s", f.Job.TargetContainer, f.TargetObjectName(), err.Error())
+		Log(LogError, "PUT %s/%s failed: %s", f.Job.TargetContainer, f.TargetObjectName(), err.Error())
 		return TransferFailed
 	}
 
