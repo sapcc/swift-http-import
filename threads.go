@@ -63,7 +63,7 @@ func Run(state *SharedState) {
 
 	//setup a simple linear pipeline of workers (it should be fairly trivial to
 	//scale this out to multiple workers later)
-	makeTransferThread(state, makeCheckerThread(state, makeScraperThread(state)))
+	makeTransferThread(state, makeScraperThread(state))
 
 	//wait for all of them to return
 	state.WaitGroup.Wait()
@@ -112,42 +112,6 @@ func makeScraperThread(state *SharedState) <-chan File {
 	return out
 }
 
-func makeCheckerThread(state *SharedState, in <-chan File) <-chan File {
-	state.WaitGroup.Add(1)
-	out := make(chan File, 10)
-	done := state.Context.Done()
-
-	go func() {
-		defer state.WaitGroup.Done()
-		defer close(out)
-
-		var filesNeedTransfer uint64
-
-	WorkerLoop:
-		for {
-			var file File
-			select {
-			case <-done:
-				break WorkerLoop
-			case file = <-in:
-				if file.Path == "" {
-					//input channel is closed and returns zero values
-					break WorkerLoop
-				}
-				if file.NeedsTransfer(state.SwiftConnection) {
-					filesNeedTransfer++
-					out <- file
-				}
-			}
-		}
-
-		//submit statistics to main thread
-		state.FilesNeedTransfer = filesNeedTransfer
-	}()
-
-	return out
-}
-
 func makeTransferThread(state *SharedState, in <-chan File) {
 	state.WaitGroup.Add(1)
 	done := state.Context.Done()
@@ -155,6 +119,7 @@ func makeTransferThread(state *SharedState, in <-chan File) {
 	go func() {
 		defer state.WaitGroup.Done()
 
+		var filesNeedTransfer uint64
 		var filesTransferred uint64
 
 	WorkerLoop:
@@ -168,13 +133,20 @@ func makeTransferThread(state *SharedState, in <-chan File) {
 					//input channel is closed and returns zero values
 					break WorkerLoop
 				}
-				if file.PerformTransfer(state.SwiftConnection) {
+				switch file.PerformTransfer(state.SwiftConnection) {
+				case TransferSuccess:
+					filesNeedTransfer++
 					filesTransferred++
+				case TransferSkipped:
+					//don't count
+				case TransferFailed:
+					filesNeedTransfer++
 				}
 			}
 		}
 
 		//submit statistics to main thread
+		state.FilesNeedTransfer = filesNeedTransfer
 		state.FilesTransferred = filesTransferred
 	}()
 }

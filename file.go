@@ -21,6 +21,7 @@ package main
 
 import (
 	"log"
+	"net/http"
 	"path/filepath"
 	"strings"
 
@@ -47,10 +48,24 @@ func (f File) TargetObjectName() string {
 	return filepath.Join(f.Job.TargetPrefix, objectName)
 }
 
-//NeedsTransfer looks at the file on both sides, and returns true if it needs
-//to be copied.
-func (f File) NeedsTransfer(conn *swift.Connection) bool {
-	Log(LogDebug, "checking state of %s", f.SourceURL())
+//TransferResult is the return type for PerformTransfer().
+type TransferResult uint
+
+const (
+	//TransferSuccess means that the file was newer on the source and was sent
+	//to the target.
+	TransferSuccess TransferResult = iota
+	//TransferSkipped means that the file was the same on both sides and
+	//nothing was transferred.
+	TransferSkipped
+	//TransferFailed means that an error occurred and was logged.
+	TransferFailed
+)
+
+//PerformTransfer transfers this file from the source to the target.
+//The return value indicates if the transfer finished successfully.
+func (f File) PerformTransfer(conn *swift.Connection) TransferResult {
+	Log(LogDebug, "transferring %s", f.SourceURL())
 
 	//query the file metadata at the target
 	_, headers, err := conn.Object(
@@ -59,57 +74,50 @@ func (f File) NeedsTransfer(conn *swift.Connection) bool {
 	)
 	if err != nil {
 		if err == swift.ObjectNotFound {
-			//needs transfer (duh)
-			return true
+			headers = swift.Headers{}
+		} else {
+			//log all other errors and skip the file (we don't want to waste
+			//bandwidth downloading stuff if there is reasonable doubt that we will
+			//not be able to upload it to Swift)
+			log.Printf("skipping %s: HEAD %s/%s failed: %s",
+				f.SourceURL(),
+				f.Job.TargetContainer, f.TargetObjectName(),
+				err.Error(),
+			)
+			return TransferFailed
 		}
-		//log all other errors and skip the file (we don't want to waste
-		//bandwidth downloading stuff if there is reasonable doubt that we will
-		//not be able to upload it to Swift)
-		log.Printf("skipping %s: HEAD %s/%s failed: %s",
-			f.SourceURL(),
-			f.Job.TargetContainer, f.TargetObjectName(),
-			err.Error(),
-		)
-		return false
 	}
 
-	//query the file metadata at the source
-	response, err := f.Job.HTTPClient.Head(f.SourceURL())
-	if err != nil {
-		log.Printf("skipping %s: HEAD failed: %s", f.SourceURL(), err.Error())
-		//if HEAD does not work, we don't expect GET to work, so skip this
-		return false
-	}
-
-	//look for any indication that the objects on both sides are the same
-	metadata := headers.ObjectMetadata()
-	if etag := response.Header.Get("Etag"); etag != "" && etag == metadata["source-etag"] {
-		return false
-	}
-	if mtime := response.Header.Get("Last-Modified"); mtime != "" && mtime == metadata["source-last-modified"] {
-		return false
-	}
-
-	//object appears not to be the same on both sides
-	return true
-}
-
-//PerformTransfer transfers this file from the source to the target.
-//The return value indicates if the transfer finished successfully.
-func (f File) PerformTransfer(conn *swift.Connection) bool {
-	Log(LogDebug, "transferring %s", f.SourceURL())
-
-	//retrieve file from source
-	response, err := f.Job.HTTPClient.Get(f.SourceURL())
+	//prepare request to retrieve from source, taking advantage of Etag and
+	//Last-Modified where possible
+	req, err := http.NewRequest("GET", f.SourceURL(), nil)
 	if err != nil {
 		log.Printf("skipping %s: GET failed: %s", f.SourceURL(), err.Error())
-		return false
+		return TransferFailed
+	}
+	metadata := headers.ObjectMetadata()
+	if etag := metadata["source-etag"]; etag != "" {
+		req.Header.Set("If-None-Match", etag)
+	}
+	if mtime := metadata["source-last-modified"]; mtime != "" {
+		req.Header.Set("If-Modified-Since", mtime)
+	}
+
+	//retrieve file from source
+	response, err := f.Job.HTTPClient.Do(req)
+	if err != nil {
+		log.Printf("skipping %s: GET failed: %s", f.SourceURL(), err.Error())
+		return TransferFailed
 	}
 	defer response.Body.Close()
 
+	if response.StatusCode == 304 { //Not Modified
+		return TransferSkipped
+	}
+
 	//store some headers from the source to later identify whether this
 	//resource has changed
-	metadata := make(swift.Metadata)
+	metadata = make(swift.Metadata)
 	if etag := response.Header.Get("Etag"); etag != "" {
 		metadata["source-etag"] = etag
 	}
@@ -128,8 +136,8 @@ func (f File) PerformTransfer(conn *swift.Connection) bool {
 	)
 	if err != nil {
 		log.Printf("PUT %s/%s failed: %s", f.Job.TargetContainer, f.TargetObjectName(), err.Error())
-		return false
+		return TransferFailed
 	}
 
-	return true
+	return TransferSuccess
 }
