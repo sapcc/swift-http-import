@@ -47,16 +47,16 @@ swift:
   project_name: datastore
   project_domain_name: Default
   password: 20g82rzg235oughq
-  region_name: outer_space
 
 jobs:
   - from: http://de.archive.ubuntu.com/ubuntu/
     to:   mirror/ubuntu-repos
 ```
 
-The first paragraph contains the authentication parameters for OpenStack's Identity v3 API. Each sync job contains the
-source URL as `from`, and `to` has the target container name, optionally followed by an object name prefix in the target
-container. For example, in the case above, the file
+The first paragraph contains the authentication parameters for OpenStack's Identity v3 API. Optional a `region_name`
+can be specified.
+Each sync job contains the source URL as `from`, and `to` has the target container name, optionally followed by an 
+object name prefix in the target container. For example, in the case above, the file
 
 ```
 http://de.archive.ubuntu.com/ubuntu/pool/main/p/pam/pam_1.1.8.orig.tar.gz
