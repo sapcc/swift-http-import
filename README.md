@@ -84,9 +84,10 @@ jobs:
 Log output on `stderr` is very sparse by default. Errors are always reported, and a final count will appear at the end like this:
 
 ```
-2016/12/19 14:28:23 INFO: 103 dirs scanned, 1496 files found, 167/170 files transferred
+2016/12/19 14:28:23 INFO: 103 dirs scanned, 1496 files found, 167 transferred, 3 failed
+INFO: 4 dirs scanned; 45 files found, 0 transferred, 0 failed
 ```
 
 In this case, all sources contain 103 directories and 1496 files. 170 files were found to be newer on the source and
-thus need transfer. 167 of them were successfully transferred, which means that 3 file transfers failed (so there should
-be 3 errors in the log).
+thus need transfer. Of those, 167 were successfully transferred, and the remaining 3 file transfers failed (so there
+should be 3 errors in the log).

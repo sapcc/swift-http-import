@@ -42,7 +42,7 @@ type SharedState struct {
 	//locking is required for these fields
 	DirectoriesScanned uint64
 	FilesFound         uint64
-	FilesNeedTransfer  uint64
+	FilesFailed        uint64
 	FilesTransferred   uint64
 }
 
@@ -69,9 +69,9 @@ func Run(state *SharedState) {
 	state.WaitGroup.Wait()
 
 	//report results
-	Log(LogInfo, "%d dirs scanned, %d files found, %d/%d files transferred",
+	Log(LogInfo, "%d dirs scanned, %d files found, %d transferred, %d failed",
 		state.DirectoriesScanned, state.FilesFound,
-		state.FilesNeedTransfer, state.FilesTransferred,
+		state.FilesTransferred, state.FilesFailed,
 	)
 }
 
@@ -119,7 +119,7 @@ func makeTransferThread(state *SharedState, in <-chan File) {
 	go func() {
 		defer state.WaitGroup.Done()
 
-		var filesNeedTransfer uint64
+		var filesFailed uint64
 		var filesTransferred uint64
 
 	WorkerLoop:
@@ -135,18 +135,17 @@ func makeTransferThread(state *SharedState, in <-chan File) {
 				}
 				switch file.PerformTransfer(state.SwiftConnection) {
 				case TransferSuccess:
-					filesNeedTransfer++
 					filesTransferred++
 				case TransferSkipped:
-					//don't count
+					//nothing to count
 				case TransferFailed:
-					filesNeedTransfer++
+					filesFailed++
 				}
 			}
 		}
 
 		//submit statistics to main thread
-		state.FilesNeedTransfer = filesNeedTransfer
+		state.FilesFailed = filesFailed
 		state.FilesTransferred = filesTransferred
 	}()
 }
