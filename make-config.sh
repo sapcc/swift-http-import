@@ -20,6 +20,9 @@ swift:
   password:            ${OS_PASSWORD}
   region_name:         ${OS_REGION_NAME}
 
+workers:
+  transfer: 1
+
 jobs:
   - from: $1
     to:   $2

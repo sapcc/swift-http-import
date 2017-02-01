@@ -52,6 +52,9 @@ type Configuration struct {
 		Password          string `yaml:"password"`
 		RegionName        string `yaml:"region_name"`
 	}
+	WorkerCounts struct {
+		Transfer uint
+	} `yaml:"workers"`
 	Jobs []*Job
 }
 
@@ -79,6 +82,11 @@ func ReadConfiguration() (*Configuration, []error) {
 			job.TargetContainer = parts[0]
 			job.TargetPrefix = parts[1]
 		}
+	}
+
+	//set default value
+	if cfg.WorkerCounts.Transfer == 0 {
+		cfg.WorkerCounts.Transfer = 1
 	}
 
 	return &cfg, cfg.Validate()

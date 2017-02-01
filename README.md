@@ -55,6 +55,7 @@ jobs:
 
 The first paragraph contains the authentication parameters for OpenStack's Identity v3 API. Optionally a `region_name`
 can be specified, but this is only required if there are multiple regions to choose from.
+
 Each sync job contains the source URL as `from`, and `to` has the target container name, optionally followed by an 
 object name prefix in the target container. For example, in the case above, the file
 
@@ -78,6 +79,12 @@ jobs:
     ca:   /path/to/server-ca.pem
 ```
 
+By default, only a single worker thread will be transferring files. You can scale this up by including a `workers` section like so:
+
+```yaml
+workers:
+  transfer: 10
+```
 
 ## Log output
 

@@ -63,7 +63,10 @@ func Run(state *SharedState) {
 
 	//setup a simple linear pipeline of workers (it should be fairly trivial to
 	//scale this out to multiple workers later)
-	makeTransferThread(state, makeScraperThread(state))
+	queue := makeScraperThread(state)
+	for i := uint(0); i < state.WorkerCounts.Transfer; i++ {
+		makeTransferThread(state, queue)
+	}
 
 	//wait for all of them to return
 	state.WaitGroup.Wait()
