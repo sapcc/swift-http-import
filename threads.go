@@ -146,7 +146,6 @@ func makeTransferThread(state *SharedState, in <-chan File) {
 				switch file.PerformTransfer(state.SwiftConnection) {
 				case TransferSuccess:
 					filesTransferred++
-
 				case TransferSkipped:
 					//nothing to count
 				case TransferFailed:
