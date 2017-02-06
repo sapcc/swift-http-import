@@ -95,7 +95,7 @@ func ReadConfiguration() (*Configuration, []error) {
 	}
 
 	// set default statsd port
-	if cfg.Statsd.HostName != "" && cfg.Statsd.Port != 0 {
+	if cfg.Statsd.HostName != "" && cfg.Statsd.Port == 0 {
 		cfg.Statsd.Port = 8125
 	}
 	// set default statsd prefix
