@@ -25,6 +25,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strconv"
 	"sync"
 	"time"
 
@@ -49,7 +50,7 @@ func main() {
 	// initialize statsd client
 	var err error
 	if config.Statsd.HostName != "" {
-		statsd_client, err = statsd.NewClient(config.Statsd.HostName + ":" + string(config.Statsd.Port), config.Statsd.Prefix)
+		statsd_client, err = statsd.NewClient(config.Statsd.HostName + ":" + strconv.Itoa(config.Statsd.Port), config.Statsd.Prefix)
 		// handle any errors
 		if err != nil {
 			Log(LogFatal, err.Error())
