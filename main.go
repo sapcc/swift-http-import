@@ -49,12 +49,11 @@ func main() {
 	// initialize statsd client
 	var err error
 	if config.Statsd.HostName != "" {
-		statsd_client, err = statsd.NewClient(config.Statsd.HostName + ":" + config.Statsd.Port, config.Statsd.Prefix)
+		statsd_client, err = statsd.NewClient(config.Statsd.HostName + ":" + string(config.Statsd.Port), config.Statsd.Prefix)
 		// handle any errors
 		if err != nil {
 			Log(LogFatal, err.Error())
 		}
-		Gauge("last_run.success", 0, 1.0)
 
 		// make sure to clean up
 		defer statsd_client.Close()
@@ -85,7 +84,7 @@ func main() {
 		SwiftConnection: &conn,
 	})
 
-	Gauge("last_run.duration_s", int64(time.Since(startTime).Seconds()), 1.0)
+	Gauge("last_run.duration_seconds", int64(time.Since(startTime).Seconds()), 1.0)
 	Log(LogInfo, "finished in %s", time.Since(startTime).String())
 }
 

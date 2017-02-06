@@ -108,11 +108,9 @@ func makeScraperThread(state *SharedState) <-chan File {
 			}
 
 			for _, file := range scraper.Next() {
-				Inc("files_found", 1, 1.0)
 				filesFound++
 				out <- file
 			}
-			Inc("dirs_found", 1, 1.0)
 			directoriesScanned++
 		}
 
@@ -148,13 +146,11 @@ func makeTransferThread(state *SharedState, in <-chan File) {
 				switch file.PerformTransfer(state.SwiftConnection) {
 				case TransferSuccess:
 					filesTransferred++
-					Inc("files_transfered", 1, 1.0)
 
 				case TransferSkipped:
 					//nothing to count
 				case TransferFailed:
 					filesFailed++
-					Inc("files_failed", 1, 1.0)
 				}
 			}
 		}

@@ -75,10 +75,3 @@ func Gauge(bucket string, value int64, rate float32) error {
 	}
 	return nil
 }
-
-func Inc(bucket string, value int64, rate float32) error {
-	if statsd_client != nil {
-		return statsd_client.Inc(bucket, value, rate)
-	}
-	return nil
-}

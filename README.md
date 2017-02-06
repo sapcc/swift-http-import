@@ -114,12 +114,8 @@ The following metric are sent:
 | Kind    | Name                      |
 | ------- | ------------------------- |
 | Gauge   | last_run.success          |
-| Gauge   | last_run.duration_s       |
+| Gauge   | last_run.duration_seconds |
 | Gauge   | last_run.dirs_scanned     |
 | Gauge   | last_run.files_found      |
 | Gauge   | last_run.files_transfered |
 | Gauge   | last_run.files_failed     |
-| Counter | dirs_found                |
-| Counter | files_found               |
-| Counter | files_transfered          |
-| Counter | files_failed              |
