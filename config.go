@@ -55,6 +55,11 @@ type Configuration struct {
 	WorkerCounts struct {
 		Transfer uint
 	} `yaml:"workers"`
+	Statsd struct {
+		HostName 	string 	`yaml:"hostname"`
+		Port	 	int 	`yaml:"port"`
+		Prefix	 	string 	`yaml:"prefix"`
+	}
 	Jobs []*Job
 }
 
@@ -87,6 +92,15 @@ func ReadConfiguration() (*Configuration, []error) {
 	//set default value
 	if cfg.WorkerCounts.Transfer == 0 {
 		cfg.WorkerCounts.Transfer = 1
+	}
+
+	// set default statsd port
+	if cfg.Statsd.HostName != "" && cfg.Statsd.Port == 0 {
+		cfg.Statsd.Port = 8125
+	}
+	// set default statsd prefix
+	if cfg.Statsd.Prefix == "" {
+		cfg.Statsd.Prefix = "swift_http_import"
 	}
 
 	return &cfg, cfg.Validate()

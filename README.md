@@ -98,3 +98,24 @@ INFO: 4 dirs scanned; 45 files found, 0 transferred, 0 failed
 In this case, all sources contain 103 directories and 1496 files. 170 files were found to be newer on the source and
 thus need transfer. Of those, 167 were successfully transferred, and the remaining 3 file transfers failed (so there
 should be 3 errors in the log).
+
+## StatsD metrics
+
+Adding an optional statsd config section enables submitting StatsD metrics.
+```yaml
+statsd:
+  hostname: localhost
+  port:     8125
+  prefix:   swift_http_import
+```
+
+The following metric are sent:
+
+| Kind    | Name                      |
+| ------- | ------------------------- |
+| Gauge   | last_run.success          |
+| Gauge   | last_run.duration_seconds |
+| Gauge   | last_run.dirs_scanned     |
+| Gauge   | last_run.files_found      |
+| Gauge   | last_run.files_transfered |
+| Gauge   | last_run.files_failed     |

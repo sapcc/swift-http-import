@@ -30,6 +30,7 @@ import (
 
 	"golang.org/x/net/context"
 
+	"github.com/cactus/go-statsd-client/statsd"
 	"github.com/ncw/swift"
 )
 
@@ -45,6 +46,19 @@ func main() {
 		os.Exit(1)
 	}
 
+	// initialize statsd client
+	var err error
+	if config.Statsd.HostName != "" {
+		statsd_client, err = statsd.NewClient(config.Statsd.HostName + ":" + string(config.Statsd.Port), config.Statsd.Prefix)
+		// handle any errors
+		if err != nil {
+			Log(LogFatal, err.Error())
+		}
+
+		// make sure to clean up
+		defer statsd_client.Close()
+	}
+
 	//initialize Swift connection
 	conn := swift.Connection{
 		AuthVersion:  3,
@@ -56,7 +70,7 @@ func main() {
 		ApiKey:       config.Swift.Password,
 		Region:       config.Swift.RegionName,
 	}
-	err := conn.Authenticate()
+	err = conn.Authenticate()
 	if err != nil {
 		Log(LogFatal, err.Error())
 	}
@@ -70,6 +84,7 @@ func main() {
 		SwiftConnection: &conn,
 	})
 
+	Gauge("last_run.duration_seconds", int64(time.Since(startTime).Seconds()), 1.0)
 	Log(LogInfo, "finished in %s", time.Since(startTime).String())
 }
 

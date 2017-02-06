@@ -71,6 +71,18 @@ func Run(state *SharedState) {
 	//wait for all of them to return
 	state.WaitGroup.Wait()
 
+	//send statistics
+	Gauge("last_run.dirs_scanned", int64(state.DirectoriesScanned), 1.0)
+	Gauge("last_run.files_found", int64(state.FilesFound), 1.0)
+	Gauge("last_run.files_transfered", int64(state.FilesTransferred), 1.0)
+	Gauge("last_run.files_failed", int64(state.FilesFailed), 1.0)
+	if state.FilesFailed > 0 {
+		Gauge("last_run.success", 0, 1.0)
+	} else {
+		Gauge("last_run.success", 1, 1.0)
+	}
+
+
 	//report results
 	Log(LogInfo, "%d dirs scanned, %d files found, %d transferred, %d failed",
 		state.DirectoriesScanned, state.FilesFound,
