@@ -76,7 +76,12 @@ func Run(state *SharedState) {
 	Gauge("last_run.files_found", int64(state.FilesFound), 1.0)
 	Gauge("last_run.files_transfered", int64(state.FilesTransferred), 1.0)
 	Gauge("last_run.files_failed", int64(state.FilesFailed), 1.0)
-	Gauge("last_run.success", int64(!bool(state.FilesFailed)), 1.0)
+	if state.FilesFailed > 0 {
+		Gauge("last_run.success", 0, 1.0)
+	} else {
+		Gauge("last_run.success", 1, 1.0)
+	}
+
 
 	//report results
 	Log(LogInfo, "%d dirs scanned, %d files found, %d transferred, %d failed",
