@@ -23,6 +23,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"github.com/cactus/go-statsd-client/statsd"
 )
 
 //URLPathJoin appends a path to a URL.
@@ -64,4 +65,20 @@ func Log(level LogLevel, msg string, args ...interface{}) {
 	if level == LogFatal {
 		os.Exit(1)
 	}
+}
+
+var statsd_client statsd.Statter
+
+func Gauge(bucket string, value int64, rate float32) error {
+	if statsd_client != nil {
+		return statsd_client.Gauge(bucket, value, rate)
+	}
+	return nil
+}
+
+func Inc(bucket string, value int64, rate float32) error {
+	if statsd_client != nil {
+		return statsd_client.Inc(bucket, value, rate)
+	}
+	return nil
 }
