@@ -56,9 +56,9 @@ type Configuration struct {
 		Transfer uint
 	} `yaml:"workers"`
 	Statsd struct {
-		HostName 	string 	`yaml:"hostname"`
-		Port	 	int 	`yaml:"port"`
-		Prefix	 	string 	`yaml:"prefix"`
+		HostName string `yaml:"hostname"`
+		Port     int    `yaml:"port"`
+		Prefix   string `yaml:"prefix"`
 	}
 	Jobs []*Job
 }

@@ -69,6 +69,8 @@ would be synced to the `mirror` container as
 ubuntu-repos/pool/main/p/pam/pam_1.1.8.orig.tar.gz
 ```
 
+The order of jobs is significant: Source trees will be scraped in the order indicated by the `jobs` list.
+
 There is also support for SSL client based authentication against the source. Hereby the server CA is optional.
 ```yaml
 jobs:

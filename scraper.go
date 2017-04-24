@@ -34,6 +34,22 @@ type Directory struct {
 	Path string
 }
 
+//directoryStack is a []Directory that implements LIFO semantics.
+type directoryStack []Directory
+
+func (s directoryStack) IsEmpty() bool {
+	return len(s) == 0
+}
+
+func (s directoryStack) Push(d Directory) directoryStack {
+	return append(s, d)
+}
+
+func (s directoryStack) Pop() (directoryStack, Directory) {
+	l := len(s)
+	return s[:l-1], s[l-1]
+}
+
 //SourceURL returns the URL of this directory at its source.
 func (d Directory) SourceURL() string {
 	url := URLPathJoin(d.Job.SourceRootURL, d.Path)
@@ -49,18 +65,21 @@ func (d Directory) SourceURL() string {
 
 //Scraper describes the state of the scraper thread.
 type Scraper struct {
-	Queue []Directory
+	//We use a stack here to ensure that the first job's source is completely
+	//scraped, and only then the second job's source is scraped, and so on.
+	Stack directoryStack
 }
 
 //NewScraper creates a new scraper.
 func NewScraper(config *Configuration) *Scraper {
 	s := &Scraper{
-		Queue: make([]Directory, 0, len(config.Jobs)),
+		Stack: make(directoryStack, 0, len(config.Jobs)),
 	}
 
-	for _, job := range config.Jobs {
-		s.Queue = append(s.Queue, Directory{
-			Job:  job,
+	//push jobs in *reverse* order so that the first job will be processed first
+	for idx := range config.Jobs {
+		s.Stack = s.Stack.Push(Directory{
+			Job:  config.Jobs[len(config.Jobs)-idx-1],
 			Path: "/",
 		})
 	}
@@ -70,7 +89,7 @@ func NewScraper(config *Configuration) *Scraper {
 
 //Done returns true when the scraper has scraped everything.
 func (s *Scraper) Done() bool {
-	return len(s.Queue) == 0
+	return s.Stack.IsEmpty()
 }
 
 //matches scheme prefix (e.g. "http:" or "git+ssh:") at the start of a full URL
@@ -87,8 +106,8 @@ func (s *Scraper) Next() []File {
 	}
 
 	//fetch next directory from queue
-	directory := s.Queue[0]
-	s.Queue = s.Queue[1:] //TODO: this might leak memory if the slice implementation is not clever enough
+	var directory Directory
+	s.Stack, directory = s.Stack.Pop()
 	Log(LogDebug, "scraping %s", directory.SourceURL())
 
 	//retrieve directory listing
@@ -164,7 +183,7 @@ func (s *Scraper) Next() []File {
 
 				//consider the link a directory if it ends with "/"
 				if strings.HasSuffix(href, "/") {
-					s.Queue = append(s.Queue, Directory{
+					s.Stack = s.Stack.Push(Directory{
 						Job:  directory.Job,
 						Path: filepath.Join(directory.Path, href),
 					})
