@@ -28,6 +28,7 @@ import (
 	"strings"
 
 	yaml "gopkg.in/yaml.v2"
+	"regexp"
 )
 
 //Job describes a single mirroring job.
@@ -38,7 +39,9 @@ type Job struct {
 	ClientCertificatePath    string `yaml:"cert"`
 	ClientCertificateKeyPath string `yaml:"key"`
 	ServerCAPath             string `yaml:"ca"`
+	ExcludePattern        	 string `yaml:"excl"`
 	HTTPClient               *http.Client
+	ExcludeRx                *regexp.Regexp
 }
 
 //Configuration contains the contents of the configuration file.
@@ -144,6 +147,9 @@ func (cfg Configuration) Validate() []error {
 			if job.ClientCertificateKeyPath == "" {
 				result = append(result, fmt.Errorf("missing value for swift.jobs[%d].key", idx))
 			}
+		}
+		if job.ExcludePattern != "" {
+			job.ExcludeRx = regexp.MustCompile(job.ExcludePattern)
 		}
 	}
 
