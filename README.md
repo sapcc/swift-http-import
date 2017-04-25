@@ -88,6 +88,16 @@ workers:
   transfer: 10
 ```
 
+Excluding directories or files to be scraped from the source can be reached with specifying a regex in the job definition:
+```yaml
+jobs:
+  - from: http://de.archive.ubuntu.com/ubuntu/
+    to:   mirror/ubuntu-repos
+    excl: /sub_dir$|.gz$
+```
+
+This would exclude directories named `sub_dir` and files with extension `gz` on every level.
+
 ## Log output
 
 Log output on `stderr` is very sparse by default. Errors are always reported, and a final count will appear at the end like this:
