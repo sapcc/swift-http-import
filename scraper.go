@@ -108,7 +108,14 @@ func (s *Scraper) Next() []File {
 	//fetch next directory from queue
 	var directory Directory
 	s.Stack, directory = s.Stack.Pop()
-	Log(LogDebug, "scraping %s", directory.SourceURL())
+
+	//ignore explicit excluded directories, no need to drill deeper
+	if directory.Job.ExcludeRx != nil && directory.Job.ExcludeRx.MatchString(directory.Path) {
+		Log(LogDebug, "skipping %s: because of exclusion %s", directory.SourceURL(), directory.Job.ExcludePattern)
+		return nil
+	} else {
+		Log(LogDebug, "scraping %s", directory.SourceURL())
+	}
 
 	//retrieve directory listing
 	//TODO: This should send "Accept: text/html", but at least Apache and nginx
@@ -178,6 +185,11 @@ func (s *Scraper) Next() []File {
 				//ignore links with a query part (Apache directory listings use these for
 				//adjustable sorting)
 				if strings.Contains(href, "?") {
+					continue
+				}
+				//ignore explicit excluded patterns
+				if directory.Job.ExcludeRx != nil && directory.Job.ExcludeRx.MatchString(href) {
+					Log(LogDebug, "skipping %s: because of exclusion %s", directory.SourceURL() + href, directory.Job.ExcludePattern)
 					continue
 				}
 
