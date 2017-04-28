@@ -180,6 +180,16 @@ func (s *Scraper) Next() []File {
 				if strings.Contains(href, "?") {
 					continue
 				}
+				//ignore explicit excluded patterns
+				if directory.Job.ExcludeRx != nil && directory.Job.ExcludeRx.MatchString(href) {
+					Log(LogDebug, "skipping %s: is excluded by `%s`", directory.SourceURL() + href, directory.Job.ExcludePattern)
+					continue
+				}
+				//ignore not included patterns
+				if directory.Job.IncludeRx != nil && !directory.Job.IncludeRx.MatchString(href) {
+					Log(LogDebug, "skipping %s: is not included by `%s", directory.SourceURL() + href, directory.Job.IncludePattern)
+					continue
+				}
 
 				//consider the link a directory if it ends with "/"
 				if strings.HasSuffix(href, "/") {

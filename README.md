@@ -88,6 +88,32 @@ workers:
   transfer: 10
 ```
 
+Restricting the scraped files before transferring them to the target can be reached with two optional job configurations:
+* `except`: Exclude directories and files which are matched by `except`
+* `only`: Exclude directories and files which are not matched by `only`
+
+The evaluation precedence is as listed.
+
+Example 1:
+```yaml
+jobs:
+  - from:   http://de.archive.ubuntu.com/ubuntu/
+    to:     mirror/ubuntu-repos
+    except: "sub_dir/$.gz$"
+```
+This would exclude directories named `sub_dir` and files with extension `gz` on every level from scraping.
+
+Example 2:
+
+```yaml
+jobs:
+  - from:   http://de.archive.ubuntu.com/ubuntu/
+    to:     mirror/ubuntu-repos
+    only:   "/$|.amd64.deb$"
+```
+This would only transfer amd64 debian packages. Consider that you should allow all directories in `only` by `/$`,
+if you want to traverse the whole tree.
+
 ## Log output
 
 Log output on `stderr` is very sparse by default. Errors are always reported, and a final count will appear at the end like this:
