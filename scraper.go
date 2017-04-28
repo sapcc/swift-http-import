@@ -187,7 +187,7 @@ func (s *Scraper) Next() []File {
 				}
 				//ignore not included patterns
 				if directory.Job.IncludeRx != nil && !directory.Job.IncludeRx.MatchString(href) {
-					Log(LogDebug, "skipping %s: is not included by `%s", directory.SourceURL() + href, directory.Job.IncludePattern)
+					Log(LogDebug, "skipping %s: is not included by `%s`", directory.SourceURL() + href, directory.Job.IncludePattern)
 					continue
 				}
 
