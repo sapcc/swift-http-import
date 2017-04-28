@@ -39,9 +39,11 @@ type Job struct {
 	ClientCertificatePath    string `yaml:"cert"`
 	ClientCertificateKeyPath string `yaml:"key"`
 	ServerCAPath             string `yaml:"ca"`
-	ExcludePattern        	 string `yaml:"excl"`
+	ExcludePattern        	 string `yaml:"except"`
+	IncludePattern        	 string `yaml:"only"`
 	HTTPClient               *http.Client
 	ExcludeRx                *regexp.Regexp
+	IncludeRx                *regexp.Regexp
 }
 
 //Configuration contains the contents of the configuration file.
@@ -150,6 +152,9 @@ func (cfg Configuration) Validate() []error {
 		}
 		if job.ExcludePattern != "" {
 			job.ExcludeRx = regexp.MustCompile(job.ExcludePattern)
+		}
+		if job.IncludePattern != "" {
+			job.IncludeRx = regexp.MustCompile(job.IncludePattern)
 		}
 	}
 

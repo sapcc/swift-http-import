@@ -88,15 +88,31 @@ workers:
   transfer: 10
 ```
 
-Excluding directories or files to be scraped from the source can be reached with specifying a regex in the job definition:
+Restricting the scraped files before transferring them to the target can be reached with two optional job configurations:
+* `except`: Exclude directories and files which are matched by `except`
+* `only`: Exclude directories and files which are not matched by `only`
+
+The evaluation precedence is as listed.
+
+Example 1:
 ```yaml
 jobs:
-  - from: http://de.archive.ubuntu.com/ubuntu/
-    to:   mirror/ubuntu-repos
-    excl: /sub_dir$|.gz$
+  - from:   http://de.archive.ubuntu.com/ubuntu/
+    to:     mirror/ubuntu-repos
+    except: "sub_dir/$.gz$"
 ```
+This would exclude directories named `sub_dir` and files with extension `gz` on every level from scraping.
 
-This would exclude directories named `sub_dir` and files with extension `gz` on every level.
+Example 2:
+
+```yaml
+jobs:
+  - from:   http://de.archive.ubuntu.com/ubuntu/
+    to:     mirror/ubuntu-repos
+    only:   "/$|.amd64.deb$"
+```
+This would only transfer amd64 debian packages. Consider that you should allow all directories in `only` by `/$`,
+if you want to traverse the whole tree.
 
 ## Log output
 
