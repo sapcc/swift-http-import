@@ -71,6 +71,17 @@ ubuntu-repos/pool/main/p/pam/pam_1.1.8.orig.tar.gz
 
 The order of jobs is significant: Source trees will be scraped in the order indicated by the `jobs` list.
 
+When a regex is given in the `immutable` key, files with names matching this regex will be considered immutable, and
+`swift-http-import` will not check them for updates after having synced them once. This is especially useful for package
+repositories because package files, once uploaded, will never change:
+
+```yaml
+jobs:
+  - from: http://de.archive.ubuntu.com/ubuntu/
+    to:   mirror/ubuntu-repos
+    immutable: '.*\.deb$'
+```
+
 There is also support for SSL client based authentication against the source. Hereby the server CA is optional.
 ```yaml
 jobs:
@@ -120,7 +131,6 @@ Log output on `stderr` is very sparse by default. Errors are always reported, an
 
 ```
 2016/12/19 14:28:23 INFO: 103 dirs scanned, 1496 files found, 167 transferred, 3 failed
-INFO: 4 dirs scanned; 45 files found, 0 transferred, 0 failed
 ```
 
 In this case, all sources contain 103 directories and 1496 files. 170 files were found to be newer on the source and

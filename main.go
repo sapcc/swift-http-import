@@ -26,6 +26,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -50,7 +51,7 @@ func main() {
 	// initialize statsd client
 	var err error
 	if config.Statsd.HostName != "" {
-		statsd_client, err = statsd.NewClient(config.Statsd.HostName + ":" + strconv.Itoa(config.Statsd.Port), config.Statsd.Prefix)
+		statsd_client, err = statsd.NewClient(config.Statsd.HostName+":"+strconv.Itoa(config.Statsd.Port), config.Statsd.Prefix)
 		// handle any errors
 		if err != nil {
 			Log(LogFatal, err.Error())
@@ -76,6 +77,7 @@ func main() {
 		Log(LogFatal, err.Error())
 	}
 	PrepareTargets(&conn, config)
+	PrepareJobs(&conn, config.Jobs)
 	PrepareClients(config)
 
 	//start workers
@@ -113,6 +115,37 @@ func PrepareTargets(conn *swift.Connection, config *Configuration) {
 	}
 
 	wg.Wait()
+}
+
+//PrepareJobs fills those data structures in Job instances that require a
+//swift.Connection.
+func PrepareJobs(conn *swift.Connection, jobs []*Job) {
+	for _, job := range jobs {
+		//only need to fill IsFileTransferred if we want to abort transfers of
+		//immutable files early
+		if job.ImmutableFileRx == nil {
+			continue
+		}
+
+		prefix := job.TargetPrefix
+		if prefix != "" && !strings.HasSuffix(prefix, "/") {
+			prefix += "/"
+		}
+
+		paths, err := conn.ObjectNames(job.TargetContainer, &swift.ObjectsOpts{
+			Prefix: prefix,
+		})
+		if err != nil {
+			Log(LogFatal,
+				"could not list objects in Swift at %s/%s: %s",
+				job.TargetContainer, prefix, err.Error(),
+			)
+		}
+		job.IsFileTransferred = make(map[string]bool, len(paths))
+		for _, path := range paths {
+			job.IsFileTransferred[path] = true
+		}
+	}
 }
 
 //PrepareClients ensure http client SSL and or CA support setup

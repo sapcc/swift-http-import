@@ -180,14 +180,20 @@ func (s *Scraper) Next() []File {
 				if strings.Contains(href, "?") {
 					continue
 				}
+
+				pathForMatching := filepath.Join(directory.Path, href)
+				if strings.HasSuffix(href, "/") {
+					pathForMatching += "/"
+				}
+
 				//ignore explicit excluded patterns
-				if directory.Job.ExcludeRx != nil && directory.Job.ExcludeRx.MatchString(href) {
-					Log(LogDebug, "skipping %s: is excluded by `%s`", directory.SourceURL() + href, directory.Job.ExcludePattern)
+				if directory.Job.ExcludeRx != nil && directory.Job.ExcludeRx.MatchString(pathForMatching) {
+					Log(LogDebug, "skipping %s: is excluded by `%s`", pathForMatching, directory.Job.ExcludePattern)
 					continue
 				}
 				//ignore not included patterns
-				if directory.Job.IncludeRx != nil && !directory.Job.IncludeRx.MatchString(href) {
-					Log(LogDebug, "skipping %s: is not included by `%s`", directory.SourceURL() + href, directory.Job.IncludePattern)
+				if directory.Job.IncludeRx != nil && !directory.Job.IncludeRx.MatchString(pathForMatching) {
+					Log(LogDebug, "skipping %s: is not included by `%s`", pathForMatching, directory.Job.IncludePattern)
 					continue
 				}
 
@@ -198,10 +204,18 @@ func (s *Scraper) Next() []File {
 						Path: filepath.Join(directory.Path, href),
 					})
 				} else {
-					result = append(result, File{
+					file := File{
 						Job:  directory.Job,
 						Path: filepath.Join(directory.Path, href),
-					})
+					}
+					//ignore immutable files that have already been transferred
+					if directory.Job.ImmutableFileRx != nil && directory.Job.ImmutableFileRx.MatchString(pathForMatching) {
+						if directory.Job.IsFileTransferred[file.TargetObjectName()] {
+							Log(LogDebug, "skipping %s: already transferred", pathForMatching)
+							continue
+						}
+					}
+					result = append(result, file)
 				}
 			}
 		}

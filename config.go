@@ -25,25 +25,32 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"regexp"
 	"strings"
 
 	yaml "gopkg.in/yaml.v2"
-	"regexp"
 )
 
 //Job describes a single mirroring job.
 type Job struct {
-	SourceRootURL            string `yaml:"from"`
-	TargetContainer          string `yaml:"to"`
-	TargetPrefix             string `yaml:"-"`
+	//basic options
+	SourceRootURL   string `yaml:"from"`
+	TargetContainer string `yaml:"to"`
+	TargetPrefix    string `yaml:"-"`
+	//behavior options
+	ExcludePattern       string `yaml:"except"`
+	IncludePattern       string `yaml:"only"`
+	ImmutableFilePattern string `yaml:"immutable"`
+	//auth options
 	ClientCertificatePath    string `yaml:"cert"`
 	ClientCertificateKeyPath string `yaml:"key"`
 	ServerCAPath             string `yaml:"ca"`
-	ExcludePattern        	 string `yaml:"except"`
-	IncludePattern        	 string `yaml:"only"`
-	HTTPClient               *http.Client
-	ExcludeRx                *regexp.Regexp
-	IncludeRx                *regexp.Regexp
+	//pre-compiled assets
+	HTTPClient        *http.Client    `yaml:"-"`
+	ExcludeRx         *regexp.Regexp  `yaml:"-"`
+	IncludeRx         *regexp.Regexp  `yaml:"-"`
+	ImmutableFileRx   *regexp.Regexp  `yaml:"-"`
+	IsFileTransferred map[string]bool `yaml:"-"` //key = TargetPrefix + file path
 }
 
 //Configuration contains the contents of the configuration file.
@@ -150,12 +157,21 @@ func (cfg Configuration) Validate() []error {
 				result = append(result, fmt.Errorf("missing value for swift.jobs[%d].key", idx))
 			}
 		}
-		if job.ExcludePattern != "" {
-			job.ExcludeRx = regexp.MustCompile(job.ExcludePattern)
+
+		//compile patterns into regexes
+		compileOptionalRegex := func(key, pattern string) *regexp.Regexp {
+			if pattern == "" {
+				return nil
+			}
+			rx, err := regexp.Compile(pattern)
+			if err != nil {
+				result = append(result, fmt.Errorf("malformed regex in swift.jobs[%d].%s: %s", idx, key, err.Error()))
+			}
+			return rx
 		}
-		if job.IncludePattern != "" {
-			job.IncludeRx = regexp.MustCompile(job.IncludePattern)
-		}
+		job.ExcludeRx = compileOptionalRegex("except", job.ExcludePattern)
+		job.IncludeRx = compileOptionalRegex("only", job.IncludePattern)
+		job.ImmutableFileRx = compileOptionalRegex("immutable", job.ImmutableFilePattern)
 	}
 
 	return result
