@@ -93,8 +93,8 @@ func ReadConfiguration() (*Configuration, []error) {
 //JobConfiguration describes a transfer job in the configuration file.
 type JobConfiguration struct {
 	//basic options
-	SourceRootURL            string `yaml:"from"`
-	TargetContainerAndPrefix string `yaml:"to"`
+	Source                   LocationUnmarshaler `yaml:"from"`
+	TargetContainerAndPrefix string              `yaml:"to"`
 	//behavior options
 	ExcludePattern       string `yaml:"except"`
 	IncludePattern       string `yaml:"only"`
@@ -103,6 +103,44 @@ type JobConfiguration struct {
 	ClientCertificatePath    string `yaml:"cert"`
 	ClientCertificateKeyPath string `yaml:"key"`
 	ServerCAPath             string `yaml:"ca"`
+}
+
+//LocationUnmarshaler provides a yaml.Unmarshaler implementation for the Location interface.
+type LocationUnmarshaler struct {
+	loc Location
+}
+
+//UnmarshalYAML implements the yaml.Unmarshaler interface.
+func (u *LocationUnmarshaler) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	//try to unmarshal as URLLocation
+	var url string
+	err := unmarshal(&url)
+	if err == nil {
+		if url == "" {
+			u.loc = nil
+		} else {
+			u.loc = URLLocation(url)
+		}
+		return nil
+	}
+
+	//try to unmarshal as SwiftLocation
+	var creds struct {
+		SwiftCredentials
+		ContainerName string `yaml:"container"`
+		ObjectPrefix  string `yaml:"object_prefix"`
+	}
+	err = unmarshal(&creds)
+	if err != nil {
+		return err
+	}
+
+	u.loc = &SwiftLocation{
+		Credentials:   creds.SwiftCredentials,
+		ContainerName: creds.ContainerName,
+		ObjectPrefix:  creds.ObjectPrefix,
+	}
+	return nil
 }
 
 //Job describes a transfer job at runtime.
@@ -118,7 +156,7 @@ type Job struct {
 
 //Compile validates the given JobConfiguration, then creates and prepares a Job from it.
 func (cfg JobConfiguration) Compile(name string, creds SwiftCredentials) (job *Job, errors []error) {
-	if cfg.SourceRootURL == "" {
+	if cfg.Source.loc == nil {
 		errors = append(errors, fmt.Errorf("missing value for %s.from", name))
 	}
 	if cfg.TargetContainerAndPrefix == "" {
@@ -135,7 +173,7 @@ func (cfg JobConfiguration) Compile(name string, creds SwiftCredentials) (job *J
 	}
 
 	job = &Job{
-		Source: URLLocation(cfg.SourceRootURL),
+		Source: cfg.Source.loc,
 		Target: &SwiftLocation{
 			Credentials:   creds,
 			ContainerName: cfg.TargetContainerAndPrefix,
@@ -165,7 +203,11 @@ func (cfg JobConfiguration) Compile(name string, creds SwiftCredentials) (job *J
 	job.ImmutableFileRx = compileOptionalRegex("immutable", cfg.ImmutableFilePattern)
 
 	//ensure that connection to Swift exists and that target container is available
-	err := job.Target.Connect()
+	err := job.Source.Connect()
+	if err != nil {
+		errors = append(errors, err)
+	}
+	err = job.Target.Connect()
 	if err != nil {
 		errors = append(errors, err)
 	}

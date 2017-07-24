@@ -24,6 +24,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/ncw/swift"
 	"golang.org/x/net/html"
 	"golang.org/x/net/html/atom"
 )
@@ -88,14 +89,47 @@ func (s *Scraper) Next() []File {
 	//fetch next directory from stack, list its entries
 	var directory Directory
 	s.Stack, directory = s.Stack.Pop()
-	files, subdirectories := directory.Job.Source.ListEntries(directory.Job, directory.Path)
+	job := directory.Job //shortcut
+	entries := job.Source.ListEntries(job, directory.Path)
 
-	//push subdirectories onto stack to recurse into them
-	for _, dirName := range subdirectories {
-		s.Stack = s.Stack.Push(Directory{
-			Job:  directory.Job,
-			Path: filepath.Join(directory.Path, dirName),
-		})
+	var files []File
+	for _, entryName := range entries {
+		pathForMatching := filepath.Join(directory.Path, entryName)
+		if strings.HasSuffix(entryName, "/") {
+			pathForMatching += "/"
+		}
+
+		//ignore explicit excluded patterns
+		if job.ExcludeRx != nil && job.ExcludeRx.MatchString(pathForMatching) {
+			Log(LogDebug, "skipping %s: is excluded by `%s`", pathForMatching, job.ExcludeRx.String())
+			continue
+		}
+		//ignore not included patterns
+		if job.IncludeRx != nil && !job.IncludeRx.MatchString(pathForMatching) {
+			Log(LogDebug, "skipping %s: is not included by `%s`", pathForMatching, job.IncludeRx.String())
+			continue
+		}
+
+		//consider the link a directory if it ends with "/"
+		if strings.HasSuffix(entryName, "/") {
+			s.Stack = s.Stack.Push(Directory{
+				Job:  directory.Job,
+				Path: filepath.Join(directory.Path, entryName),
+			})
+		} else {
+			file := File{
+				Job:  job,
+				Path: filepath.Join(directory.Path, entryName),
+			}
+			//ignore immutable files that have already been transferred
+			if job.ImmutableFileRx != nil && job.ImmutableFileRx.MatchString(pathForMatching) {
+				if job.IsFileTransferred[file.TargetObjectName()] {
+					Log(LogDebug, "skipping %s: already transferred", pathForMatching)
+					continue
+				}
+			}
+			files = append(files, file)
+		}
 	}
 
 	return files
@@ -109,7 +143,7 @@ var schemeRx = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9+.-]*:`)
 var dotdotRx = regexp.MustCompile(`(?:^|/)\.\.(?:$|/)`)
 
 //ListEntries implements the Location interface.
-func (u URLLocation) ListEntries(job *Job, path string) (files []File, subdirectories []string) {
+func (u URLLocation) ListEntries(job *Job, path string) []string {
 	//get full URL of this subdirectory
 	url := URLPathJoin(string(u), path)
 	//to get a well-formatted directory listing, the directory URL must have a
@@ -128,30 +162,31 @@ func (u URLLocation) ListEntries(job *Job, path string) (files []File, subdirect
 	response, err := job.HTTPClient.Get(url)
 	if err != nil {
 		Log(LogError, "skipping %s: GET failed: %s", url, err.Error())
-		return nil, nil
+		return nil
 	}
 	defer response.Body.Close()
 
 	//check that we actually got a directory listing
 	if !strings.HasPrefix(response.Status, "2") {
 		Log(LogError, "skipping %s: GET returned status %s", url, response.Status)
-		return nil, nil
+		return nil
 	}
 	contentType := response.Header.Get("Content-Type")
 	if !strings.HasPrefix(contentType, "text/html") {
 		Log(LogError, "skipping %s: GET returned unexpected Content-Type: %s", url, contentType)
-		return nil, nil
+		return nil
 	}
 
 	//find links inside the HTML document
 	tokenizer := html.NewTokenizer(response.Body)
+	var result []string
 	for {
 		tokenType := tokenizer.Next()
 
 		switch tokenType {
 		case html.ErrorToken:
 			//end of document
-			return
+			return result
 		case html.StartTagToken:
 			token := tokenizer.Token()
 
@@ -191,42 +226,28 @@ func (u URLLocation) ListEntries(job *Job, path string) (files []File, subdirect
 					continue
 				}
 
-				pathForMatching := filepath.Join(path, href)
-				if strings.HasSuffix(href, "/") {
-					pathForMatching += "/"
-				}
-
-				//ignore explicit excluded patterns
-				if job.ExcludeRx != nil && job.ExcludeRx.MatchString(pathForMatching) {
-					Log(LogDebug, "skipping %s: is excluded by `%s`", pathForMatching, job.ExcludeRx.String())
-					continue
-				}
-				//ignore not included patterns
-				if job.IncludeRx != nil && !job.IncludeRx.MatchString(pathForMatching) {
-					Log(LogDebug, "skipping %s: is not included by `%s`", pathForMatching, job.IncludeRx.String())
-					continue
-				}
-
-				//consider the link a directory if it ends with "/"
-				if strings.HasSuffix(href, "/") {
-					subdirectories = append(subdirectories, href)
-				} else {
-					file := File{
-						Job:  job,
-						Path: filepath.Join(path, href),
-					}
-					//ignore immutable files that have already been transferred
-					if job.ImmutableFileRx != nil && job.ImmutableFileRx.MatchString(pathForMatching) {
-						if job.IsFileTransferred[file.TargetObjectName()] {
-							Log(LogDebug, "skipping %s: already transferred", pathForMatching)
-							continue
-						}
-					}
-					files = append(files, file)
-				}
+				result = append(result, href)
 			}
 		}
 	}
+}
 
-	return
+//ListEntries implements the Location interface.
+func (s *SwiftLocation) ListEntries(job *Job, path string) []string {
+	objectPath := filepath.Join(s.ObjectPrefix, path)
+	if !strings.HasSuffix(objectPath, "/") {
+		objectPath += "/"
+	}
+	Log(LogDebug, "scraping %s/%s", s.ContainerName, objectPath)
+
+	names, err := s.Connection.ObjectNamesAll(s.ContainerName, &swift.ObjectsOpts{
+		Prefix:    objectPath,
+		Delimiter: '/',
+	})
+	if err != nil {
+		Log(LogError, "skipping %s/%s: GET failed: %s", s.ContainerName, objectPath, err.Error())
+		return nil
+	}
+
+	return names
 }

@@ -156,3 +156,24 @@ func (u URLLocation) GetFile(job *Job, path string, targetState FileState) (io.R
 		ContentType:  response.Header.Get("Content-Type"),
 	}, nil
 }
+
+//GetFile implements the Location interface.
+func (s *SwiftLocation) GetFile(job *Job, path string, targetState FileState) (io.ReadCloser, FileState, error) {
+	objectPath := filepath.Join(s.ObjectPrefix, path)
+
+	reqHeaders := make(swift.Headers)
+	if targetState.Etag != "" {
+		reqHeaders["If-None-Match"] = targetState.Etag
+	}
+	if targetState.LastModified != "" {
+		reqHeaders["If-Modified-Since"] = targetState.LastModified
+	}
+
+	body, respHeaders, err := s.Connection.ObjectOpen(s.ContainerName, objectPath, false, reqHeaders)
+	return body, FileState{
+		Etag:         respHeaders["Etag"],
+		LastModified: respHeaders["Last-Modified"],
+		SkipTransfer: false, //TODO how to observe status "304 Not Modified" with ObjectOpen?
+		ContentType:  respHeaders["Content-Type"],
+	}, err
+}

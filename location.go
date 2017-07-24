@@ -29,8 +29,11 @@ import (
 
 //Location describes a place from which files can be fetched.
 type Location interface {
-	//ListEntries implementations are in scraper.go
-	ListEntries(job *Job, path string) (files []File, subdirectories []string)
+	//for type-specific one-time setup
+	Connect() error
+	//ListEntries implementations are in scraper.go. Each result value must have
+	//a "/" prefix for subdirectories, or none for files.
+	ListEntries(job *Job, path string) []string
 	//GetFile implementations are in file.go
 	GetFile(job *Job, path string, targetState FileState) (body io.ReadCloser, sourceState FileState, err error)
 }
@@ -46,6 +49,11 @@ type FileState struct {
 
 //URLLocation describes a location that's accessible by HTTP. Its value is its root URL.
 type URLLocation string
+
+//Connect implements the Location interface.
+func (u URLLocation) Connect() error {
+	return nil
+}
 
 //SwiftCredentials contains all parameters required to establish a Swift
 //connection.
@@ -109,7 +117,7 @@ type SwiftLocation struct {
 
 var swiftConnectionCache = map[string]*swift.Connection{}
 
-//Connect establishes the connection to Swift.
+//Connect implements the Location interface. It establishes the connection to Swift.
 func (l *SwiftLocation) Connect() error {
 	if l.Connection != nil {
 		return nil
