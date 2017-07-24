@@ -92,6 +92,23 @@ jobs:
     ca:   /path/to/server-ca.pem
 ```
 
+Furthermore, the source can also be a private Swift container if Swift credentials are specified instead of a source URL:
+
+```yaml
+jobs:
+  - from:
+      auth_url:            https://my.keystone.local:5000/v3
+      user_name:           uploader
+      user_domain_name:    Default
+      project_name:        datastore
+      project_domain_name: Default
+      password:            20g82rzg235oughq
+      container:           upstream-mirror
+      object_prefix:       repos/ubuntu
+    to: mirror/ubuntu-repos
+    immutable: '.*\.deb$'
+```
+
 By default, only a single worker thread will be transferring files. You can scale this up by including a `workers` section like so:
 
 ```yaml
@@ -110,7 +127,7 @@ Example 1:
 jobs:
   - from:   http://de.archive.ubuntu.com/ubuntu/
     to:     mirror/ubuntu-repos
-    except: "sub_dir/$.gz$"
+    except: "sub_dir/$|.gz$"
 ```
 This would exclude directories named `sub_dir` and files with extension `gz` on every level from scraping.
 
@@ -149,11 +166,11 @@ statsd:
 
 The following metric are sent:
 
-| Kind    | Name                      |
-| ------- | ------------------------- |
-| Gauge   | last_run.success          |
-| Gauge   | last_run.duration_seconds |
-| Gauge   | last_run.dirs_scanned     |
-| Gauge   | last_run.files_found      |
-| Gauge   | last_run.files_transfered |
-| Gauge   | last_run.files_failed     |
+| Kind    | Name                        |
+| ------- | --------------------------- |
+| Gauge   | `last_run.success`          |
+| Gauge   | `last_run.duration_seconds` |
+| Gauge   | `last_run.dirs_scanned`     |
+| Gauge   | `last_run.files_found`      |
+| Gauge   | `last_run.files_transfered` |
+| Gauge   | `last_run.files_failed`     |
