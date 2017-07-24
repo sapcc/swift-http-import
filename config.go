@@ -20,7 +20,8 @@
 package main
 
 import (
-	"errors"
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -28,42 +29,14 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/ncw/swift"
+
 	yaml "gopkg.in/yaml.v2"
 )
 
-//Job describes a single mirroring job.
-type Job struct {
-	//basic options
-	SourceRootURL   string `yaml:"from"`
-	TargetContainer string `yaml:"to"`
-	TargetPrefix    string `yaml:"-"`
-	//behavior options
-	ExcludePattern       string `yaml:"except"`
-	IncludePattern       string `yaml:"only"`
-	ImmutableFilePattern string `yaml:"immutable"`
-	//auth options
-	ClientCertificatePath    string `yaml:"cert"`
-	ClientCertificateKeyPath string `yaml:"key"`
-	ServerCAPath             string `yaml:"ca"`
-	//pre-compiled assets
-	HTTPClient        *http.Client    `yaml:"-"`
-	ExcludeRx         *regexp.Regexp  `yaml:"-"`
-	IncludeRx         *regexp.Regexp  `yaml:"-"`
-	ImmutableFileRx   *regexp.Regexp  `yaml:"-"`
-	IsFileTransferred map[string]bool `yaml:"-"` //key = TargetPrefix + file path
-}
-
 //Configuration contains the contents of the configuration file.
 type Configuration struct {
-	Swift struct {
-		AuthURL           string `yaml:"auth_url"`
-		UserName          string `yaml:"user_name"`
-		UserDomainName    string `yaml:"user_domain_name"`
-		ProjectName       string `yaml:"project_name"`
-		ProjectDomainName string `yaml:"project_domain_name"`
-		Password          string `yaml:"password"`
-		RegionName        string `yaml:"region_name"`
-	}
+	Swift        SwiftCredentials `yaml:"swift"`
 	WorkerCounts struct {
 		Transfer uint
 	} `yaml:"workers"`
@@ -71,8 +44,9 @@ type Configuration struct {
 		HostName string `yaml:"hostname"`
 		Port     int    `yaml:"port"`
 		Prefix   string `yaml:"prefix"`
-	}
-	Jobs []*Job
+	} `yaml:"statsd"`
+	JobConfigs []JobConfiguration `yaml:"jobs"`
+	Jobs       []*Job             `yaml:"-"`
 }
 
 //ReadConfiguration reads the configuration file.
@@ -92,87 +66,188 @@ func ReadConfiguration() (*Configuration, []error) {
 		return nil, []error{err}
 	}
 
-	for _, job := range cfg.Jobs {
-		//split "to" field into container and object name prefix if necessary
-		if strings.Contains(job.TargetContainer, "/") {
-			parts := strings.SplitN(job.TargetContainer, "/", 2)
-			job.TargetContainer = parts[0]
-			job.TargetPrefix = parts[1]
-		}
-	}
-
-	//set default value
+	//set default values
 	if cfg.WorkerCounts.Transfer == 0 {
 		cfg.WorkerCounts.Transfer = 1
 	}
-
-	// set default statsd port
 	if cfg.Statsd.HostName != "" && cfg.Statsd.Port == 0 {
 		cfg.Statsd.Port = 8125
 	}
-	// set default statsd prefix
 	if cfg.Statsd.Prefix == "" {
 		cfg.Statsd.Prefix = "swift_http_import"
 	}
 
-	return &cfg, cfg.Validate()
+	errors := cfg.Swift.Validate("swift")
+	for idx, jobConfig := range cfg.JobConfigs {
+		job, jobErrors := jobConfig.Compile(
+			fmt.Sprintf("swift.jobs[%d]", idx),
+			cfg.Swift,
+		)
+		cfg.Jobs = append(cfg.Jobs, job)
+		errors = append(errors, jobErrors...)
+	}
+
+	return &cfg, errors
 }
 
-//Validate returns an empty list only if the configuration is valid.
-func (cfg Configuration) Validate() []error {
-	var result []error
+//JobConfiguration describes a transfer job in the configuration file.
+type JobConfiguration struct {
+	//basic options
+	SourceRootURL            string `yaml:"from"`
+	TargetContainerAndPrefix string `yaml:"to"`
+	//behavior options
+	ExcludePattern       string `yaml:"except"`
+	IncludePattern       string `yaml:"only"`
+	ImmutableFilePattern string `yaml:"immutable"`
+	//auth options
+	ClientCertificatePath    string `yaml:"cert"`
+	ClientCertificateKeyPath string `yaml:"key"`
+	ServerCAPath             string `yaml:"ca"`
+}
 
-	if cfg.Swift.AuthURL == "" {
-		result = append(result, errors.New("missing value for swift.auth_url"))
-	}
-	if cfg.Swift.UserName == "" {
-		result = append(result, errors.New("missing value for swift.user_name"))
-	}
-	if cfg.Swift.UserDomainName == "" {
-		result = append(result, errors.New("missing value for swift.user_domain_name"))
-	}
-	if cfg.Swift.ProjectName == "" {
-		result = append(result, errors.New("missing value for swift.project_name"))
-	}
-	if cfg.Swift.ProjectDomainName == "" {
-		result = append(result, errors.New("missing value for swift.project_domain_name"))
-	}
-	if cfg.Swift.Password == "" {
-		result = append(result, errors.New("missing value for swift.password"))
-	}
+//Job describes a transfer job at runtime.
+type Job struct {
+	SourceRootURL     string
+	Target            *SwiftLocation
+	HTTPClient        *http.Client
+	ExcludeRx         *regexp.Regexp //pointers because nil signifies absence
+	IncludeRx         *regexp.Regexp
+	ImmutableFileRx   *regexp.Regexp
+	IsFileTransferred map[string]bool //key = TargetPrefix + file path
+}
 
-	for idx, job := range cfg.Jobs {
-		if job.SourceRootURL == "" {
-			result = append(result, fmt.Errorf("missing value for swift.jobs[%d].from", idx))
+//Compile validates the given JobConfiguration, then creates and prepares a Job from it.
+func (cfg JobConfiguration) Compile(name string, creds SwiftCredentials) (job *Job, errors []error) {
+	if cfg.SourceRootURL == "" {
+		errors = append(errors, fmt.Errorf("missing value for %s.from", name))
+	}
+	if cfg.TargetContainerAndPrefix == "" {
+		errors = append(errors, fmt.Errorf("missing value for %s.to", name))
+	}
+	// If one of the following is set, the other one needs also to be set
+	if cfg.ClientCertificatePath != "" || cfg.ClientCertificateKeyPath != "" {
+		if cfg.ClientCertificatePath == "" {
+			errors = append(errors, fmt.Errorf("missing value for %s.cert", name))
 		}
-		if job.TargetContainer == "" {
-			result = append(result, fmt.Errorf("missing value for swift.jobs[%d].to", idx))
+		if cfg.ClientCertificateKeyPath == "" {
+			errors = append(errors, fmt.Errorf("missing value for %s.key", name))
 		}
-		// If one of the following is set, the other one needs also to be set
-		if job.ClientCertificatePath != "" || job.ClientCertificateKeyPath != "" {
-			if job.ClientCertificatePath == "" {
-				result = append(result, fmt.Errorf("missing value for swift.jobs[%d].cert", idx))
-			}
-			if job.ClientCertificateKeyPath == "" {
-				result = append(result, fmt.Errorf("missing value for swift.jobs[%d].key", idx))
-			}
-		}
-
-		//compile patterns into regexes
-		compileOptionalRegex := func(key, pattern string) *regexp.Regexp {
-			if pattern == "" {
-				return nil
-			}
-			rx, err := regexp.Compile(pattern)
-			if err != nil {
-				result = append(result, fmt.Errorf("malformed regex in swift.jobs[%d].%s: %s", idx, key, err.Error()))
-			}
-			return rx
-		}
-		job.ExcludeRx = compileOptionalRegex("except", job.ExcludePattern)
-		job.IncludeRx = compileOptionalRegex("only", job.IncludePattern)
-		job.ImmutableFileRx = compileOptionalRegex("immutable", job.ImmutableFilePattern)
 	}
 
-	return result
+	job = &Job{
+		SourceRootURL: cfg.SourceRootURL,
+		Target: &SwiftLocation{
+			Credentials:   creds,
+			ContainerName: cfg.TargetContainerAndPrefix,
+		},
+	}
+
+	//split "to" field into container and object name prefix if necessary
+	if strings.Contains(cfg.TargetContainerAndPrefix, "/") {
+		parts := strings.SplitN(cfg.TargetContainerAndPrefix, "/", 2)
+		job.Target.ContainerName = parts[0]
+		job.Target.ObjectPrefix = parts[1]
+	}
+
+	//compile patterns into regexes
+	compileOptionalRegex := func(key, pattern string) *regexp.Regexp {
+		if pattern == "" {
+			return nil
+		}
+		rx, err := regexp.Compile(pattern)
+		if err != nil {
+			errors = append(errors, fmt.Errorf("malformed regex in %s.%s: %s", name, key, err.Error()))
+		}
+		return rx
+	}
+	job.ExcludeRx = compileOptionalRegex("except", cfg.ExcludePattern)
+	job.IncludeRx = compileOptionalRegex("only", cfg.IncludePattern)
+	job.ImmutableFileRx = compileOptionalRegex("immutable", cfg.ImmutableFilePattern)
+
+	//ensure that connection to Swift exists and that target container is available
+	err := job.Target.Connect()
+	if err != nil {
+		errors = append(errors, err)
+	}
+
+	errors = append(errors, job.prepareHTTPClient(cfg)...)
+
+	err = job.prepareTransferredFilesLookup()
+	if err != nil {
+		errors = append(errors, err)
+	}
+
+	return
+}
+
+//Prepare HTTP client with SSL client certificate, if necessary.
+func (job *Job) prepareHTTPClient(cfg JobConfiguration) (errors []error) {
+	tlsConfig := &tls.Config{}
+
+	if cfg.ClientCertificatePath != "" {
+		// Load client cert
+		clientCertificate, err := tls.LoadX509KeyPair(cfg.ClientCertificatePath, cfg.ClientCertificateKeyPath)
+		if err != nil {
+			errors = append(errors, fmt.Errorf("cannot load client certificate from %s: %s", cfg.ClientCertificatePath, err.Error()))
+		}
+
+		Log(LogDebug, "Client certificate %s loaded", cfg.ClientCertificatePath)
+		tlsConfig.Certificates = []tls.Certificate{clientCertificate}
+	}
+
+	if cfg.ServerCAPath != "" {
+		// Load server CA cert
+		serverCA, err := ioutil.ReadFile(cfg.ServerCAPath)
+		if err != nil {
+			errors = append(errors, fmt.Errorf("cannot load CA certificate from %s: %s", cfg.ServerCAPath, err.Error()))
+			Log(LogFatal, "Server CA could not be loaded: %s", err.Error())
+		}
+
+		certPool := x509.NewCertPool()
+		certPool.AppendCertsFromPEM(serverCA)
+
+		Log(LogDebug, "Server CA %s loaded", cfg.ServerCAPath)
+		tlsConfig.RootCAs = certPool
+	}
+
+	if cfg.ClientCertificatePath != "" || cfg.ServerCAPath != "" {
+		tlsConfig.BuildNameToCertificate()
+		// Overriding the transport for TLS, requires also Proxy to be set from ENV,
+		// otherwise a set proxy will get lost
+		transport := &http.Transport{TLSClientConfig: tlsConfig, Proxy: http.ProxyFromEnvironment}
+		job.HTTPClient = &http.Client{Transport: transport}
+	} else {
+		job.HTTPClient = http.DefaultClient
+	}
+
+	return
+}
+
+func (job *Job) prepareTransferredFilesLookup() error {
+	//if we want to abort transfers of immutable files early...
+	if job.ImmutableFileRx == nil {
+		return nil
+	}
+
+	//...we need to first enumerate all files on the receiving side
+	prefix := job.Target.ObjectPrefix
+	if prefix != "" && !strings.HasSuffix(prefix, "/") {
+		prefix += "/"
+	}
+
+	paths, err := job.Target.Connection.ObjectNames(job.Target.ContainerName, &swift.ObjectsOpts{
+		Prefix: prefix,
+	})
+	if err != nil {
+		return fmt.Errorf(
+			"could not list objects in Swift at %s/%s: %s",
+			job.Target.ContainerName, prefix, err.Error(),
+		)
+	}
+	job.IsFileTransferred = make(map[string]bool, len(paths))
+	for _, path := range paths {
+		job.IsFileTransferred[path] = true
+	}
+
+	return nil
 }

@@ -41,10 +41,10 @@ func (f File) SourceURL() string {
 //TargetObjectName returns the object name of this file in the target container.
 func (f File) TargetObjectName() string {
 	objectName := strings.TrimPrefix(f.Path, "/")
-	if f.Job.TargetPrefix == "" {
+	if f.Job.Target.ObjectPrefix == "" {
 		return objectName
 	}
-	return filepath.Join(f.Job.TargetPrefix, objectName)
+	return filepath.Join(f.Job.Target.ObjectPrefix, objectName)
 }
 
 //TransferResult is the return type for PerformTransfer().
@@ -63,12 +63,12 @@ const (
 
 //PerformTransfer transfers this file from the source to the target.
 //The return value indicates if the transfer finished successfully.
-func (f File) PerformTransfer(conn *swift.Connection) TransferResult {
+func (f File) PerformTransfer() TransferResult {
 	Log(LogDebug, "transferring %s", f.SourceURL())
 
 	//query the file metadata at the target
-	_, headers, err := conn.Object(
-		f.Job.TargetContainer,
+	_, headers, err := f.Job.Target.Connection.Object(
+		f.Job.Target.ContainerName,
 		f.TargetObjectName(),
 	)
 	if err != nil {
@@ -80,7 +80,7 @@ func (f File) PerformTransfer(conn *swift.Connection) TransferResult {
 			//not be able to upload it to Swift)
 			Log(LogError, "skipping %s: HEAD %s/%s failed: %s",
 				f.SourceURL(),
-				f.Job.TargetContainer, f.TargetObjectName(),
+				f.Job.Target.ContainerName, f.TargetObjectName(),
 				err.Error(),
 			)
 			return TransferFailed
@@ -125,8 +125,8 @@ func (f File) PerformTransfer(conn *swift.Connection) TransferResult {
 	}
 
 	//upload file to target
-	_, err = conn.ObjectPut(
-		f.Job.TargetContainer,
+	_, err = f.Job.Target.Connection.ObjectPut(
+		f.Job.Target.ContainerName,
 		f.TargetObjectName(),
 		response.Body,
 		false, "",
@@ -134,7 +134,7 @@ func (f File) PerformTransfer(conn *swift.Connection) TransferResult {
 		metadata.ObjectHeaders(),
 	)
 	if err != nil {
-		Log(LogError, "PUT %s/%s failed: %s", f.Job.TargetContainer, f.TargetObjectName(), err.Error())
+		Log(LogError, "PUT %s/%s failed: %s", f.Job.Target.ContainerName, f.TargetObjectName(), err.Error())
 		return TransferFailed
 	}
 

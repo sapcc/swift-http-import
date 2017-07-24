@@ -26,16 +26,13 @@ import (
 	"syscall"
 
 	"golang.org/x/net/context"
-
-	"github.com/ncw/swift"
 )
 
 //SharedState contains all the stuff shared between all worker threads.
 type SharedState struct {
 	Configuration
-	Context         context.Context
-	SwiftConnection *swift.Connection
-	WaitGroup       sync.WaitGroup
+	Context   context.Context
+	WaitGroup sync.WaitGroup
 
 	//each of these is only ever written by one thread (and then read by the
 	//main thread after waiting on the writing thread), so no additional
@@ -81,7 +78,6 @@ func Run(state *SharedState) {
 	} else {
 		Gauge("last_run.success", 1, 1.0)
 	}
-
 
 	//report results
 	Log(LogInfo, "%d dirs scanned, %d files found, %d transferred, %d failed",
@@ -148,7 +144,7 @@ func makeTransferThread(state *SharedState, in <-chan File) {
 					//input channel is closed and returns zero values
 					break WorkerLoop
 				}
-				switch file.PerformTransfer(state.SwiftConnection) {
+				switch file.PerformTransfer() {
 				case TransferSuccess:
 					filesTransferred++
 				case TransferSkipped:

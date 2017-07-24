@@ -188,12 +188,12 @@ func (s *Scraper) Next() []File {
 
 				//ignore explicit excluded patterns
 				if directory.Job.ExcludeRx != nil && directory.Job.ExcludeRx.MatchString(pathForMatching) {
-					Log(LogDebug, "skipping %s: is excluded by `%s`", pathForMatching, directory.Job.ExcludePattern)
+					Log(LogDebug, "skipping %s: is excluded by `%s`", pathForMatching, directory.Job.ExcludeRx.String())
 					continue
 				}
 				//ignore not included patterns
 				if directory.Job.IncludeRx != nil && !directory.Job.IncludeRx.MatchString(pathForMatching) {
-					Log(LogDebug, "skipping %s: is not included by `%s`", pathForMatching, directory.Job.IncludePattern)
+					Log(LogDebug, "skipping %s: is not included by `%s`", pathForMatching, directory.Job.IncludeRx.String())
 					continue
 				}
 
