@@ -107,7 +107,7 @@ type JobConfiguration struct {
 
 //Job describes a transfer job at runtime.
 type Job struct {
-	SourceRootURL     string
+	Source            Location
 	Target            *SwiftLocation
 	HTTPClient        *http.Client
 	ExcludeRx         *regexp.Regexp //pointers because nil signifies absence
@@ -135,7 +135,7 @@ func (cfg JobConfiguration) Compile(name string, creds SwiftCredentials) (job *J
 	}
 
 	job = &Job{
-		SourceRootURL: cfg.SourceRootURL,
+		Source: URLLocation(cfg.SourceRootURL),
 		Target: &SwiftLocation{
 			Credentials:   creds,
 			ContainerName: cfg.TargetContainerAndPrefix,

@@ -21,10 +21,31 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/ncw/swift"
 )
+
+//Location describes a place from which files can be fetched.
+type Location interface {
+	//ListEntries implementations are in scraper.go
+	ListEntries(job *Job, path string) (files []File, subdirectories []string)
+	//GetFile implementations are in file.go
+	GetFile(job *Job, path string, targetState FileState) (body io.ReadCloser, sourceState FileState, err error)
+}
+
+//FileState is used by Location.GetFile() to describe the state of a file.
+type FileState struct {
+	Etag         string
+	LastModified string
+	//the following fields are only used in `sourceState`, not `targetState`
+	SkipTransfer bool
+	ContentType  string
+}
+
+//URLLocation describes a location that's accessible by HTTP. Its value is its root URL.
+type URLLocation string
 
 //SwiftCredentials contains all parameters required to establish a Swift
 //connection.

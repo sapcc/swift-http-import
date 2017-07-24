@@ -20,6 +20,8 @@
 package main
 
 import (
+	"fmt"
+	"io"
 	"net/http"
 	"path/filepath"
 	"strings"
@@ -31,11 +33,6 @@ import (
 type File struct {
 	Job  *Job
 	Path string
-}
-
-//SourceURL returns the URL of this file at its source.
-func (f File) SourceURL() string {
-	return URLPathJoin(f.Job.SourceRootURL, f.Path)
 }
 
 //TargetObjectName returns the object name of this file in the target container.
@@ -64,7 +61,7 @@ const (
 //PerformTransfer transfers this file from the source to the target.
 //The return value indicates if the transfer finished successfully.
 func (f File) PerformTransfer() TransferResult {
-	Log(LogDebug, "transferring %s", f.SourceURL())
+	Log(LogDebug, "transferring to %s/%s", f.Job.Target.ContainerName, f.TargetObjectName())
 
 	//query the file metadata at the target
 	_, headers, err := f.Job.Target.Connection.Object(
@@ -78,8 +75,7 @@ func (f File) PerformTransfer() TransferResult {
 			//log all other errors and skip the file (we don't want to waste
 			//bandwidth downloading stuff if there is reasonable doubt that we will
 			//not be able to upload it to Swift)
-			Log(LogError, "skipping %s: HEAD %s/%s failed: %s",
-				f.SourceURL(),
+			Log(LogError, "skipping target %s/%s: HEAD failed: %s",
 				f.Job.Target.ContainerName, f.TargetObjectName(),
 				err.Error(),
 			)
@@ -87,50 +83,39 @@ func (f File) PerformTransfer() TransferResult {
 		}
 	}
 
-	//prepare request to retrieve from source, taking advantage of Etag and
-	//Last-Modified where possible
-	req, err := http.NewRequest("GET", f.SourceURL(), nil)
-	if err != nil {
-		Log(LogError, "skipping %s: GET failed: %s", f.SourceURL(), err.Error())
-		return TransferFailed
-	}
+	//retrieve object from source, taking advantage of Etag and Last-Modified where possible
 	metadata := headers.ObjectMetadata()
-	if etag := metadata["source-etag"]; etag != "" {
-		req.Header.Set("If-None-Match", etag)
+	targetState := FileState{
+		Etag:         metadata["source-etag"],
+		LastModified: metadata["source-last-modified"],
 	}
-	if mtime := metadata["source-last-modified"]; mtime != "" {
-		req.Header.Set("If-Modified-Since", mtime)
-	}
-
-	//retrieve file from source
-	response, err := f.Job.HTTPClient.Do(req)
+	body, sourceState, err := f.Job.Source.GetFile(f.Job, f.Path, targetState)
 	if err != nil {
-		Log(LogError, "skipping %s: GET failed: %s", f.SourceURL(), err.Error())
+		Log(LogError, err.Error())
 		return TransferFailed
 	}
-	defer response.Body.Close()
-
-	if response.StatusCode == 304 { //Not Modified
+	defer body.Close()
+	if sourceState.SkipTransfer { // 304 Not Modified
 		return TransferSkipped
 	}
 
 	//store some headers from the source to later identify whether this
 	//resource has changed
 	metadata = make(swift.Metadata)
-	if etag := response.Header.Get("Etag"); etag != "" {
-		metadata["source-etag"] = etag
+	if sourceState.Etag != "" {
+		metadata["source-etag"] = sourceState.Etag
 	}
-	if mtime := response.Header.Get("Last-Modified"); mtime != "" {
-		metadata["source-last-modified"] = mtime
+	if sourceState.LastModified != "" {
+		metadata["source-last-modified"] = sourceState.LastModified
 	}
 
 	//upload file to target
 	_, err = f.Job.Target.Connection.ObjectPut(
 		f.Job.Target.ContainerName,
 		f.TargetObjectName(),
-		response.Body,
+		body,
 		false, "",
-		response.Header.Get("Content-Type"),
+		sourceState.ContentType,
 		metadata.ObjectHeaders(),
 	)
 	if err != nil {
@@ -139,4 +124,35 @@ func (f File) PerformTransfer() TransferResult {
 	}
 
 	return TransferSuccess
+}
+
+//GetFile implements the Location interface.
+func (u URLLocation) GetFile(job *Job, path string, targetState FileState) (io.ReadCloser, FileState, error) {
+	url := URLPathJoin(string(u), path)
+
+	//prepare request to retrieve from source, taking advantage of Etag and
+	//Last-Modified where possible
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, FileState{}, fmt.Errorf("skipping %s: GET failed: %s", url, err.Error())
+	}
+	if targetState.Etag != "" {
+		req.Header.Set("If-None-Match", targetState.Etag)
+	}
+	if targetState.LastModified != "" {
+		req.Header.Set("If-Modified-Since", targetState.LastModified)
+	}
+
+	//retrieve file from source
+	response, err := job.HTTPClient.Do(req)
+	if err != nil {
+		return nil, FileState{}, fmt.Errorf("skipping %s: GET failed: %s", url, err.Error())
+	}
+
+	return response.Body, FileState{
+		Etag:         response.Header.Get("Etag"),
+		LastModified: response.Header.Get("Last-Modified"),
+		SkipTransfer: response.StatusCode == 304,
+		ContentType:  response.Header.Get("Content-Type"),
+	}, nil
 }

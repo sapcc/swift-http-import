@@ -50,19 +50,6 @@ func (s directoryStack) Pop() (directoryStack, Directory) {
 	return s[:l-1], s[l-1]
 }
 
-//SourceURL returns the URL of this directory at its source.
-func (d Directory) SourceURL() string {
-	url := URLPathJoin(d.Job.SourceRootURL, d.Path)
-	//to get a well-formatted directory listing, the directory URL must have a
-	//trailing slash (most web servers automatically redirect from the URL
-	//without trailing slash to the URL with trailing slash; others show a
-	//slightly different directory listing that we cannot parse correctly)
-	if !strings.HasSuffix(url, "/") {
-		url += "/"
-	}
-	return url
-}
-
 //Scraper describes the state of the scraper thread.
 type Scraper struct {
 	//We use a stack here to ensure that the first job's source is completely
@@ -92,6 +79,28 @@ func (s *Scraper) Done() bool {
 	return s.Stack.IsEmpty()
 }
 
+//Next scrapes the next directory.
+func (s *Scraper) Next() []File {
+	if s.Done() {
+		return nil
+	}
+
+	//fetch next directory from stack, list its entries
+	var directory Directory
+	s.Stack, directory = s.Stack.Pop()
+	files, subdirectories := directory.Job.Source.ListEntries(directory.Job, directory.Path)
+
+	//push subdirectories onto stack to recurse into them
+	for _, dirName := range subdirectories {
+		s.Stack = s.Stack.Push(Directory{
+			Job:  directory.Job,
+			Path: filepath.Join(directory.Path, dirName),
+		})
+	}
+
+	return files
+}
+
 //matches scheme prefix (e.g. "http:" or "git+ssh:") at the start of a full URL
 //[RFC 3986, 3.1]
 var schemeRx = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9+.-]*:`)
@@ -99,49 +108,50 @@ var schemeRx = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9+.-]*:`)
 //matches ".." path element
 var dotdotRx = regexp.MustCompile(`(?:^|/)\.\.(?:$|/)`)
 
-//Next scrapes the next directory.
-func (s *Scraper) Next() []File {
-	if s.Done() {
-		return nil
+//ListEntries implements the Location interface.
+func (u URLLocation) ListEntries(job *Job, path string) (files []File, subdirectories []string) {
+	//get full URL of this subdirectory
+	url := URLPathJoin(string(u), path)
+	//to get a well-formatted directory listing, the directory URL must have a
+	//trailing slash (most web servers automatically redirect from the URL
+	//without trailing slash to the URL with trailing slash; others show a
+	//slightly different directory listing that we cannot parse correctly)
+	if !strings.HasSuffix(url, "/") {
+		url += "/"
 	}
 
-	//fetch next directory from queue
-	var directory Directory
-	s.Stack, directory = s.Stack.Pop()
-	Log(LogDebug, "scraping %s", directory.SourceURL())
+	Log(LogDebug, "scraping %s", url)
 
 	//retrieve directory listing
 	//TODO: This should send "Accept: text/html", but at least Apache and nginx
 	//don't care about the Accept header, anyway, as far as my testing showed.
-	response, err := directory.Job.HTTPClient.Get(directory.SourceURL())
+	response, err := job.HTTPClient.Get(url)
 	if err != nil {
-		Log(LogError, "skipping %s: GET failed: %s", directory.SourceURL(), err.Error())
-		return nil
+		Log(LogError, "skipping %s: GET failed: %s", url, err.Error())
+		return nil, nil
 	}
 	defer response.Body.Close()
 
 	//check that we actually got a directory listing
 	if !strings.HasPrefix(response.Status, "2") {
-		Log(LogError, "skipping %s: GET returned status %s", directory.SourceURL(), response.Status)
-		return nil
+		Log(LogError, "skipping %s: GET returned status %s", url, response.Status)
+		return nil, nil
 	}
 	contentType := response.Header.Get("Content-Type")
 	if !strings.HasPrefix(contentType, "text/html") {
-		Log(LogError, "skipping %s: GET returned unexpected Content-Type: %s", directory.SourceURL(), contentType)
-		return nil
+		Log(LogError, "skipping %s: GET returned unexpected Content-Type: %s", url, contentType)
+		return nil, nil
 	}
 
 	//find links inside the HTML document
 	tokenizer := html.NewTokenizer(response.Body)
-	var result []File
-
 	for {
 		tokenType := tokenizer.Next()
 
 		switch tokenType {
 		case html.ErrorToken:
 			//end of document
-			return result
+			return
 		case html.StartTagToken:
 			token := tokenizer.Token()
 
@@ -181,45 +191,42 @@ func (s *Scraper) Next() []File {
 					continue
 				}
 
-				pathForMatching := filepath.Join(directory.Path, href)
+				pathForMatching := filepath.Join(path, href)
 				if strings.HasSuffix(href, "/") {
 					pathForMatching += "/"
 				}
 
 				//ignore explicit excluded patterns
-				if directory.Job.ExcludeRx != nil && directory.Job.ExcludeRx.MatchString(pathForMatching) {
-					Log(LogDebug, "skipping %s: is excluded by `%s`", pathForMatching, directory.Job.ExcludeRx.String())
+				if job.ExcludeRx != nil && job.ExcludeRx.MatchString(pathForMatching) {
+					Log(LogDebug, "skipping %s: is excluded by `%s`", pathForMatching, job.ExcludeRx.String())
 					continue
 				}
 				//ignore not included patterns
-				if directory.Job.IncludeRx != nil && !directory.Job.IncludeRx.MatchString(pathForMatching) {
-					Log(LogDebug, "skipping %s: is not included by `%s`", pathForMatching, directory.Job.IncludeRx.String())
+				if job.IncludeRx != nil && !job.IncludeRx.MatchString(pathForMatching) {
+					Log(LogDebug, "skipping %s: is not included by `%s`", pathForMatching, job.IncludeRx.String())
 					continue
 				}
 
 				//consider the link a directory if it ends with "/"
 				if strings.HasSuffix(href, "/") {
-					s.Stack = s.Stack.Push(Directory{
-						Job:  directory.Job,
-						Path: filepath.Join(directory.Path, href),
-					})
+					subdirectories = append(subdirectories, href)
 				} else {
 					file := File{
-						Job:  directory.Job,
-						Path: filepath.Join(directory.Path, href),
+						Job:  job,
+						Path: filepath.Join(path, href),
 					}
 					//ignore immutable files that have already been transferred
-					if directory.Job.ImmutableFileRx != nil && directory.Job.ImmutableFileRx.MatchString(pathForMatching) {
-						if directory.Job.IsFileTransferred[file.TargetObjectName()] {
+					if job.ImmutableFileRx != nil && job.ImmutableFileRx.MatchString(pathForMatching) {
+						if job.IsFileTransferred[file.TargetObjectName()] {
 							Log(LogDebug, "skipping %s: already transferred", pathForMatching)
 							continue
 						}
 					}
-					result = append(result, file)
+					files = append(files, file)
 				}
 			}
 		}
 	}
 
-	return result
+	return
 }
