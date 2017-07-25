@@ -1,5 +1,9 @@
+# build artifacts
 swift-http-import
 .golangvend-cache/
+
+# test artifacts
+tmp.??????
 
 # for my own testing
 test.yaml
