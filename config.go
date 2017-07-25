@@ -126,9 +126,15 @@ func (u *LocationUnmarshaler) UnmarshalYAML(unmarshal func(interface{}) error) e
 
 	//try to unmarshal as SwiftLocation
 	var creds struct {
-		SwiftCredentials
-		ContainerName string `yaml:"container"`
-		ObjectPrefix  string `yaml:"object_prefix"`
+		AuthURL           string `yaml:"auth_url"`
+		UserName          string `yaml:"user_name"`
+		UserDomainName    string `yaml:"user_domain_name"`
+		ProjectName       string `yaml:"project_name"`
+		ProjectDomainName string `yaml:"project_domain_name"`
+		Password          string `yaml:"password"`
+		RegionName        string `yaml:"region_name"`
+		ContainerName     string `yaml:"container"`
+		ObjectPrefix      string `yaml:"object_prefix"`
 	}
 	err = unmarshal(&creds)
 	if err != nil {
@@ -136,7 +142,15 @@ func (u *LocationUnmarshaler) UnmarshalYAML(unmarshal func(interface{}) error) e
 	}
 
 	u.loc = &SwiftLocation{
-		Credentials:   creds.SwiftCredentials,
+		Credentials: SwiftCredentials{
+			AuthURL:           creds.AuthURL,
+			UserName:          creds.UserName,
+			UserDomainName:    creds.UserDomainName,
+			ProjectName:       creds.ProjectName,
+			ProjectDomainName: creds.ProjectDomainName,
+			Password:          creds.Password,
+			RegionName:        creds.RegionName,
+		},
 		ContainerName: creds.ContainerName,
 		ObjectPrefix:  creds.ObjectPrefix,
 	}
@@ -172,6 +186,10 @@ func (cfg JobConfiguration) Compile(name string, creds SwiftCredentials) (job *J
 		}
 	}
 
+	if swiftSource, ok := cfg.Source.loc.(*SwiftLocation); ok {
+		errors = append(errors, swiftSource.Credentials.Validate(name+".from")...)
+	}
+
 	job = &Job{
 		Source: cfg.Source.loc,
 		Target: &SwiftLocation{
@@ -201,6 +219,11 @@ func (cfg JobConfiguration) Compile(name string, creds SwiftCredentials) (job *J
 	job.ExcludeRx = compileOptionalRegex("except", cfg.ExcludePattern)
 	job.IncludeRx = compileOptionalRegex("only", cfg.IncludePattern)
 	job.ImmutableFileRx = compileOptionalRegex("immutable", cfg.ImmutableFilePattern)
+
+	//do not try connecting to Swift if credentials are invalid etc.
+	if len(errors) > 0 {
+		return
+	}
 
 	//ensure that connection to Swift exists and that target container is available
 	err := job.Source.Connect()
