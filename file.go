@@ -173,7 +173,7 @@ func (s *SwiftLocation) GetFile(job *Job, path string, targetState FileState) (i
 	return body, FileState{
 		Etag:         respHeaders["Etag"],
 		LastModified: respHeaders["Last-Modified"],
-		SkipTransfer: false, //TODO how to observe status "304 Not Modified" with ObjectOpen?
+		SkipTransfer: body.StatusCode() == 304,
 		ContentType:  respHeaders["Content-Type"],
 	}, err
 }
