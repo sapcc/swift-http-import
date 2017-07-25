@@ -7,8 +7,9 @@ GOFLAGS := -ldflags '-s -w'
 swift-http-import: *.go
 	$(GOCC) build $(GOFLAGS) -o $@ github.com/sapcc/swift-http-import
 
-check:
-	bash tests.sh
+check: all
+	bash tests.sh http
+	bash tests.sh swift
 	echo -e '\e[1;32mSuccess!\e[0m'
 
 vendor:

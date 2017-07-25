@@ -2,6 +2,14 @@
 set -euo pipefail
 cd "$(readlink -f "$(dirname "$0")")"
 
+if [ $# -ne 1 ]; then
+  echo "usage: ./tests.sh (http|swift)" >&2
+  exit 1
+fi
+if [ "$1" != swift -a "$1" != http ]; then
+  echo "usage: ./tests.sh (http|swift)" >&2
+  exit 1
+fi
 if [ -z "${OS_AUTH_URL:-}" ]; then
   echo "!! This testcase needs OpenStack credentials in the usual OS_* variables." >&2
   exit 1
@@ -68,8 +76,12 @@ EOF
 swift post "${CONTAINER_PUBLIC}" -r '.r:*,.rlistings' -m 'web-listings: true'
 sleep 15 # wait for container listing to get updated
 
-# get public HTTP URL for container
-CONTAINER_PUBLIC_URL="$(swift stat -v "${CONTAINER_PUBLIC}" | awk '$1=="URL:"{print$2}')/${DISAMBIGUATOR}"
+if [ "$1" = swift ]; then
+  SOURCE_SPEC="{ container: \"${CONTAINER_PUBLIC}\", $AUTH_PARAMS }"
+else
+  # get public HTTP URL for container
+  SOURCE_SPEC="$(swift stat -v "${CONTAINER_PUBLIC}" | awk '$1=="URL:"{print$2}')/${DISAMBIGUATOR}"
+fi
 
 ################################################################################
 # functions for tests
@@ -105,7 +117,7 @@ step 'Test 1: Mirror from HTTP'
 mirror <<-EOF
   swift: { $AUTH_PARAMS }
   jobs:
-    - from: ${CONTAINER_PUBLIC_URL}
+    - from: ${SOURCE_SPEC}
       to: ${CONTAINER_BASE}-test1
 EOF
 
@@ -127,7 +139,7 @@ sleep 15 # wait for container listing to get updated
 mirror <<-EOF
   swift: { $AUTH_PARAMS }
   jobs:
-    - from: ${CONTAINER_PUBLIC_URL}
+    - from: ${SOURCE_SPEC}
       to: ${CONTAINER_BASE}-test1
 EOF
 
@@ -146,7 +158,7 @@ step 'Test 2: Exclusion regex'
 mirror <<-EOF
   swift: { $AUTH_PARAMS }
   jobs:
-    - from: ${CONTAINER_PUBLIC_URL}
+    - from: ${SOURCE_SPEC}
       to: ${CONTAINER_BASE}-test2
       except: 'some/'
 EOF
@@ -159,7 +171,7 @@ EOF
 mirror <<-EOF
   swift: { $AUTH_PARAMS }
   jobs:
-    - from: ${CONTAINER_PUBLIC_URL}
+    - from: ${SOURCE_SPEC}
       to: ${CONTAINER_BASE}-test2
       except: '2'
 EOF
@@ -177,7 +189,7 @@ step 'Test 3: Inclusion regex'
 mirror <<-EOF
   swift: { $AUTH_PARAMS }
   jobs:
-    - from: ${CONTAINER_PUBLIC_URL}
+    - from: ${SOURCE_SPEC}
       to: ${CONTAINER_BASE}-test3
       only: '[0-9].txt'
 EOF
@@ -187,7 +199,7 @@ expect test3 </dev/null # empty because the inclusion regex did not match the di
 mirror <<-EOF
   swift: { $AUTH_PARAMS }
   jobs:
-    - from: ${CONTAINER_PUBLIC_URL}
+    - from: ${SOURCE_SPEC}
       to: ${CONTAINER_BASE}-test3
       only: '/$|[0-9].txt'
 EOF
@@ -205,7 +217,7 @@ step 'Test 4: Exclusion takes precedence over inclusion'
 mirror <<-EOF
   swift: { $AUTH_PARAMS }
   jobs:
-    - from: ${CONTAINER_PUBLIC_URL}
+    - from: ${SOURCE_SPEC}
       to: ${CONTAINER_BASE}-test4
       only: '/$|[0-9].txt'
       except: '2'
@@ -222,7 +234,7 @@ step 'Test 5: Immutability regex blocks re-transfer'
 mirror <<-EOF
   swift: { $AUTH_PARAMS }
   jobs:
-    - from: ${CONTAINER_PUBLIC_URL}
+    - from: ${SOURCE_SPEC}
       to: ${CONTAINER_BASE}-test5
       only: '/$|file.txt'
       immutable: '.*.txt'
@@ -240,7 +252,7 @@ EOF
 mirror <<-EOF
   swift: { $AUTH_PARAMS }
   jobs:
-    - from: ${CONTAINER_PUBLIC_URL}
+    - from: ${SOURCE_SPEC}
       to: ${CONTAINER_BASE}-test5
       only: '/$|file.txt'
       immutable: '.*.txt'
