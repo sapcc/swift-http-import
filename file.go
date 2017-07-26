@@ -94,7 +94,9 @@ func (f File) PerformTransfer() TransferResult {
 		Log(LogError, err.Error())
 		return TransferFailed
 	}
-	defer body.Close()
+	if body != nil {
+		defer body.Close()
+	}
 	if sourceState.SkipTransfer { // 304 Not Modified
 		return TransferSkipped
 	}
@@ -170,10 +172,16 @@ func (s *SwiftLocation) GetFile(job *Job, path string, targetState FileState) (i
 	}
 
 	body, respHeaders, err := s.Connection.ObjectOpen(s.ContainerName, objectPath, false, reqHeaders)
-	return body, FileState{
-		Etag:         respHeaders["Etag"],
-		LastModified: respHeaders["Last-Modified"],
-		SkipTransfer: body.StatusCode() == 304,
-		ContentType:  respHeaders["Content-Type"],
-	}, err
+	switch err {
+	case nil:
+		return body, FileState{
+			Etag:         respHeaders["Etag"],
+			LastModified: respHeaders["Last-Modified"],
+			ContentType:  respHeaders["Content-Type"],
+		}, nil
+	case swift.NotModified:
+		return nil, FileState{SkipTransfer: true}, nil
+	default:
+		return nil, FileState{}, err
+	}
 }
