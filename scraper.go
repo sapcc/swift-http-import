@@ -234,11 +234,11 @@ func (u URLLocation) ListEntries(job *Job, path string) []string {
 
 //ListEntries implements the Location interface.
 func (s *SwiftLocation) ListEntries(job *Job, path string) []string {
-	objectPath := filepath.Join(s.ObjectPrefix, path)
-	if !strings.HasSuffix(objectPath, "/") {
+	objectPath := filepath.Join(s.ObjectPrefix, strings.TrimPrefix(path, "/"))
+	if objectPath != "" && !strings.HasSuffix(objectPath, "/") {
 		objectPath += "/"
 	}
-	Log(LogDebug, "scraping %s/%s", s.ContainerName, objectPath)
+	Log(LogDebug, "listing objects at %s/%s", s.ContainerName, objectPath)
 
 	names, err := s.Connection.ObjectNamesAll(s.ContainerName, &swift.ObjectsOpts{
 		Prefix:    objectPath,
@@ -249,5 +249,13 @@ func (s *SwiftLocation) ListEntries(job *Job, path string) []string {
 		return nil
 	}
 
+	//ObjectNamesAll returns full names, but we want only the basenames
+	for idx, name := range names {
+		isDir := strings.HasSuffix(name, "/")
+		names[idx] = filepath.Base(name)
+		if isDir {
+			names[idx] += "/"
+		}
+	}
 	return names
 }
