@@ -122,6 +122,16 @@ func (f File) PerformTransfer() TransferResult {
 	)
 	if err != nil {
 		Log(LogError, "PUT %s/%s failed: %s", f.Job.Target.ContainerName, f.TargetObjectName(), err.Error())
+
+		//delete potentially incomplete upload
+		err := f.Job.Target.Connection.ObjectDelete(
+			f.Job.Target.ContainerName,
+			f.TargetObjectName(),
+		)
+		if err != nil {
+			Log(LogError, "DELETE %s/%s failed: %s", f.Job.Target.ContainerName, f.TargetObjectName(), err.Error())
+		}
+
 		return TransferFailed
 	}
 
