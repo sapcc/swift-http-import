@@ -29,10 +29,12 @@ The binary can also be installed with `go get`:
 go get github.com/sapcc/swift-http-import
 ```
 
+Or just grab a pre-compiled binary from the [release list](https://github.com/sapcc/swift-http-import/releases).
+
 To build the Docker container:
 
 ```bash
-make GOFLAGS="-ldflags '-w -linkmode external -extldflags -static'" && docker build .
+docker build .
 ```
 
 ## Usage
