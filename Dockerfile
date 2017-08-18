@@ -1,12 +1,18 @@
+FROM golang:1.8.3-alpine3.6 as builder
+WORKDIR /x/src/github.com/sapcc/swift-http-import/
+RUN apk add --no-cache curl make openssl && \
+    mkdir -p /pkg/bin/ && \
+    curl -L https://github.com/Yelp/dumb-init/releases/download/v1.2.0/dumb-init_1.2.0_amd64 > /pkg/bin/dumb-init && \
+    chmod +x /pkg/bin/dumb-init
+
+COPY . .
+RUN make install PREFIX=/pkg
+
+################################################################################
+
 FROM alpine:latest
 MAINTAINER "Stefan Majewsky <stefan.majewsky@sap.com>"
+RUN apk add --no-cache ca-certificates
 
-# wget(1) is only used to retrieve dumb-init
-RUN apk update && \
-    apk add wget ca-certificates && \
-    wget -O /bin/dumb-init https://github.com/Yelp/dumb-init/releases/download/v1.2.0/dumb-init_1.2.0_amd64 && \
-    chmod +x /bin/dumb-init && \
-    apk del wget
-
-ADD swift-http-import /bin/swift-http-import
-ENTRYPOINT ["/bin/dumb-init", "--", "/bin/swift-http-import"]
+COPY --from=builder /pkg/ /usr/
+ENTRYPOINT ["/usr/bin/dumb-init", "--", "/usr/bin/swift-http-import"]
