@@ -33,9 +33,17 @@ type Location interface {
 	Connect() error
 	//ListEntries implementations are in scraper.go. Each result value must have
 	//a "/" prefix for subdirectories, or none for files.
-	ListEntries(job *Job, path string) []string
+	ListEntries(job *Job, path string) ([]string, *ScrapingError)
 	//GetFile implementations are in file.go
 	GetFile(job *Job, path string, targetState FileState) (body io.ReadCloser, sourceState FileState, err error)
+}
+
+//ScrapingError is an error that occurs while scraping a directory.
+type ScrapingError struct {
+	//the location of the directory (e.g. an URL)
+	Location string
+	//error message
+	Message string
 }
 
 //FileState is used by Location.GetFile() to describe the state of a file.

@@ -31,8 +31,9 @@ import (
 
 //Directory describes a directory on the source side which can be scraped.
 type Directory struct {
-	Job  *Job
-	Path string
+	Job          *Job
+	Path         string
+	RetryCounter uint
 }
 
 //directoryStack is a []Directory that implements LIFO semantics.
@@ -49,6 +50,10 @@ func (s directoryStack) Push(d Directory) directoryStack {
 func (s directoryStack) Pop() (directoryStack, Directory) {
 	l := len(s)
 	return s[:l-1], s[l-1]
+}
+
+func (s directoryStack) PushBack(d Directory) directoryStack {
+	return append([]Directory{d}, s...)
 }
 
 //Scraper describes the state of the scraper thread.
@@ -90,7 +95,18 @@ func (s *Scraper) Next() []File {
 	var directory Directory
 	s.Stack, directory = s.Stack.Pop()
 	job := directory.Job //shortcut
-	entries := job.Source.ListEntries(job, directory.Path)
+	entries, err := job.Source.ListEntries(job, directory.Path)
+	//if listing failed, maybe retry later
+	if err != nil {
+		if directory.RetryCounter >= 2 {
+			Log(LogError, "giving up on %s: %s", err.Location, err.Message)
+		} else {
+			Log(LogError, "skipping %s for now: %s", err.Location, err.Message)
+			directory.RetryCounter++
+			s.Stack = s.Stack.PushBack(directory)
+		}
+		return nil
+	}
 
 	var files []File
 	for _, entryName := range entries {
@@ -143,7 +159,7 @@ var schemeRx = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9+.-]*:`)
 var dotdotRx = regexp.MustCompile(`(?:^|/)\.\.(?:$|/)`)
 
 //ListEntries implements the Location interface.
-func (u URLLocation) ListEntries(job *Job, path string) []string {
+func (u URLLocation) ListEntries(job *Job, path string) ([]string, *ScrapingError) {
 	//get full URL of this subdirectory
 	url := URLPathJoin(string(u), path)
 	//to get a well-formatted directory listing, the directory URL must have a
@@ -161,20 +177,17 @@ func (u URLLocation) ListEntries(job *Job, path string) []string {
 	//don't care about the Accept header, anyway, as far as my testing showed.
 	response, err := job.HTTPClient.Get(url)
 	if err != nil {
-		Log(LogError, "skipping %s: GET failed: %s", url, err.Error())
-		return nil
+		return nil, &ScrapingError{url, "GET failed: " + err.Error()}
 	}
 	defer response.Body.Close()
 
 	//check that we actually got a directory listing
 	if !strings.HasPrefix(response.Status, "2") {
-		Log(LogError, "skipping %s: GET returned status %s", url, response.Status)
-		return nil
+		return nil, &ScrapingError{url, "GET returned status " + response.Status}
 	}
 	contentType := response.Header.Get("Content-Type")
 	if !strings.HasPrefix(contentType, "text/html") {
-		Log(LogError, "skipping %s: GET returned unexpected Content-Type: %s", url, contentType)
-		return nil
+		return nil, &ScrapingError{url, "GET returned unexpected Content-Type: " + contentType}
 	}
 
 	//find links inside the HTML document
@@ -186,7 +199,7 @@ func (u URLLocation) ListEntries(job *Job, path string) []string {
 		switch tokenType {
 		case html.ErrorToken:
 			//end of document
-			return result
+			return result, nil
 		case html.StartTagToken:
 			token := tokenizer.Token()
 
@@ -233,7 +246,7 @@ func (u URLLocation) ListEntries(job *Job, path string) []string {
 }
 
 //ListEntries implements the Location interface.
-func (s *SwiftLocation) ListEntries(job *Job, path string) []string {
+func (s *SwiftLocation) ListEntries(job *Job, path string) ([]string, *ScrapingError) {
 	objectPath := filepath.Join(s.ObjectPrefix, strings.TrimPrefix(path, "/"))
 	if objectPath != "" && !strings.HasSuffix(objectPath, "/") {
 		objectPath += "/"
@@ -245,8 +258,10 @@ func (s *SwiftLocation) ListEntries(job *Job, path string) []string {
 		Delimiter: '/',
 	})
 	if err != nil {
-		Log(LogError, "skipping %s/%s: GET failed: %s", s.ContainerName, objectPath, err.Error())
-		return nil
+		return nil, &ScrapingError{
+			Location: s.ContainerName + "/" + "objectPath",
+			Message:  "GET failed: " + err.Error(),
+		}
 	}
 
 	//ObjectNamesAll returns full names, but we want only the basenames
@@ -257,5 +272,5 @@ func (s *SwiftLocation) ListEntries(job *Job, path string) []string {
 			names[idx] += "/"
 		}
 	}
-	return names
+	return names, nil
 }
