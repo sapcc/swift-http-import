@@ -38,6 +38,7 @@ type SharedState struct {
 	//main thread after waiting on the writing thread), so no additional
 	//locking is required for these fields
 	DirectoriesScanned uint64
+	DirectoriesFailed  uint64
 	FilesFound         uint64
 	FilesFailed        uint64
 	FilesTransferred   uint64
@@ -73,7 +74,7 @@ func Run(state *SharedState) (exitCode int) {
 	Gauge("last_run.files_found", int64(state.FilesFound), 1.0)
 	Gauge("last_run.files_transfered", int64(state.FilesTransferred), 1.0)
 	Gauge("last_run.files_failed", int64(state.FilesFailed), 1.0)
-	if state.FilesFailed > 0 {
+	if state.FilesFailed > 0 || state.DirectoriesFailed > 0 {
 		Gauge("last_run.success", 0, 1.0)
 		exitCode = 1
 	} else {
@@ -82,9 +83,11 @@ func Run(state *SharedState) (exitCode int) {
 	}
 
 	//report results
-	Log(LogInfo, "%d dirs scanned, %d files found, %d transferred, %d failed",
-		state.DirectoriesScanned, state.FilesFound,
-		state.FilesTransferred, state.FilesFailed,
+	Log(LogInfo, "%d dirs scanned, %d failed",
+		state.DirectoriesScanned, state.DirectoriesFailed,
+	)
+	Log(LogInfo, "%d files found, %d transferred, %d failed",
+		state.FilesFound, state.FilesTransferred, state.FilesFailed,
 	)
 
 	return
@@ -100,6 +103,7 @@ func makeScraperThread(state *SharedState) <-chan File {
 		defer state.WaitGroup.Done()
 		defer close(out)
 
+		var directoriesFailed uint64
 		var directoriesScanned uint64
 		var filesFound uint64
 
@@ -112,14 +116,19 @@ func makeScraperThread(state *SharedState) <-chan File {
 				break
 			}
 
-			for _, file := range scraper.Next() {
+			files, countAsFailed := scraper.Next()
+			for _, file := range files {
 				filesFound++
 				out <- file
 			}
 			directoriesScanned++
+			if countAsFailed {
+				directoriesFailed++
+			}
 		}
 
 		//submit statistics to main thread
+		state.DirectoriesFailed = directoriesFailed
 		state.DirectoriesScanned = directoriesScanned
 		state.FilesFound = filesFound
 	}()

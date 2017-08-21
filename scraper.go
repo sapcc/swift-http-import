@@ -86,9 +86,9 @@ func (s *Scraper) Done() bool {
 }
 
 //Next scrapes the next directory.
-func (s *Scraper) Next() []File {
+func (s *Scraper) Next() (files []File, countAsFailed bool) {
 	if s.Done() {
-		return nil
+		return nil, false
 	}
 
 	//fetch next directory from stack, list its entries
@@ -100,15 +100,14 @@ func (s *Scraper) Next() []File {
 	if err != nil {
 		if directory.RetryCounter >= 2 {
 			Log(LogError, "giving up on %s: %s", err.Location, err.Message)
-		} else {
-			Log(LogError, "skipping %s for now: %s", err.Location, err.Message)
-			directory.RetryCounter++
-			s.Stack = s.Stack.PushBack(directory)
+			return nil, true
 		}
-		return nil
+		Log(LogError, "skipping %s for now: %s", err.Location, err.Message)
+		directory.RetryCounter++
+		s.Stack = s.Stack.PushBack(directory)
+		return nil, false
 	}
 
-	var files []File
 	for _, entryName := range entries {
 		pathForMatching := filepath.Join(directory.Path, entryName)
 		if strings.HasSuffix(entryName, "/") {
@@ -148,7 +147,7 @@ func (s *Scraper) Next() []File {
 		}
 	}
 
-	return files
+	return files, false
 }
 
 //matches scheme prefix (e.g. "http:" or "git+ssh:") at the start of a full URL
