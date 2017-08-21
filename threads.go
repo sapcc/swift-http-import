@@ -130,33 +130,52 @@ func makeTransferThread(state *SharedState, in <-chan File) {
 	go func() {
 		defer state.WaitGroup.Done()
 
-		var filesFailed uint64
-		var filesTransferred uint64
-
-	WorkerLoop:
-		for {
-			var file File
-			select {
-			case <-done:
-				break WorkerLoop
-			case file = <-in:
-				if file.Path == "" {
-					//input channel is closed and returns zero values
-					break WorkerLoop
-				}
-				switch file.PerformTransfer() {
-				case TransferSuccess:
-					filesTransferred++
-				case TransferSkipped:
-					//nothing to count
-				case TransferFailed:
-					filesFailed++
-				}
-			}
-		}
+		//run worker loop
+		filesTransferred1, filesFailed1, aborted := transferThreadWorkerLoop(in, done)
 
 		//submit statistics to main thread
-		state.FilesFailed = filesFailed
-		state.FilesTransferred = filesTransferred
+		state.FilesFailed = uint64(len(filesFailed1))
+		state.FilesTransferred = filesTransferred1
+		if aborted || len(filesFailed1) == 0 {
+			return
+		}
+
+		//if not yet aborted, retry transfer of failed files one more time
+		Log(LogInfo, "retrying %d failed file transfers...", len(filesFailed1))
+		in2 := make(chan File, len(filesFailed1)+1)
+		for _, file := range filesFailed1 {
+			in2 <- file
+		}
+		in2 <- File{Path: ""}
+		filesTransferred2, filesFailed2, _ := transferThreadWorkerLoop(in2, done)
+
+		//submit new statistics
+		state.FilesFailed = uint64(len(filesFailed2))
+		state.FilesTransferred = filesTransferred1 + filesTransferred2
 	}()
+}
+
+func transferThreadWorkerLoop(in <-chan File, done <-chan struct{}) (filesTransferred uint64, filesFailed []File, aborted bool) {
+	for {
+		var file File
+		select {
+		case <-done:
+			aborted = true
+			return
+		case file = <-in:
+			if file.Path == "" {
+				//input channel is closed and returns zero values
+				aborted = false
+				return
+			}
+			switch file.PerformTransfer() {
+			case TransferSuccess:
+				filesTransferred++
+			case TransferSkipped:
+				//nothing to count
+			case TransferFailed:
+				filesFailed = append(filesFailed, file)
+			}
+		}
+	}
 }
