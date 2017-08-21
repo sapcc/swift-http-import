@@ -55,11 +55,12 @@ func main() {
 	}
 
 	//start workers
-	Run(&SharedState{
+	exitCode := Run(&SharedState{
 		Configuration: *config,
 		Context:       context.Background(),
 	})
 
 	Gauge("last_run.duration_seconds", int64(time.Since(startTime).Seconds()), 1.0)
 	Log(LogInfo, "finished in %s", time.Since(startTime).String())
+	os.Exit(exitCode)
 }

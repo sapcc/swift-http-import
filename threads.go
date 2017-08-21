@@ -44,7 +44,7 @@ type SharedState struct {
 }
 
 //Run starts and orchestrates the various worker threads.
-func Run(state *SharedState) {
+func Run(state *SharedState) (exitCode int) {
 	//receive SIGINT/SIGTERM signals
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, os.Interrupt, syscall.SIGTERM)
@@ -75,8 +75,10 @@ func Run(state *SharedState) {
 	Gauge("last_run.files_failed", int64(state.FilesFailed), 1.0)
 	if state.FilesFailed > 0 {
 		Gauge("last_run.success", 0, 1.0)
+		exitCode = 1
 	} else {
 		Gauge("last_run.success", 1, 1.0)
+		exitCode = 0
 	}
 
 	//report results
@@ -84,6 +86,8 @@ func Run(state *SharedState) {
 		state.DirectoriesScanned, state.FilesFound,
 		state.FilesTransferred, state.FilesFailed,
 	)
+
+	return
 }
 
 func makeScraperThread(state *SharedState) <-chan File {
