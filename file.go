@@ -160,6 +160,12 @@ func (u URLLocation) GetFile(job *Job, path string, targetState FileState) (io.R
 	if err != nil {
 		return nil, FileState{}, fmt.Errorf("skipping %s: GET failed: %s", url, err.Error())
 	}
+	if response.StatusCode != 200 && response.StatusCode != 304 {
+		return nil, FileState{}, fmt.Errorf(
+			"skipping %s: GET returned unexpected status code: expected 200 or 304, but got %d",
+			url, response.StatusCode,
+		)
+	}
 
 	return response.Body, FileState{
 		Etag:         response.Header.Get("Etag"),
