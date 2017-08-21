@@ -149,7 +149,8 @@ if you want to traverse the whole tree.
 Log output on `stderr` is very sparse by default. Errors are always reported, and a final count will appear at the end like this:
 
 ```
-2016/12/19 14:28:23 INFO: 103 dirs scanned, 1496 files found, 167 transferred, 3 failed
+2016/12/19 14:28:23 INFO: 103 dirs scanned, 0 failed
+2016/12/19 14:28:23 INFO: 1496 files found, 167 transferred, 3 failed
 ```
 
 In this case, all sources contain 103 directories and 1496 files. 170 files were found to be newer on the source and
