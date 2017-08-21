@@ -1,5 +1,6 @@
 # build artifacts
-swift-http-import
+/build
+.gopath/pkg/
 .golangvend-cache/
 
 # test artifacts
