@@ -111,14 +111,9 @@ func (s *Scraper) Next() (files []File, countAsFailed bool) {
 			pathForMatching += "/"
 		}
 
-		//ignore explicit excluded patterns
-		if job.ExcludeRx != nil && job.ExcludeRx.MatchString(pathForMatching) {
-			util.Log(util.LogDebug, "skipping %s: is excluded by `%s`", pathForMatching, job.ExcludeRx.String())
-			continue
-		}
-		//ignore not included patterns
-		if job.IncludeRx != nil && !job.IncludeRx.MatchString(pathForMatching) {
-			util.Log(util.LogDebug, "skipping %s: is not included by `%s`", pathForMatching, job.IncludeRx.String())
+		excludeReason := job.Matcher.Check(pathForMatching)
+		if excludeReason != "" {
+			util.Log(util.LogDebug, "skipping %s: %s", pathForMatching, excludeReason)
 			continue
 		}
 

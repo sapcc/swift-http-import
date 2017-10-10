@@ -61,8 +61,8 @@ const (
 //The return value indicates if the transfer finished successfully.
 func (f File) PerformTransfer() TransferResult {
 	//check if this file needs transfer
-	if f.Job.ImmutableFileRx != nil && f.Job.ImmutableFileRx.MatchString(f.Path) {
-		if f.Job.IsFileTransferred[f.TargetObjectName()] {
+	if f.Job.Matcher.ImmutableFileRx != nil && f.Job.Matcher.ImmutableFileRx.MatchString(f.Path) {
+		if f.Job.Target.FileExists[f.TargetObjectName()] {
 			util.Log(util.LogDebug, "skipping %s/%s: already transferred", f.Job.Target.ContainerName, f.TargetObjectName())
 			return TransferSkipped
 		}

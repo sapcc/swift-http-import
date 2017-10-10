@@ -41,10 +41,13 @@ type SwiftLocation struct {
 	RegionName        string `yaml:"region_name"`
 	ContainerName     string `yaml:"container"`
 	ObjectNamePrefix  string `yaml:"object_prefix"`
-	//Connection is filled by Connect().
-	Connection *swift.Connection `yaml:"-"`
 	//configuration for Validate()
 	ValidateIgnoreEmptyContainer bool `yaml:"-"`
+	//Connection is filled by Connect().
+	Connection *swift.Connection `yaml:"-"`
+	//FileExists is filled by DiscoverExistingFiles(). The keys are object names
+	//including the ObjectNamePrefix, if any.
+	FileExists map[string]bool `yaml:"-"`
 }
 
 func (s SwiftLocation) cacheKey() string {
@@ -194,4 +197,38 @@ func (s *SwiftLocation) GetFile(path string, targetState FileState) (io.ReadClos
 	default:
 		return nil, FileState{}, err
 	}
+}
+
+//DiscoverExistingFiles finds all objects that currently exist in this location
+//(i.e. in this Swift container below the given object name prefix) and fills
+//s.FileExists accordingly.
+//
+//The given Matcher is used to find out which files are to be considered as
+//belonging to the transfer job in question.
+func (s *SwiftLocation) DiscoverExistingFiles(matcher Matcher) error {
+
+	prefix := s.ObjectNamePrefix
+	if prefix != "" && !strings.HasSuffix(prefix, "/") {
+		prefix += "/"
+	}
+
+	paths, err := s.Connection.ObjectNames(s.ContainerName, &swift.ObjectsOpts{
+		Prefix: prefix,
+	})
+	if err != nil {
+		return fmt.Errorf(
+			"could not list objects in Swift at %s/%s: %s",
+			s.ContainerName, prefix, err.Error(),
+		)
+	}
+
+	s.FileExists = make(map[string]bool, len(paths))
+	for _, path := range paths {
+		pathForMatching := strings.TrimPrefix(path, prefix)
+		if matcher.CheckRecursive(pathForMatching) == "" {
+			s.FileExists[path] = true
+		}
+	}
+
+	return nil
 }

@@ -24,9 +24,7 @@ import (
 	"io/ioutil"
 	"os"
 	"regexp"
-	"strings"
 
-	"github.com/ncw/swift"
 	"github.com/sapcc/swift-http-import/pkg/objects"
 
 	yaml "gopkg.in/yaml.v2"
@@ -125,12 +123,9 @@ func (u *SourceUnmarshaler) UnmarshalYAML(unmarshal func(interface{}) error) err
 
 //Job describes a transfer job at runtime.
 type Job struct {
-	Source            objects.Source
-	Target            *objects.SwiftLocation
-	ExcludeRx         *regexp.Regexp //pointers because nil signifies absence
-	IncludeRx         *regexp.Regexp
-	ImmutableFileRx   *regexp.Regexp
-	IsFileTransferred map[string]bool //key = TargetPrefix + file path
+	Source  objects.Source
+	Target  *objects.SwiftLocation
+	Matcher objects.Matcher
 }
 
 //Compile validates the given JobConfiguration, then creates and prepares a Job from it.
@@ -170,9 +165,9 @@ func (cfg JobConfiguration) Compile(name string, swift objects.SwiftLocation) (j
 		}
 		return rx
 	}
-	job.ExcludeRx = compileOptionalRegex("except", cfg.ExcludePattern)
-	job.IncludeRx = compileOptionalRegex("only", cfg.IncludePattern)
-	job.ImmutableFileRx = compileOptionalRegex("immutable", cfg.ImmutableFilePattern)
+	job.Matcher.ExcludeRx = compileOptionalRegex("except", cfg.ExcludePattern)
+	job.Matcher.IncludeRx = compileOptionalRegex("only", cfg.IncludePattern)
+	job.Matcher.ImmutableFileRx = compileOptionalRegex("immutable", cfg.ImmutableFilePattern)
 
 	//do not try connecting to Swift if credentials are invalid etc.
 	if len(errors) > 0 {
@@ -189,39 +184,10 @@ func (cfg JobConfiguration) Compile(name string, swift objects.SwiftLocation) (j
 		errors = append(errors, err)
 	}
 
-	err = job.prepareTransferredFilesLookup()
+	err = job.Target.DiscoverExistingFiles(job.Matcher)
 	if err != nil {
 		errors = append(errors, err)
 	}
 
 	return
-}
-
-func (job *Job) prepareTransferredFilesLookup() error {
-	//if we want to abort transfers of immutable files early...
-	if job.ImmutableFileRx == nil {
-		return nil
-	}
-
-	//...we need to first enumerate all files on the receiving side
-	prefix := job.Target.ObjectNamePrefix
-	if prefix != "" && !strings.HasSuffix(prefix, "/") {
-		prefix += "/"
-	}
-
-	paths, err := job.Target.Connection.ObjectNames(job.Target.ContainerName, &swift.ObjectsOpts{
-		Prefix: prefix,
-	})
-	if err != nil {
-		return fmt.Errorf(
-			"could not list objects in Swift at %s/%s: %s",
-			job.Target.ContainerName, prefix, err.Error(),
-		)
-	}
-	job.IsFileTransferred = make(map[string]bool, len(paths))
-	for _, path := range paths {
-		job.IsFileTransferred[path] = true
-	}
-
-	return nil
 }
