@@ -51,14 +51,17 @@ swift:
   password: 20g82rzg235oughq
 
 jobs:
-  - from: http://de.archive.ubuntu.com/ubuntu/
-    to:   mirror/ubuntu-repos
+  - from:
+      url: http://de.archive.ubuntu.com/ubuntu/
+    to:
+      container: mirror
+      object_prefix: ubuntu-repos
 ```
 
 The first paragraph contains the authentication parameters for OpenStack's Identity v3 API. Optionally a `region_name`
 can be specified, but this is only required if there are multiple regions to choose from.
 
-Each sync job contains the source URL as `from`, and `to` has the target container name, optionally followed by an 
+Each sync job contains the source URL as `from.url`, and `to.container` has the target container name, optionally paired with an
 object name prefix in the target container. For example, in the case above, the file
 
 ```
@@ -79,19 +82,25 @@ repositories because package files, once uploaded, will never change:
 
 ```yaml
 jobs:
-  - from: http://de.archive.ubuntu.com/ubuntu/
-    to:   mirror/ubuntu-repos
+  - from:
+      url: http://de.archive.ubuntu.com/ubuntu/
+    to:
+      container: mirror
+      object_prefix: ubuntu-repos
     immutable: '.*\.deb$'
 ```
 
-There is also support for SSL client based authentication against the source. Hereby the server CA is optional.
+There is also support for SSL client based authentication against the source. The server CA field is optional.
 ```yaml
 jobs:
-  - from: http://de.archive.ubuntu.com/ubuntu/
-    to:   mirror/ubuntu-repos
-    cert: /path/to/client.pem
-    key:  /path/to/client-key.pem
-    ca:   /path/to/server-ca.pem
+  - from:
+      url:  http://de.archive.ubuntu.com/ubuntu/
+      cert: /path/to/client.pem
+      key:  /path/to/client-key.pem
+      ca:   /path/to/server-ca.pem
+    to:
+      container: mirror
+      object_prefix: ubuntu-repos
 ```
 
 Furthermore, the source can also be a private Swift container if Swift credentials are specified instead of a source URL:
@@ -107,7 +116,9 @@ jobs:
       password:            20g82rzg235oughq
       container:           upstream-mirror
       object_prefix:       repos/ubuntu
-    to: mirror/ubuntu-repos
+    to:
+      container: mirror
+      object_prefix: ubuntu-repos
     immutable: '.*\.deb$'
 ```
 
@@ -127,8 +138,11 @@ The evaluation precedence is as listed.
 Example 1:
 ```yaml
 jobs:
-  - from:   http://de.archive.ubuntu.com/ubuntu/
-    to:     mirror/ubuntu-repos
+  - from:
+      url: http://de.archive.ubuntu.com/ubuntu/
+    to:
+      container: mirror
+      object_prefix: ubuntu-repos
     except: "sub_dir/$|.gz$"
 ```
 This would exclude directories named `sub_dir` and files with extension `gz` on every level from scraping.
@@ -137,8 +151,11 @@ Example 2:
 
 ```yaml
 jobs:
-  - from:   http://de.archive.ubuntu.com/ubuntu/
-    to:     mirror/ubuntu-repos
+  - from:
+      url: http://de.archive.ubuntu.com/ubuntu/
+    to:
+      container: mirror
+      object_prefix: ubuntu-repos
     only:   "/$|.amd64.deb$"
 ```
 This would only transfer amd64 debian packages. Consider that you should allow all directories in `only` by `/$`,

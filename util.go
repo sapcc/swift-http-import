@@ -20,20 +20,8 @@
 package main
 
 import (
-	"strings"
-
 	"github.com/cactus/go-statsd-client/statsd"
 )
-
-//URLPathJoin appends a path to a URL.
-func URLPathJoin(url, path string) string {
-	result := url
-	if !strings.HasSuffix(result, "/") {
-		result += "/"
-	}
-
-	return result + strings.TrimPrefix(path, "/")
-}
 
 var statsd_client statsd.Statter
 

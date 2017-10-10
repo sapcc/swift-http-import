@@ -20,13 +20,11 @@
 package main
 
 import (
-	"fmt"
-	"io"
-	"net/http"
 	"path/filepath"
 	"strings"
 
 	"github.com/ncw/swift"
+	"github.com/sapcc/swift-http-import/pkg/objects"
 	"github.com/sapcc/swift-http-import/pkg/util"
 )
 
@@ -39,10 +37,10 @@ type File struct {
 //TargetObjectName returns the object name of this file in the target container.
 func (f File) TargetObjectName() string {
 	objectName := strings.TrimPrefix(f.Path, "/")
-	if f.Job.Target.ObjectPrefix == "" {
+	if f.Job.Target.ObjectNamePrefix == "" {
 		return objectName
 	}
-	return filepath.Join(f.Job.Target.ObjectPrefix, objectName)
+	return filepath.Join(f.Job.Target.ObjectNamePrefix, objectName)
 }
 
 //TransferResult is the return type for PerformTransfer().
@@ -86,11 +84,11 @@ func (f File) PerformTransfer() TransferResult {
 
 	//retrieve object from source, taking advantage of Etag and Last-Modified where possible
 	metadata := headers.ObjectMetadata()
-	targetState := FileState{
+	targetState := objects.FileState{
 		Etag:         metadata["source-etag"],
 		LastModified: metadata["source-last-modified"],
 	}
-	body, sourceState, err := f.Job.Source.GetFile(f.Job, f.Path, targetState)
+	body, sourceState, err := f.Job.Source.GetFile(f.Path, targetState)
 	if err != nil {
 		util.Log(util.LogError, err.Error())
 		return TransferFailed
@@ -137,68 +135,4 @@ func (f File) PerformTransfer() TransferResult {
 	}
 
 	return TransferSuccess
-}
-
-//GetFile implements the Location interface.
-func (u URLLocation) GetFile(job *Job, path string, targetState FileState) (io.ReadCloser, FileState, error) {
-	url := URLPathJoin(string(u), path)
-
-	//prepare request to retrieve from source, taking advantage of Etag and
-	//Last-Modified where possible
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return nil, FileState{}, fmt.Errorf("skipping %s: GET failed: %s", url, err.Error())
-	}
-	if targetState.Etag != "" {
-		req.Header.Set("If-None-Match", targetState.Etag)
-	}
-	if targetState.LastModified != "" {
-		req.Header.Set("If-Modified-Since", targetState.LastModified)
-	}
-
-	//retrieve file from source
-	response, err := job.HTTPClient.Do(req)
-	if err != nil {
-		return nil, FileState{}, fmt.Errorf("skipping %s: GET failed: %s", url, err.Error())
-	}
-	if response.StatusCode != 200 && response.StatusCode != 304 {
-		return nil, FileState{}, fmt.Errorf(
-			"skipping %s: GET returned unexpected status code: expected 200 or 304, but got %d",
-			url, response.StatusCode,
-		)
-	}
-
-	return response.Body, FileState{
-		Etag:         response.Header.Get("Etag"),
-		LastModified: response.Header.Get("Last-Modified"),
-		SkipTransfer: response.StatusCode == 304,
-		ContentType:  response.Header.Get("Content-Type"),
-	}, nil
-}
-
-//GetFile implements the Location interface.
-func (s *SwiftLocation) GetFile(job *Job, path string, targetState FileState) (io.ReadCloser, FileState, error) {
-	objectPath := filepath.Join(s.ObjectPrefix, path)
-
-	reqHeaders := make(swift.Headers)
-	if targetState.Etag != "" {
-		reqHeaders["If-None-Match"] = targetState.Etag
-	}
-	if targetState.LastModified != "" {
-		reqHeaders["If-Modified-Since"] = targetState.LastModified
-	}
-
-	body, respHeaders, err := s.Connection.ObjectOpen(s.ContainerName, objectPath, false, reqHeaders)
-	switch err {
-	case nil:
-		return body, FileState{
-			Etag:         respHeaders["Etag"],
-			LastModified: respHeaders["Last-Modified"],
-			ContentType:  respHeaders["Content-Type"],
-		}, nil
-	case swift.NotModified:
-		return nil, FileState{SkipTransfer: true}, nil
-	default:
-		return nil, FileState{}, err
-	}
 }

@@ -80,7 +80,7 @@ if [ "$1" = swift ]; then
   SOURCE_SPEC="{ container: \"${CONTAINER_PUBLIC}\", object_prefix: \"${DISAMBIGUATOR}\", ${AUTH_PARAMS} }"
 else
   # get public HTTP URL for container
-  SOURCE_SPEC="$(swift stat -v "${CONTAINER_PUBLIC}" | awk '$1=="URL:"{print$2}')/${DISAMBIGUATOR}"
+  SOURCE_SPEC="{ url: \"$(swift stat -v "${CONTAINER_PUBLIC}" | awk '$1=="URL:"{print$2}')/${DISAMBIGUATOR}\" }"
 fi
 
 ################################################################################
@@ -118,7 +118,7 @@ mirror <<-EOF
   swift: { $AUTH_PARAMS }
   jobs:
     - from: ${SOURCE_SPEC}
-      to: ${CONTAINER_BASE}-test1
+      to: { container: ${CONTAINER_BASE}-test1 }
 EOF
 
 expect test1 <<-EOF
@@ -140,7 +140,7 @@ mirror <<-EOF
   swift: { $AUTH_PARAMS }
   jobs:
     - from: ${SOURCE_SPEC}
-      to: ${CONTAINER_BASE}-test1
+      to: { container: ${CONTAINER_BASE}-test1 }
 EOF
 
 expect test1 <<-EOF
@@ -159,7 +159,7 @@ mirror <<-EOF
   swift: { $AUTH_PARAMS }
   jobs:
     - from: ${SOURCE_SPEC}
-      to: ${CONTAINER_BASE}-test2
+      to: { container: ${CONTAINER_BASE}-test2 }
       except: 'some/'
 EOF
 
@@ -172,7 +172,7 @@ mirror <<-EOF
   swift: { $AUTH_PARAMS }
   jobs:
     - from: ${SOURCE_SPEC}
-      to: ${CONTAINER_BASE}-test2
+      to: { container: ${CONTAINER_BASE}-test2 }
       except: '2'
 EOF
 
@@ -190,7 +190,7 @@ mirror <<-EOF
   swift: { $AUTH_PARAMS }
   jobs:
     - from: ${SOURCE_SPEC}
-      to: ${CONTAINER_BASE}-test3
+      to: { container: ${CONTAINER_BASE}-test3 }
       only: '[0-9].txt'
 EOF
 
@@ -200,7 +200,7 @@ mirror <<-EOF
   swift: { $AUTH_PARAMS }
   jobs:
     - from: ${SOURCE_SPEC}
-      to: ${CONTAINER_BASE}-test3
+      to: { container: ${CONTAINER_BASE}-test3 }
       only: '/$|[0-9].txt'
 EOF
 
@@ -218,7 +218,7 @@ mirror <<-EOF
   swift: { $AUTH_PARAMS }
   jobs:
     - from: ${SOURCE_SPEC}
-      to: ${CONTAINER_BASE}-test4
+      to: { container: ${CONTAINER_BASE}-test4 }
       only: '/$|[0-9].txt'
       except: '2'
 EOF
@@ -235,7 +235,7 @@ mirror <<-EOF
   swift: { $AUTH_PARAMS }
   jobs:
     - from: ${SOURCE_SPEC}
-      to: ${CONTAINER_BASE}-test5
+      to: { container: ${CONTAINER_BASE}-test5 }
       only: '/$|file.txt'
       immutable: '.*.txt'
 EOF
@@ -253,7 +253,7 @@ mirror <<-EOF
   swift: { $AUTH_PARAMS }
   jobs:
     - from: ${SOURCE_SPEC}
-      to: ${CONTAINER_BASE}-test5
+      to: { container: ${CONTAINER_BASE}-test5 }
       only: '/$|file.txt'
       immutable: '.*.txt'
 EOF

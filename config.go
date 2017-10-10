@@ -20,24 +20,21 @@
 package main
 
 import (
-	"crypto/tls"
-	"crypto/x509"
 	"fmt"
 	"io/ioutil"
-	"net/http"
 	"os"
 	"regexp"
 	"strings"
 
 	"github.com/ncw/swift"
-	"github.com/sapcc/swift-http-import/pkg/util"
+	"github.com/sapcc/swift-http-import/pkg/objects"
 
 	yaml "gopkg.in/yaml.v2"
 )
 
 //Configuration contains the contents of the configuration file.
 type Configuration struct {
-	Swift        SwiftCredentials `yaml:"swift"`
+	Swift        objects.SwiftLocation `yaml:"swift"`
 	WorkerCounts struct {
 		Transfer uint
 	} `yaml:"workers"`
@@ -78,6 +75,7 @@ func ReadConfiguration() (*Configuration, []error) {
 		cfg.Statsd.Prefix = "swift_http_import"
 	}
 
+	cfg.Swift.ValidateIgnoreEmptyContainer = true
 	errors := cfg.Swift.Validate("swift")
 	for idx, jobConfig := range cfg.JobConfigs {
 		job, jobErrors := jobConfig.Compile(
@@ -94,75 +92,41 @@ func ReadConfiguration() (*Configuration, []error) {
 //JobConfiguration describes a transfer job in the configuration file.
 type JobConfiguration struct {
 	//basic options
-	Source                   LocationUnmarshaler `yaml:"from"`
-	TargetContainerAndPrefix string              `yaml:"to"`
+	Source SourceUnmarshaler      `yaml:"from"`
+	Target *objects.SwiftLocation `yaml:"to"`
 	//behavior options
 	ExcludePattern       string `yaml:"except"`
 	IncludePattern       string `yaml:"only"`
 	ImmutableFilePattern string `yaml:"immutable"`
-	//auth options
-	ClientCertificatePath    string `yaml:"cert"`
-	ClientCertificateKeyPath string `yaml:"key"`
-	ServerCAPath             string `yaml:"ca"`
 }
 
-//LocationUnmarshaler provides a yaml.Unmarshaler implementation for the Location interface.
-type LocationUnmarshaler struct {
-	loc Location
+//SourceUnmarshaler provides a yaml.Unmarshaler implementation for the Source interface.
+type SourceUnmarshaler struct {
+	src objects.Source
 }
 
 //UnmarshalYAML implements the yaml.Unmarshaler interface.
-func (u *LocationUnmarshaler) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	//try to unmarshal as URLLocation
-	var url string
-	err := unmarshal(&url)
-	if err == nil {
-		if url == "" {
-			u.loc = nil
-		} else {
-			u.loc = URLLocation(url)
-		}
-		return nil
-	}
-
-	//try to unmarshal as SwiftLocation
-	var creds struct {
-		AuthURL           string `yaml:"auth_url"`
-		UserName          string `yaml:"user_name"`
-		UserDomainName    string `yaml:"user_domain_name"`
-		ProjectName       string `yaml:"project_name"`
-		ProjectDomainName string `yaml:"project_domain_name"`
-		Password          string `yaml:"password"`
-		RegionName        string `yaml:"region_name"`
-		ContainerName     string `yaml:"container"`
-		ObjectPrefix      string `yaml:"object_prefix"`
-	}
-	err = unmarshal(&creds)
+func (u *SourceUnmarshaler) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	//unmarshal as map
+	var data map[string]interface{}
+	err := unmarshal(&data)
 	if err != nil {
 		return err
 	}
 
-	u.loc = &SwiftLocation{
-		Credentials: SwiftCredentials{
-			AuthURL:           creds.AuthURL,
-			UserName:          creds.UserName,
-			UserDomainName:    creds.UserDomainName,
-			ProjectName:       creds.ProjectName,
-			ProjectDomainName: creds.ProjectDomainName,
-			Password:          creds.Password,
-			RegionName:        creds.RegionName,
-		},
-		ContainerName: creds.ContainerName,
-		ObjectPrefix:  creds.ObjectPrefix,
+	//look at keys to determine whether this is a URLSource or a SwiftSource
+	if _, exists := data["url"]; exists {
+		u.src = &objects.URLSource{}
+	} else {
+		u.src = &objects.SwiftLocation{}
 	}
-	return nil
+	return unmarshal(u.src)
 }
 
 //Job describes a transfer job at runtime.
 type Job struct {
-	Source            Location
-	Target            *SwiftLocation
-	HTTPClient        *http.Client
+	Source            objects.Source
+	Target            *objects.SwiftLocation
 	ExcludeRx         *regexp.Regexp //pointers because nil signifies absence
 	IncludeRx         *regexp.Regexp
 	ImmutableFileRx   *regexp.Regexp
@@ -170,40 +134,29 @@ type Job struct {
 }
 
 //Compile validates the given JobConfiguration, then creates and prepares a Job from it.
-func (cfg JobConfiguration) Compile(name string, creds SwiftCredentials) (job *Job, errors []error) {
-	if cfg.Source.loc == nil {
+func (cfg JobConfiguration) Compile(name string, swift objects.SwiftLocation) (job *Job, errors []error) {
+	if cfg.Source.src == nil {
 		errors = append(errors, fmt.Errorf("missing value for %s.from", name))
+	} else {
+		errors = append(errors, cfg.Source.src.Validate(name+".from")...)
 	}
-	if cfg.TargetContainerAndPrefix == "" {
+	if cfg.Target == nil {
 		errors = append(errors, fmt.Errorf("missing value for %s.to", name))
-	}
-	// If one of the following is set, the other one needs also to be set
-	if cfg.ClientCertificatePath != "" || cfg.ClientCertificateKeyPath != "" {
-		if cfg.ClientCertificatePath == "" {
-			errors = append(errors, fmt.Errorf("missing value for %s.cert", name))
-		}
-		if cfg.ClientCertificateKeyPath == "" {
-			errors = append(errors, fmt.Errorf("missing value for %s.key", name))
-		}
-	}
-
-	if swiftSource, ok := cfg.Source.loc.(*SwiftLocation); ok {
-		errors = append(errors, swiftSource.Credentials.Validate(name+".from")...)
+	} else {
+		//target inherits connection parameters from global Swift credentials
+		cfg.Target.AuthURL = swift.AuthURL
+		cfg.Target.UserName = swift.UserName
+		cfg.Target.UserDomainName = swift.UserDomainName
+		cfg.Target.ProjectName = swift.ProjectName
+		cfg.Target.ProjectDomainName = swift.ProjectDomainName
+		cfg.Target.Password = swift.Password
+		cfg.Target.RegionName = swift.RegionName
+		errors = append(errors, cfg.Target.Validate(name+".to")...)
 	}
 
 	job = &Job{
-		Source: cfg.Source.loc,
-		Target: &SwiftLocation{
-			Credentials:   creds,
-			ContainerName: cfg.TargetContainerAndPrefix,
-		},
-	}
-
-	//split "to" field into container and object name prefix if necessary
-	if strings.Contains(cfg.TargetContainerAndPrefix, "/") {
-		parts := strings.SplitN(cfg.TargetContainerAndPrefix, "/", 2)
-		job.Target.ContainerName = parts[0]
-		job.Target.ObjectPrefix = parts[1]
+		Source: cfg.Source.src,
+		Target: cfg.Target,
 	}
 
 	//compile patterns into regexes
@@ -236,54 +189,9 @@ func (cfg JobConfiguration) Compile(name string, creds SwiftCredentials) (job *J
 		errors = append(errors, err)
 	}
 
-	errors = append(errors, job.prepareHTTPClient(cfg)...)
-
 	err = job.prepareTransferredFilesLookup()
 	if err != nil {
 		errors = append(errors, err)
-	}
-
-	return
-}
-
-//Prepare HTTP client with SSL client certificate, if necessary.
-func (job *Job) prepareHTTPClient(cfg JobConfiguration) (errors []error) {
-	tlsConfig := &tls.Config{}
-
-	if cfg.ClientCertificatePath != "" {
-		// Load client cert
-		clientCertificate, err := tls.LoadX509KeyPair(cfg.ClientCertificatePath, cfg.ClientCertificateKeyPath)
-		if err != nil {
-			errors = append(errors, fmt.Errorf("cannot load client certificate from %s: %s", cfg.ClientCertificatePath, err.Error()))
-		}
-
-		util.Log(util.LogDebug, "Client certificate %s loaded", cfg.ClientCertificatePath)
-		tlsConfig.Certificates = []tls.Certificate{clientCertificate}
-	}
-
-	if cfg.ServerCAPath != "" {
-		// Load server CA cert
-		serverCA, err := ioutil.ReadFile(cfg.ServerCAPath)
-		if err != nil {
-			errors = append(errors, fmt.Errorf("cannot load CA certificate from %s: %s", cfg.ServerCAPath, err.Error()))
-			util.Log(util.LogFatal, "Server CA could not be loaded: %s", err.Error())
-		}
-
-		certPool := x509.NewCertPool()
-		certPool.AppendCertsFromPEM(serverCA)
-
-		util.Log(util.LogDebug, "Server CA %s loaded", cfg.ServerCAPath)
-		tlsConfig.RootCAs = certPool
-	}
-
-	if cfg.ClientCertificatePath != "" || cfg.ServerCAPath != "" {
-		tlsConfig.BuildNameToCertificate()
-		// Overriding the transport for TLS, requires also Proxy to be set from ENV,
-		// otherwise a set proxy will get lost
-		transport := &http.Transport{TLSClientConfig: tlsConfig, Proxy: http.ProxyFromEnvironment}
-		job.HTTPClient = &http.Client{Transport: transport}
-	} else {
-		job.HTTPClient = http.DefaultClient
 	}
 
 	return
@@ -296,7 +204,7 @@ func (job *Job) prepareTransferredFilesLookup() error {
 	}
 
 	//...we need to first enumerate all files on the receiving side
-	prefix := job.Target.ObjectPrefix
+	prefix := job.Target.ObjectNamePrefix
 	if prefix != "" && !strings.HasSuffix(prefix, "/") {
 		prefix += "/"
 	}
