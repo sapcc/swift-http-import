@@ -27,6 +27,7 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/cactus/go-statsd-client/statsd"
+	"github.com/sapcc/swift-http-import/pkg/util"
 )
 
 func main() {
@@ -36,7 +37,7 @@ func main() {
 	config, errs := ReadConfiguration()
 	if len(errs) > 0 {
 		for _, err := range errs {
-			Log(LogError, err.Error())
+			util.Log(util.LogError, err.Error())
 		}
 		os.Exit(1)
 	}
@@ -47,7 +48,7 @@ func main() {
 		statsd_client, err = statsd.NewClient(config.Statsd.HostName+":"+strconv.Itoa(config.Statsd.Port), config.Statsd.Prefix)
 		// handle any errors
 		if err != nil {
-			Log(LogFatal, err.Error())
+			util.Log(util.LogFatal, err.Error())
 		}
 
 		// make sure to clean up
@@ -61,6 +62,6 @@ func main() {
 	})
 
 	Gauge("last_run.duration_seconds", int64(time.Since(startTime).Seconds()), 1.0)
-	Log(LogInfo, "finished in %s", time.Since(startTime).String())
+	util.Log(util.LogInfo, "finished in %s", time.Since(startTime).String())
 	os.Exit(exitCode)
 }

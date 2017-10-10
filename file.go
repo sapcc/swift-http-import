@@ -27,6 +27,7 @@ import (
 	"strings"
 
 	"github.com/ncw/swift"
+	"github.com/sapcc/swift-http-import/pkg/util"
 )
 
 //File describes a single file which is mirrored as part of a Job.
@@ -61,7 +62,7 @@ const (
 //PerformTransfer transfers this file from the source to the target.
 //The return value indicates if the transfer finished successfully.
 func (f File) PerformTransfer() TransferResult {
-	Log(LogDebug, "transferring to %s/%s", f.Job.Target.ContainerName, f.TargetObjectName())
+	util.Log(util.LogDebug, "transferring to %s/%s", f.Job.Target.ContainerName, f.TargetObjectName())
 
 	//query the file metadata at the target
 	_, headers, err := f.Job.Target.Connection.Object(
@@ -75,7 +76,7 @@ func (f File) PerformTransfer() TransferResult {
 			//log all other errors and skip the file (we don't want to waste
 			//bandwidth downloading stuff if there is reasonable doubt that we will
 			//not be able to upload it to Swift)
-			Log(LogError, "skipping target %s/%s: HEAD failed: %s",
+			util.Log(util.LogError, "skipping target %s/%s: HEAD failed: %s",
 				f.Job.Target.ContainerName, f.TargetObjectName(),
 				err.Error(),
 			)
@@ -91,7 +92,7 @@ func (f File) PerformTransfer() TransferResult {
 	}
 	body, sourceState, err := f.Job.Source.GetFile(f.Job, f.Path, targetState)
 	if err != nil {
-		Log(LogError, err.Error())
+		util.Log(util.LogError, err.Error())
 		return TransferFailed
 	}
 	if body != nil {
@@ -121,7 +122,7 @@ func (f File) PerformTransfer() TransferResult {
 		metadata.ObjectHeaders(),
 	)
 	if err != nil {
-		Log(LogError, "PUT %s/%s failed: %s", f.Job.Target.ContainerName, f.TargetObjectName(), err.Error())
+		util.Log(util.LogError, "PUT %s/%s failed: %s", f.Job.Target.ContainerName, f.TargetObjectName(), err.Error())
 
 		//delete potentially incomplete upload
 		err := f.Job.Target.Connection.ObjectDelete(
@@ -129,7 +130,7 @@ func (f File) PerformTransfer() TransferResult {
 			f.TargetObjectName(),
 		)
 		if err != nil {
-			Log(LogError, "DELETE %s/%s failed: %s", f.Job.Target.ContainerName, f.TargetObjectName(), err.Error())
+			util.Log(util.LogError, "DELETE %s/%s failed: %s", f.Job.Target.ContainerName, f.TargetObjectName(), err.Error())
 		}
 
 		return TransferFailed

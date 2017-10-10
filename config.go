@@ -30,6 +30,7 @@ import (
 	"strings"
 
 	"github.com/ncw/swift"
+	"github.com/sapcc/swift-http-import/pkg/util"
 
 	yaml "gopkg.in/yaml.v2"
 )
@@ -256,7 +257,7 @@ func (job *Job) prepareHTTPClient(cfg JobConfiguration) (errors []error) {
 			errors = append(errors, fmt.Errorf("cannot load client certificate from %s: %s", cfg.ClientCertificatePath, err.Error()))
 		}
 
-		Log(LogDebug, "Client certificate %s loaded", cfg.ClientCertificatePath)
+		util.Log(util.LogDebug, "Client certificate %s loaded", cfg.ClientCertificatePath)
 		tlsConfig.Certificates = []tls.Certificate{clientCertificate}
 	}
 
@@ -265,13 +266,13 @@ func (job *Job) prepareHTTPClient(cfg JobConfiguration) (errors []error) {
 		serverCA, err := ioutil.ReadFile(cfg.ServerCAPath)
 		if err != nil {
 			errors = append(errors, fmt.Errorf("cannot load CA certificate from %s: %s", cfg.ServerCAPath, err.Error()))
-			Log(LogFatal, "Server CA could not be loaded: %s", err.Error())
+			util.Log(util.LogFatal, "Server CA could not be loaded: %s", err.Error())
 		}
 
 		certPool := x509.NewCertPool()
 		certPool.AppendCertsFromPEM(serverCA)
 
-		Log(LogDebug, "Server CA %s loaded", cfg.ServerCAPath)
+		util.Log(util.LogDebug, "Server CA %s loaded", cfg.ServerCAPath)
 		tlsConfig.RootCAs = certPool
 	}
 

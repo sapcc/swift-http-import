@@ -25,6 +25,7 @@ import (
 	"strings"
 
 	"github.com/ncw/swift"
+	"github.com/sapcc/swift-http-import/pkg/util"
 	"golang.org/x/net/html"
 	"golang.org/x/net/html/atom"
 )
@@ -99,10 +100,10 @@ func (s *Scraper) Next() (files []File, countAsFailed bool) {
 	//if listing failed, maybe retry later
 	if err != nil {
 		if directory.RetryCounter >= 2 {
-			Log(LogError, "giving up on %s: %s", err.Location, err.Message)
+			util.Log(util.LogError, "giving up on %s: %s", err.Location, err.Message)
 			return nil, true
 		}
-		Log(LogError, "skipping %s for now: %s", err.Location, err.Message)
+		util.Log(util.LogError, "skipping %s for now: %s", err.Location, err.Message)
 		directory.RetryCounter++
 		s.Stack = s.Stack.PushBack(directory)
 		return nil, false
@@ -116,12 +117,12 @@ func (s *Scraper) Next() (files []File, countAsFailed bool) {
 
 		//ignore explicit excluded patterns
 		if job.ExcludeRx != nil && job.ExcludeRx.MatchString(pathForMatching) {
-			Log(LogDebug, "skipping %s: is excluded by `%s`", pathForMatching, job.ExcludeRx.String())
+			util.Log(util.LogDebug, "skipping %s: is excluded by `%s`", pathForMatching, job.ExcludeRx.String())
 			continue
 		}
 		//ignore not included patterns
 		if job.IncludeRx != nil && !job.IncludeRx.MatchString(pathForMatching) {
-			Log(LogDebug, "skipping %s: is not included by `%s`", pathForMatching, job.IncludeRx.String())
+			util.Log(util.LogDebug, "skipping %s: is not included by `%s`", pathForMatching, job.IncludeRx.String())
 			continue
 		}
 
@@ -139,7 +140,7 @@ func (s *Scraper) Next() (files []File, countAsFailed bool) {
 			//ignore immutable files that have already been transferred
 			if job.ImmutableFileRx != nil && job.ImmutableFileRx.MatchString(pathForMatching) {
 				if job.IsFileTransferred[file.TargetObjectName()] {
-					Log(LogDebug, "skipping %s: already transferred", pathForMatching)
+					util.Log(util.LogDebug, "skipping %s: already transferred", pathForMatching)
 					continue
 				}
 			}
@@ -169,7 +170,7 @@ func (u URLLocation) ListEntries(job *Job, path string) ([]string, *ScrapingErro
 		url += "/"
 	}
 
-	Log(LogDebug, "scraping %s", url)
+	util.Log(util.LogDebug, "scraping %s", url)
 
 	//retrieve directory listing
 	//TODO: This should send "Accept: text/html", but at least Apache and nginx
@@ -250,7 +251,7 @@ func (s *SwiftLocation) ListEntries(job *Job, path string) ([]string, *ScrapingE
 	if objectPath != "" && !strings.HasSuffix(objectPath, "/") {
 		objectPath += "/"
 	}
-	Log(LogDebug, "listing objects at %s/%s", s.ContainerName, objectPath)
+	util.Log(util.LogDebug, "listing objects at %s/%s", s.ContainerName, objectPath)
 
 	names, err := s.Connection.ObjectNamesAll(s.ContainerName, &swift.ObjectsOpts{
 		Prefix:    objectPath,

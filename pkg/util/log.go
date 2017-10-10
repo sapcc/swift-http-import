@@ -1,6 +1,6 @@
 /*******************************************************************************
 *
-* Copyright 2016 SAP SE
+* Copyright 2016-2017 SAP SE
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -17,29 +17,40 @@
 *
 *******************************************************************************/
 
-package main
+package util
 
 import (
-	"strings"
-
-	"github.com/cactus/go-statsd-client/statsd"
+	"log"
+	"os"
 )
 
-//URLPathJoin appends a path to a URL.
-func URLPathJoin(url, path string) string {
-	result := url
-	if !strings.HasSuffix(result, "/") {
-		result += "/"
+type LogLevel int
+
+const (
+	LogFatal LogLevel = iota
+	LogError
+	LogInfo
+	LogDebug
+)
+
+var logLevelNames = []string{"FATAL", "ERROR", "INFO", "DEBUG"}
+
+var isDebug = os.Getenv("DEBUG") != ""
+
+//Log writes a log message. LogDebug messages are only written if
+//the environment variable `DEBUG` is set.
+func Log(level LogLevel, msg string, args ...interface{}) {
+	if level == LogDebug && !isDebug {
+		return
 	}
 
-	return result + strings.TrimPrefix(path, "/")
-}
-
-var statsd_client statsd.Statter
-
-func Gauge(bucket string, value int64, rate float32) error {
-	if statsd_client != nil {
-		return statsd_client.Gauge(bucket, value, rate)
+	if len(args) > 0 {
+		log.Printf(logLevelNames[level]+": "+msg+"\n", args...)
+	} else {
+		log.Println(logLevelNames[level] + ": " + msg)
 	}
-	return nil
+
+	if level == LogFatal {
+		os.Exit(1)
+	}
 }

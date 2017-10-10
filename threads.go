@@ -25,6 +25,8 @@ import (
 	"sync"
 	"syscall"
 
+	"github.com/sapcc/swift-http-import/pkg/util"
+
 	"golang.org/x/net/context"
 )
 
@@ -83,10 +85,10 @@ func Run(state *SharedState) (exitCode int) {
 	}
 
 	//report results
-	Log(LogInfo, "%d dirs scanned, %d failed",
+	util.Log(util.LogInfo, "%d dirs scanned, %d failed",
 		state.DirectoriesScanned, state.DirectoriesFailed,
 	)
-	Log(LogInfo, "%d files found, %d transferred, %d failed",
+	util.Log(util.LogInfo, "%d files found, %d transferred, %d failed",
 		state.FilesFound, state.FilesTransferred, state.FilesFailed,
 	)
 
@@ -154,7 +156,7 @@ func makeTransferThread(state *SharedState, in <-chan File) {
 		}
 
 		//if not yet aborted, retry transfer of failed files one more time
-		Log(LogInfo, "retrying %d failed file transfers...", len(filesFailed1))
+		util.Log(util.LogInfo, "retrying %d failed file transfers...", len(filesFailed1))
 		in2 := make(chan File, len(filesFailed1)+1)
 		for _, file := range filesFailed1 {
 			in2 <- file
