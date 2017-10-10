@@ -60,6 +60,14 @@ const (
 //PerformTransfer transfers this file from the source to the target.
 //The return value indicates if the transfer finished successfully.
 func (f File) PerformTransfer() TransferResult {
+	//check if this file needs transfer
+	if f.Job.ImmutableFileRx != nil && f.Job.ImmutableFileRx.MatchString(f.Path) {
+		if f.Job.IsFileTransferred[f.TargetObjectName()] {
+			util.Log(util.LogDebug, "skipping %s/%s: already transferred", f.Job.Target.ContainerName, f.TargetObjectName())
+			return TransferSkipped
+		}
+	}
+
 	util.Log(util.LogDebug, "transferring to %s/%s", f.Job.Target.ContainerName, f.TargetObjectName())
 
 	//query the file metadata at the target

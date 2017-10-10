@@ -129,18 +129,10 @@ func (s *Scraper) Next() (files []File, countAsFailed bool) {
 				Path: filepath.Join(directory.Path, entryName),
 			})
 		} else {
-			file := File{
+			files = append(files, File{
 				Job:  job,
 				Path: filepath.Join(directory.Path, entryName),
-			}
-			//ignore immutable files that have already been transferred
-			if job.ImmutableFileRx != nil && job.ImmutableFileRx.MatchString(pathForMatching) {
-				if job.IsFileTransferred[file.TargetObjectName()] {
-					util.Log(util.LogDebug, "skipping %s: already transferred", pathForMatching)
-					continue
-				}
-			}
-			files = append(files, file)
+			})
 		}
 	}
 
