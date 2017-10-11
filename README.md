@@ -76,34 +76,9 @@ ubuntu-repos/pool/main/p/pam/pam_1.1.8.orig.tar.gz
 
 The order of jobs is significant: Source trees will be scraped in the order indicated by the `jobs` list.
 
-When a regex is given in the `immutable` key, files with names matching this regex will be considered immutable, and
-`swift-http-import` will not check them for updates after having synced them once. This is especially useful for package
-repositories because package files, once uploaded, will never change:
+### Source specification
 
-```yaml
-jobs:
-  - from:
-      url: http://de.archive.ubuntu.com/ubuntu/
-    to:
-      container: mirror
-      object_prefix: ubuntu-repos
-    immutable: '.*\.deb$'
-```
-
-There is also support for SSL client based authentication against the source. The server CA field is optional.
-```yaml
-jobs:
-  - from:
-      url:  http://de.archive.ubuntu.com/ubuntu/
-      cert: /path/to/client.pem
-      key:  /path/to/client-key.pem
-      ca:   /path/to/server-ca.pem
-    to:
-      container: mirror
-      object_prefix: ubuntu-repos
-```
-
-Furthermore, the source can also be a private Swift container if Swift credentials are specified instead of a source URL:
+The source in `jobs[].from` can also be a private Swift container if Swift credentials are specified instead of a source URL.
 
 ```yaml
 jobs:
@@ -119,23 +94,40 @@ jobs:
     to:
       container: mirror
       object_prefix: ubuntu-repos
-    immutable: '.*\.deb$'
 ```
 
-By default, only a single worker thread will be transferring files. You can scale this up by including a `workers` section like so:
+If a source URL is used, you can also pin the server's CA certificate, and specify a TLS client certificate (including
+private key) that will be used by the HTTP client.
 
 ```yaml
-workers:
-  transfer: 10
+jobs:
+  - from:
+      url:  http://de.archive.ubuntu.com/ubuntu/
+      cert: /path/to/client.pem
+      key:  /path/to/client-key.pem
+      ca:   /path/to/server-ca.pem
+    to:
+      container: mirror
+      object_prefix: ubuntu-repos
 ```
 
-Restricting the scraped files before transferring them to the target can be reached with two optional job configurations:
-* `except`: Exclude directories and files which are matched by `except`
-* `only`: Exclude directories and files which are not matched by `only`
+### Transfer behavior
 
-The evaluation precedence is as listed.
+For each job, you may supply three [regular expressions](https://golang.org/pkg/regexp/syntax/) to influence which files
+are transferred:
 
-Example 1:
+* `except`: Files and subdirectories whose path matches this regex will not be transferred.
+* `only`: Only files and subdirectories whose path matches this regex will be transferred. (Note that `except` takes
+  precedence over `only`. If both are supplied, a file or subdirectory matching both regexes will be excluded.)
+* `immutable`: Files whose path matches this regex will be considered immutable, and `swift-http-import` will not check
+  them for updates after having synced them once.
+
+For `except` and `only`, you can distinguish between subdirectories and files because directory paths end with a slash,
+whereas file paths don't.
+
+For example, with the configuration below, directories called `sub_dir` and files with a `.gz` extension are excluded on
+every level in the source tree:
+
 ```yaml
 jobs:
   - from:
@@ -145,9 +137,9 @@ jobs:
       object_prefix: ubuntu-repos
     except: "sub_dir/$|.gz$"
 ```
-This would exclude directories named `sub_dir` and files with extension `gz` on every level from scraping.
 
-Example 2:
+When using `only` to select files, you will usually want to include an alternative `/$` in the regex to match all
+directories. Otherwise all directories will be excluded and you will only include files in the toplevel directory.
 
 ```yaml
 jobs:
@@ -156,10 +148,29 @@ jobs:
     to:
       container: mirror
       object_prefix: ubuntu-repos
-    only:   "/$|.amd64.deb$"
+    only: "/$|.amd64.deb$"
 ```
-This would only transfer amd64 debian packages. Consider that you should allow all directories in `only` by `/$`,
-if you want to traverse the whole tree.
+
+The `immutable` regex is especially useful for package repositories because package files, once uploaded, will never change:
+
+```yaml
+jobs:
+  - from:
+      url: http://de.archive.ubuntu.com/ubuntu/
+    to:
+      container: mirror
+      object_prefix: ubuntu-repos
+    immutable: '.*\.deb$'
+```
+
+### Performance
+
+By default, only a single worker thread will be transferring files. You can scale this up by including a `workers` section like so:
+
+```yaml
+workers:
+  transfer: 10
+```
 
 ## Log output
 
