@@ -21,7 +21,6 @@ package actors
 
 import (
 	"strconv"
-	"sync"
 	"time"
 
 	"github.com/cactus/go-statsd-client/statsd"
@@ -58,11 +57,8 @@ type Report struct {
 	ExitCode int
 }
 
-//Run executes this actor.
-func (r *Report) Run(wg *sync.WaitGroup) {
-	wg.Add(1)
-	defer wg.Done()
-
+//Run implements the Actor interface.
+func (r *Report) Run() {
 	var (
 		directoriesScanned int64
 		directoriesFailed  int64

@@ -22,7 +22,6 @@ package actors
 import (
 	"path/filepath"
 	"strings"
-	"sync"
 
 	"github.com/sapcc/swift-http-import/pkg/objects"
 	"github.com/sapcc/swift-http-import/pkg/util"
@@ -42,11 +41,8 @@ type Scraper struct {
 	Report  chan<- ReportEvent
 }
 
-//Run executes this actor.
-func (s *Scraper) Run(wg *sync.WaitGroup) {
-	wg.Add(1)
-	defer wg.Done()
-
+//Run implements the Actor interface.
+func (s *Scraper) Run() {
 	//push jobs in *reverse* order so that the first job will be processed first
 	stack := make(directoryStack, 0, len(s.Jobs))
 	for idx := range s.Jobs {
@@ -111,6 +107,9 @@ func (s *Scraper) Run(wg *sync.WaitGroup) {
 		//report that a directory was successfully scraped
 		s.Report <- ReportEvent{IsDirectory: true}
 	}
+
+	//signal to consumers that we're done
+	close(s.Output)
 }
 
 //directoryStack is a []objects.Directory that implements LIFO semantics.

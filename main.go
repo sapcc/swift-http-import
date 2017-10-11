@@ -49,7 +49,7 @@ func main() {
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, os.Interrupt, syscall.SIGTERM)
 
-	//setup a context that shuts down all actors when one of the signals above is received
+	//setup a context that shuts down all pipeline actors when one of the signals above is received
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	defer cancelFunc()
 	go func() {
@@ -66,25 +66,25 @@ func main() {
 		StartTime: startTime,
 	}
 	var wgReport sync.WaitGroup
-	go report.Run(&wgReport)
+	actors.Start(&report, &wgReport)
 
 	//setup the pipeline actors
 	var wg sync.WaitGroup
 	queue := make(chan objects.File, 10)
 
-	go (&actors.Scraper{
+	actors.Start(&actors.Scraper{
 		Context: ctx,
 		Jobs:    config.Jobs,
 		Output:  queue,
 		Report:  reportChan,
-	}).Run(&wg)
+	}, &wg)
 
 	for i := uint(0); i < config.WorkerCounts.Transfer; i++ {
-		go (&actors.Transferor{
+		actors.Start(&actors.Transferor{
 			Context: ctx,
 			Input:   queue,
 			Report:  reportChan,
-		}).Run(&wg)
+		}, &wg)
 	}
 
 	//wait for pipeline actors to finish

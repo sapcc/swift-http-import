@@ -20,8 +20,6 @@
 package actors
 
 import (
-	"sync"
-
 	"github.com/sapcc/swift-http-import/pkg/objects"
 	"github.com/sapcc/swift-http-import/pkg/util"
 	"golang.org/x/net/context"
@@ -37,11 +35,8 @@ type Transferor struct {
 	Report  chan<- ReportEvent
 }
 
-//Run executes this actor.
-func (t *Transferor) Run(wg *sync.WaitGroup) {
-	wg.Add(1)
-	defer wg.Done()
-
+//Run implements the Actor interface.
+func (t *Transferor) Run() {
 	done := t.Context.Done()
 
 	//main transfer loop - report successful and skipped transfers immediately,
