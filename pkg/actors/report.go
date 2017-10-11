@@ -36,7 +36,7 @@ type ReportEvent struct {
 	DirectoryFailed bool
 
 	IsFile             bool
-	FileTransferResult TransferResult
+	FileTransferResult objects.TransferResult
 }
 
 //Report is an actor that counts scraped directories and transferred files.
@@ -103,9 +103,9 @@ LOOP:
 			case mark.IsFile:
 				filesFound++
 				switch mark.FileTransferResult {
-				case TransferSuccess:
+				case objects.TransferSuccess:
 					filesTransferred++
-				case TransferFailed:
+				case objects.TransferFailed:
 					filesFailed++
 				}
 			}

@@ -50,9 +50,9 @@ func Run(state *SharedState) {
 	state.WaitGroup.Wait()
 }
 
-func makeScraperThread(state *SharedState) <-chan File {
+func makeScraperThread(state *SharedState) <-chan objects.File {
 	state.WaitGroup.Add(1)
-	out := make(chan File, 10)
+	out := make(chan objects.File, 10)
 
 	scraper := NewScraper(&state.Configuration)
 
@@ -83,7 +83,7 @@ func makeScraperThread(state *SharedState) <-chan File {
 	return out
 }
 
-func makeTransferThread(state *SharedState, in <-chan File) {
+func makeTransferThread(state *SharedState, in <-chan objects.File) {
 	state.WaitGroup.Add(1)
 	done := state.Context.Done()
 
@@ -93,7 +93,7 @@ func makeTransferThread(state *SharedState, in <-chan File) {
 		//main transfer loop - report successful and skipped transfers immediately,
 		//but push back failed transfers for later retry
 		aborted := false
-		var filesToRetry []File
+		var filesToRetry []objects.File
 	LOOP:
 		for {
 			select {
@@ -105,7 +105,7 @@ func makeTransferThread(state *SharedState, in <-chan File) {
 					break LOOP
 				}
 				result := file.PerformTransfer()
-				if result == actors.TransferFailed {
+				if result == objects.TransferFailed {
 					filesToRetry = append(filesToRetry, file)
 				} else {
 					state.Report <- actors.ReportEvent{IsFile: true, FileTransferResult: result}
@@ -121,7 +121,7 @@ func makeTransferThread(state *SharedState, in <-chan File) {
 			util.Log(util.LogInfo, "retrying %d failed file transfers...", len(filesToRetry))
 		}
 		for _, file := range filesToRetry {
-			result := actors.TransferFailed
+			result := objects.TransferFailed
 			//...but only if we were not aborted (this is checked in every loop
 			//iteration because the abort signal (i.e. Ctrl-C) could also happen
 			//during this loop)

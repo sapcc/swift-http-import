@@ -84,7 +84,7 @@ func (s *Scraper) Done() bool {
 }
 
 //Next scrapes the next directory.
-func (s *Scraper) Next() (files []File, countAsFailed bool) {
+func (s *Scraper) Next() (files []objects.File, countAsFailed bool) {
 	if s.Done() {
 		return nil, false
 	}
@@ -125,7 +125,7 @@ func (s *Scraper) Next() (files []File, countAsFailed bool) {
 				Path: filepath.Join(directory.Path, entryName),
 			})
 		} else {
-			files = append(files, File{
+			files = append(files, objects.File{
 				Job:  job,
 				Path: filepath.Join(directory.Path, entryName),
 			})
