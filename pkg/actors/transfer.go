@@ -63,10 +63,7 @@ LOOP:
 	}
 
 	//retry transfer of failed files one more time
-	if len(filesToRetry) == 0 {
-		return
-	}
-	if !aborted {
+	if !aborted && len(filesToRetry) > 0 {
 		util.Log(util.LogInfo, "retrying %d failed file transfers...", len(filesToRetry))
 	}
 	for _, file := range filesToRetry {
@@ -80,4 +77,9 @@ LOOP:
 		t.Report <- ReportEvent{IsFile: true, FileTransferResult: result}
 	}
 
+	//if interrupt was received, consume all remaining input to get the Scraper
+	//moving (it might be stuck trying to send into the File channel while the
+	//channel's buffer is full)
+	for _ = range t.Input {
+	}
 }
