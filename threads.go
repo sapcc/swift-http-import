@@ -40,7 +40,15 @@ type SharedState struct {
 func Run(state *SharedState) {
 	//setup a simple linear pipeline of workers (it should be fairly trivial to
 	//scale this out to multiple workers later)
-	queue := makeScraperThread(state)
+	queue := make(chan objects.File, 10)
+	s := actors.Scraper{
+		Context: state.Context,
+		Jobs:    state.Configuration.Jobs,
+		Output:  queue,
+		Report:  state.Report,
+	}
+	go s.Run(&state.WaitGroup)
+
 	for i := uint(0); i < state.WorkerCounts.Transfer; i++ {
 		t := actors.Transferor{
 			Context: state.Context,
@@ -52,37 +60,4 @@ func Run(state *SharedState) {
 
 	//wait for all of them to return
 	state.WaitGroup.Wait()
-}
-
-func makeScraperThread(state *SharedState) <-chan objects.File {
-	state.WaitGroup.Add(1)
-	out := make(chan objects.File, 10)
-
-	scraper := NewScraper(&state.Configuration)
-
-	go func() {
-		defer state.WaitGroup.Done()
-		defer close(out)
-
-		for {
-			//check if state.Context.Done() is closed
-			if state.Context.Err() != nil {
-				break
-			}
-			if scraper.Done() {
-				break
-			}
-
-			files, countAsFailed := scraper.Next()
-			for _, file := range files {
-				out <- file
-			}
-			state.Report <- actors.ReportEvent{
-				IsDirectory:     true,
-				DirectoryFailed: countAsFailed,
-			}
-		}
-	}()
-
-	return out
 }
