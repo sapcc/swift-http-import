@@ -49,7 +49,7 @@ func main() {
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, os.Interrupt, syscall.SIGTERM)
 
-	//setup a context that cancels the workers when one of the signals above is received
+	//setup a context that shuts down all actors when one of the signals above is received
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	defer cancelFunc()
 	go func() {
@@ -65,19 +65,33 @@ func main() {
 		Statsd:    config.Statsd,
 		StartTime: startTime,
 	}
-	var wg sync.WaitGroup
-	go report.Run(&wg)
+	var wgReport sync.WaitGroup
+	go report.Run(&wgReport)
 
-	//start workers
-	Run(&SharedState{
-		Configuration: *config,
-		Context:       ctx,
-		Report:        reportChan,
-	})
+	//setup the pipeline actors
+	var wg sync.WaitGroup
+	queue := make(chan objects.File, 10)
+
+	go (&actors.Scraper{
+		Context: ctx,
+		Jobs:    config.Jobs,
+		Output:  queue,
+		Report:  reportChan,
+	}).Run(&wg)
+
+	for i := uint(0); i < config.WorkerCounts.Transfer; i++ {
+		go (&actors.Transferor{
+			Context: ctx,
+			Input:   queue,
+			Report:  reportChan,
+		}).Run(&wg)
+	}
+
+	//wait for pipeline actors to finish
+	wg.Wait()
 
 	//shutdown Report actor
 	close(reportChan)
-	wg.Wait()
-
+	wgReport.Wait()
 	os.Exit(report.ExitCode)
 }
