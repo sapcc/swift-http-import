@@ -20,11 +20,9 @@
 package main
 
 import (
-	"os"
-	"os/signal"
 	"sync"
-	"syscall"
 
+	"github.com/sapcc/swift-http-import/pkg/actors"
 	"github.com/sapcc/swift-http-import/pkg/util"
 
 	"golang.org/x/net/context"
@@ -35,32 +33,11 @@ type SharedState struct {
 	Configuration
 	Context   context.Context
 	WaitGroup sync.WaitGroup
-
-	//each of these is only ever written by one thread (and then read by the
-	//main thread after waiting on the writing thread), so no additional
-	//locking is required for these fields
-	DirectoriesScanned uint64
-	DirectoriesFailed  uint64
-	FilesFound         uint64
-	FilesFailed        uint64
-	FilesTransferred   uint64
+	Report    chan<- actors.ReportEvent
 }
 
 //Run starts and orchestrates the various worker threads.
-func Run(state *SharedState) (exitCode int) {
-	//receive SIGINT/SIGTERM signals
-	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, os.Interrupt, syscall.SIGTERM)
-
-	//setup a context that cancels the workers when one of the signals above is received
-	var cancelFunc func()
-	state.Context, cancelFunc = context.WithCancel(state.Context)
-	defer cancelFunc()
-	go func() {
-		<-sigs
-		cancelFunc()
-	}()
-
+func Run(state *SharedState) {
 	//setup a simple linear pipeline of workers (it should be fairly trivial to
 	//scale this out to multiple workers later)
 	queue := makeScraperThread(state)
@@ -70,29 +47,6 @@ func Run(state *SharedState) (exitCode int) {
 
 	//wait for all of them to return
 	state.WaitGroup.Wait()
-
-	//send statistics
-	Gauge("last_run.dirs_scanned", int64(state.DirectoriesScanned), 1.0)
-	Gauge("last_run.files_found", int64(state.FilesFound), 1.0)
-	Gauge("last_run.files_transfered", int64(state.FilesTransferred), 1.0)
-	Gauge("last_run.files_failed", int64(state.FilesFailed), 1.0)
-	if state.FilesFailed > 0 || state.DirectoriesFailed > 0 {
-		Gauge("last_run.success", 0, 1.0)
-		exitCode = 1
-	} else {
-		Gauge("last_run.success", 1, 1.0)
-		exitCode = 0
-	}
-
-	//report results
-	util.Log(util.LogInfo, "%d dirs scanned, %d failed",
-		state.DirectoriesScanned, state.DirectoriesFailed,
-	)
-	util.Log(util.LogInfo, "%d files found, %d transferred, %d failed",
-		state.FilesFound, state.FilesTransferred, state.FilesFailed,
-	)
-
-	return
 }
 
 func makeScraperThread(state *SharedState) <-chan File {
@@ -105,10 +59,6 @@ func makeScraperThread(state *SharedState) <-chan File {
 		defer state.WaitGroup.Done()
 		defer close(out)
 
-		var directoriesFailed uint64
-		var directoriesScanned uint64
-		var filesFound uint64
-
 		for {
 			//check if state.Context.Done() is closed
 			if state.Context.Err() != nil {
@@ -120,19 +70,13 @@ func makeScraperThread(state *SharedState) <-chan File {
 
 			files, countAsFailed := scraper.Next()
 			for _, file := range files {
-				filesFound++
 				out <- file
 			}
-			directoriesScanned++
-			if countAsFailed {
-				directoriesFailed++
+			state.Report <- actors.ReportEvent{
+				IsDirectory:     true,
+				DirectoryFailed: countAsFailed,
 			}
 		}
-
-		//submit statistics to main thread
-		state.DirectoriesFailed = directoriesFailed
-		state.DirectoriesScanned = directoriesScanned
-		state.FilesFound = filesFound
 	}()
 
 	return out
@@ -145,52 +89,46 @@ func makeTransferThread(state *SharedState, in <-chan File) {
 	go func() {
 		defer state.WaitGroup.Done()
 
-		//run worker loop
-		filesTransferred1, filesFailed1, aborted := transferThreadWorkerLoop(in, done)
+		//main transfer loop - report successful and skipped transfers immediately,
+		//but push back failed transfers for later retry
+		aborted := false
+		var filesToRetry []File
+	LOOP:
+		for {
+			select {
+			case <-done:
+				aborted = true
+				break LOOP
+			case file, ok := <-in:
+				if !ok {
+					break LOOP
+				}
+				result := file.PerformTransfer()
+				if result == actors.TransferFailed {
+					filesToRetry = append(filesToRetry, file)
+				} else {
+					state.Report <- actors.ReportEvent{IsFile: true, FileTransferResult: result}
+				}
+			}
+		}
 
-		//submit statistics to main thread
-		state.FilesFailed = uint64(len(filesFailed1))
-		state.FilesTransferred = filesTransferred1
-		if aborted || len(filesFailed1) == 0 {
+		//retry transfer of failed files one more time
+		if len(filesToRetry) == 0 {
 			return
 		}
-
-		//if not yet aborted, retry transfer of failed files one more time
-		util.Log(util.LogInfo, "retrying %d failed file transfers...", len(filesFailed1))
-		in2 := make(chan File, len(filesFailed1)+1)
-		for _, file := range filesFailed1 {
-			in2 <- file
+		if !aborted {
+			util.Log(util.LogInfo, "retrying %d failed file transfers...", len(filesToRetry))
 		}
-		in2 <- File{Path: ""}
-		filesTransferred2, filesFailed2, _ := transferThreadWorkerLoop(in2, done)
+		for _, file := range filesToRetry {
+			result := actors.TransferFailed
+			//...but only if we were not aborted (this is checked in every loop
+			//iteration because the abort signal (i.e. Ctrl-C) could also happen
+			//during this loop)
+			if !aborted && state.Context.Err() == nil {
+				result = file.PerformTransfer()
+			}
+			state.Report <- actors.ReportEvent{IsFile: true, FileTransferResult: result}
+		}
 
-		//submit new statistics
-		state.FilesFailed = uint64(len(filesFailed2))
-		state.FilesTransferred = filesTransferred1 + filesTransferred2
 	}()
-}
-
-func transferThreadWorkerLoop(in <-chan File, done <-chan struct{}) (filesTransferred uint64, filesFailed []File, aborted bool) {
-	for {
-		var file File
-		select {
-		case <-done:
-			aborted = true
-			return
-		case file = <-in:
-			if file.Path == "" {
-				//input channel is closed and returns zero values
-				aborted = false
-				return
-			}
-			switch file.PerformTransfer() {
-			case TransferSuccess:
-				filesTransferred++
-			case TransferSkipped:
-				//nothing to count
-			case TransferFailed:
-				filesFailed = append(filesFailed, file)
-			}
-		}
-	}
 }

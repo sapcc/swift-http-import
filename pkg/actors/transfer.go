@@ -1,6 +1,6 @@
 /*******************************************************************************
 *
-* Copyright 2016 SAP SE
+* Copyright 2016-2017 SAP SE
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -17,17 +17,18 @@
 *
 *******************************************************************************/
 
-package main
+package actors
 
-import (
-	"github.com/cactus/go-statsd-client/statsd"
+//TransferResult is the return type for PerformTransfer().
+type TransferResult uint
+
+const (
+	//TransferSuccess means that the file was newer on the source and was sent
+	//to the target.
+	TransferSuccess TransferResult = iota
+	//TransferSkipped means that the file was the same on both sides and
+	//nothing was transferred.
+	TransferSkipped
+	//TransferFailed means that an error occurred and was logged.
+	TransferFailed
 )
-
-var statsd_client statsd.Statter
-
-func Gauge(bucket string, value int64, rate float32) error {
-	if statsd_client != nil {
-		return statsd_client.Gauge(bucket, value, rate)
-	}
-	return nil
-}

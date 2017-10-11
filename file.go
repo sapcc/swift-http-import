@@ -24,6 +24,7 @@ import (
 	"strings"
 
 	"github.com/ncw/swift"
+	"github.com/sapcc/swift-http-import/pkg/actors"
 	"github.com/sapcc/swift-http-import/pkg/objects"
 	"github.com/sapcc/swift-http-import/pkg/util"
 )
@@ -43,28 +44,14 @@ func (f File) TargetObjectName() string {
 	return filepath.Join(f.Job.Target.ObjectNamePrefix, objectName)
 }
 
-//TransferResult is the return type for PerformTransfer().
-type TransferResult uint
-
-const (
-	//TransferSuccess means that the file was newer on the source and was sent
-	//to the target.
-	TransferSuccess TransferResult = iota
-	//TransferSkipped means that the file was the same on both sides and
-	//nothing was transferred.
-	TransferSkipped
-	//TransferFailed means that an error occurred and was logged.
-	TransferFailed
-)
-
 //PerformTransfer transfers this file from the source to the target.
 //The return value indicates if the transfer finished successfully.
-func (f File) PerformTransfer() TransferResult {
+func (f File) PerformTransfer() actors.TransferResult {
 	//check if this file needs transfer
 	if f.Job.Matcher.ImmutableFileRx != nil && f.Job.Matcher.ImmutableFileRx.MatchString(f.Path) {
 		if f.Job.Target.FileExists[f.TargetObjectName()] {
 			util.Log(util.LogDebug, "skipping %s/%s: already transferred", f.Job.Target.ContainerName, f.TargetObjectName())
-			return TransferSkipped
+			return actors.TransferSkipped
 		}
 	}
 
@@ -86,7 +73,7 @@ func (f File) PerformTransfer() TransferResult {
 				f.Job.Target.ContainerName, f.TargetObjectName(),
 				err.Error(),
 			)
-			return TransferFailed
+			return actors.TransferFailed
 		}
 	}
 
@@ -99,13 +86,13 @@ func (f File) PerformTransfer() TransferResult {
 	body, sourceState, err := f.Job.Source.GetFile(f.Path, targetState)
 	if err != nil {
 		util.Log(util.LogError, err.Error())
-		return TransferFailed
+		return actors.TransferFailed
 	}
 	if body != nil {
 		defer body.Close()
 	}
 	if sourceState.SkipTransfer { // 304 Not Modified
-		return TransferSkipped
+		return actors.TransferSkipped
 	}
 
 	//store some headers from the source to later identify whether this
@@ -139,8 +126,8 @@ func (f File) PerformTransfer() TransferResult {
 			util.Log(util.LogError, "DELETE %s/%s failed: %s", f.Job.Target.ContainerName, f.TargetObjectName(), err.Error())
 		}
 
-		return TransferFailed
+		return actors.TransferFailed
 	}
 
-	return TransferSuccess
+	return actors.TransferSuccess
 }

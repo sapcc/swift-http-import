@@ -21,12 +21,16 @@ package main
 
 import (
 	"os"
+	"os/signal"
 	"strconv"
+	"sync"
+	"syscall"
 	"time"
 
 	"golang.org/x/net/context"
 
 	"github.com/cactus/go-statsd-client/statsd"
+	"github.com/sapcc/swift-http-import/pkg/actors"
 	"github.com/sapcc/swift-http-import/pkg/util"
 )
 
@@ -42,26 +46,55 @@ func main() {
 		os.Exit(1)
 	}
 
-	// initialize statsd client
-	var err error
+	//receive SIGINT/SIGTERM signals
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, os.Interrupt, syscall.SIGTERM)
+
+	//setup a context that cancels the workers when one of the signals above is received
+	ctx, cancelFunc := context.WithCancel(context.Background())
+	defer cancelFunc()
+	go func() {
+		<-sigs
+		cancelFunc()
+	}()
+
+	//initialize statsd client (TODO: move this into Report actor?)
+	var (
+		statter statsd.Statter
+		err     error
+	)
 	if config.Statsd.HostName != "" {
-		statsd_client, err = statsd.NewClient(config.Statsd.HostName+":"+strconv.Itoa(config.Statsd.Port), config.Statsd.Prefix)
+		statter, err = statsd.NewClient(config.Statsd.HostName+":"+strconv.Itoa(config.Statsd.Port), config.Statsd.Prefix)
 		// handle any errors
 		if err != nil {
 			util.Log(util.LogFatal, err.Error())
 		}
 
 		// make sure to clean up
-		defer statsd_client.Close()
+		defer statter.Close()
 	}
 
+	//setup the Report actor
+	reportChan := make(chan actors.ReportEvent, 10)
+	report := actors.Report{
+		Input:     reportChan,
+		Done:      ctx.Done(),
+		Statter:   statter,
+		StartTime: startTime,
+	}
+	var wg sync.WaitGroup
+	go report.Run(&wg)
+
 	//start workers
-	exitCode := Run(&SharedState{
+	Run(&SharedState{
 		Configuration: *config,
-		Context:       context.Background(),
+		Context:       ctx,
+		Report:        reportChan,
 	})
 
-	Gauge("last_run.duration_seconds", int64(time.Since(startTime).Seconds()), 1.0)
-	util.Log(util.LogInfo, "finished in %s", time.Since(startTime).String())
-	os.Exit(exitCode)
+	//shutdown Report actor
+	close(reportChan)
+	wg.Wait()
+
+	os.Exit(report.ExitCode)
 }
