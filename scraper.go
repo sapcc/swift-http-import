@@ -23,12 +23,13 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/sapcc/swift-http-import/pkg/objects"
 	"github.com/sapcc/swift-http-import/pkg/util"
 )
 
 //Directory describes a directory on the source side which can be scraped.
 type Directory struct {
-	Job          *Job
+	Job          *objects.Job
 	Path         string
 	RetryCounter uint
 }
@@ -61,7 +62,7 @@ type Scraper struct {
 }
 
 //NewScraper creates a new scraper.
-func NewScraper(config *Configuration) *Scraper {
+func NewScraper(config *objects.Configuration) *Scraper {
 	s := &Scraper{
 		Stack: make(directoryStack, 0, len(config.Jobs)),
 	}

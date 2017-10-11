@@ -22,15 +22,14 @@ package main
 import (
 	"os"
 	"os/signal"
-	"strconv"
 	"sync"
 	"syscall"
 	"time"
 
 	"golang.org/x/net/context"
 
-	"github.com/cactus/go-statsd-client/statsd"
 	"github.com/sapcc/swift-http-import/pkg/actors"
+	"github.com/sapcc/swift-http-import/pkg/objects"
 	"github.com/sapcc/swift-http-import/pkg/util"
 )
 
@@ -38,7 +37,7 @@ func main() {
 	startTime := time.Now()
 
 	//read configuration
-	config, errs := ReadConfiguration()
+	config, errs := objects.ReadConfiguration()
 	if len(errs) > 0 {
 		for _, err := range errs {
 			util.Log(util.LogError, err.Error())
@@ -58,28 +57,12 @@ func main() {
 		cancelFunc()
 	}()
 
-	//initialize statsd client (TODO: move this into Report actor?)
-	var (
-		statter statsd.Statter
-		err     error
-	)
-	if config.Statsd.HostName != "" {
-		statter, err = statsd.NewClient(config.Statsd.HostName+":"+strconv.Itoa(config.Statsd.Port), config.Statsd.Prefix)
-		// handle any errors
-		if err != nil {
-			util.Log(util.LogFatal, err.Error())
-		}
-
-		// make sure to clean up
-		defer statter.Close()
-	}
-
 	//setup the Report actor
-	reportChan := make(chan actors.ReportEvent, 10)
+	reportChan := make(chan actors.ReportEvent)
 	report := actors.Report{
 		Input:     reportChan,
 		Done:      ctx.Done(),
-		Statter:   statter,
+		Statsd:    config.Statsd,
 		StartTime: startTime,
 	}
 	var wg sync.WaitGroup

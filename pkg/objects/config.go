@@ -1,6 +1,6 @@
 /*******************************************************************************
 *
-* Copyright 2016 SAP SE
+* Copyright 2016-2017 SAP SE
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 *
 *******************************************************************************/
 
-package main
+package objects
 
 import (
 	"fmt"
@@ -25,24 +25,18 @@ import (
 	"os"
 	"regexp"
 
-	"github.com/sapcc/swift-http-import/pkg/objects"
-
 	yaml "gopkg.in/yaml.v2"
 )
 
 //Configuration contains the contents of the configuration file.
 type Configuration struct {
-	Swift        objects.SwiftLocation `yaml:"swift"`
+	Swift        SwiftLocation `yaml:"swift"`
 	WorkerCounts struct {
 		Transfer uint
 	} `yaml:"workers"`
-	Statsd struct {
-		HostName string `yaml:"hostname"`
-		Port     int    `yaml:"port"`
-		Prefix   string `yaml:"prefix"`
-	} `yaml:"statsd"`
-	JobConfigs []JobConfiguration `yaml:"jobs"`
-	Jobs       []*Job             `yaml:"-"`
+	Statsd     StatsdConfiguration `yaml:"statsd"`
+	JobConfigs []JobConfiguration  `yaml:"jobs"`
+	Jobs       []*Job              `yaml:"-"`
 }
 
 //ReadConfiguration reads the configuration file.
@@ -87,11 +81,19 @@ func ReadConfiguration() (*Configuration, []error) {
 	return &cfg, errors
 }
 
+//StatsdConfiguration contains the configuration options relating to StatsD
+//metric emission.
+type StatsdConfiguration struct {
+	HostName string `yaml:"hostname"`
+	Port     int    `yaml:"port"`
+	Prefix   string `yaml:"prefix"`
+}
+
 //JobConfiguration describes a transfer job in the configuration file.
 type JobConfiguration struct {
 	//basic options
-	Source SourceUnmarshaler      `yaml:"from"`
-	Target *objects.SwiftLocation `yaml:"to"`
+	Source SourceUnmarshaler `yaml:"from"`
+	Target *SwiftLocation    `yaml:"to"`
 	//behavior options
 	ExcludePattern       string `yaml:"except"`
 	IncludePattern       string `yaml:"only"`
@@ -100,7 +102,7 @@ type JobConfiguration struct {
 
 //SourceUnmarshaler provides a yaml.Unmarshaler implementation for the Source interface.
 type SourceUnmarshaler struct {
-	src objects.Source
+	src Source
 }
 
 //UnmarshalYAML implements the yaml.Unmarshaler interface.
@@ -114,22 +116,22 @@ func (u *SourceUnmarshaler) UnmarshalYAML(unmarshal func(interface{}) error) err
 
 	//look at keys to determine whether this is a URLSource or a SwiftSource
 	if _, exists := data["url"]; exists {
-		u.src = &objects.URLSource{}
+		u.src = &URLSource{}
 	} else {
-		u.src = &objects.SwiftLocation{}
+		u.src = &SwiftLocation{}
 	}
 	return unmarshal(u.src)
 }
 
 //Job describes a transfer job at runtime.
 type Job struct {
-	Source  objects.Source
-	Target  *objects.SwiftLocation
-	Matcher objects.Matcher
+	Source  Source
+	Target  *SwiftLocation
+	Matcher Matcher
 }
 
 //Compile validates the given JobConfiguration, then creates and prepares a Job from it.
-func (cfg JobConfiguration) Compile(name string, swift objects.SwiftLocation) (job *Job, errors []error) {
+func (cfg JobConfiguration) Compile(name string, swift SwiftLocation) (job *Job, errors []error) {
 	if cfg.Source.src == nil {
 		errors = append(errors, fmt.Errorf("missing value for %s.from", name))
 	} else {

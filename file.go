@@ -31,7 +31,7 @@ import (
 
 //File describes a single file which is mirrored as part of a Job.
 type File struct {
-	Job  *Job
+	Job  *objects.Job
 	Path string
 }
 

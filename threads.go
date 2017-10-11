@@ -23,6 +23,7 @@ import (
 	"sync"
 
 	"github.com/sapcc/swift-http-import/pkg/actors"
+	"github.com/sapcc/swift-http-import/pkg/objects"
 	"github.com/sapcc/swift-http-import/pkg/util"
 
 	"golang.org/x/net/context"
@@ -30,7 +31,7 @@ import (
 
 //SharedState contains all the stuff shared between all worker threads.
 type SharedState struct {
-	Configuration
+	objects.Configuration
 	Context   context.Context
 	WaitGroup sync.WaitGroup
 	Report    chan<- actors.ReportEvent

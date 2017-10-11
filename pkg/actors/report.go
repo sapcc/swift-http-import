@@ -20,10 +20,12 @@
 package actors
 
 import (
+	"strconv"
 	"sync"
 	"time"
 
 	"github.com/cactus/go-statsd-client/statsd"
+	"github.com/sapcc/swift-http-import/pkg/objects"
 	"github.com/sapcc/swift-http-import/pkg/util"
 )
 
@@ -49,7 +51,7 @@ type ReportEvent struct {
 type Report struct {
 	Input     <-chan ReportEvent
 	Done      <-chan struct{}
-	Statter   statsd.Statter
+	Statsd    objects.StatsdConfiguration
 	StartTime time.Time
 
 	ExitCode int
@@ -66,7 +68,21 @@ func (r *Report) Run(wg *sync.WaitGroup) {
 		filesFound         int64
 		filesFailed        int64
 		filesTransferred   int64
+		statter            statsd.Statter
 	)
+
+	//initialize statsd client
+	if r.Statsd.HostName != "" {
+		var err error
+		statter, err = statsd.NewClient(r.Statsd.HostName+":"+strconv.Itoa(r.Statsd.Port), r.Statsd.Prefix)
+		// handle any errors
+		if err != nil {
+			util.Log(util.LogFatal, err.Error())
+		}
+
+		// make sure to clean up
+		defer statter.Close()
+	}
 
 	//collect tally marks until done or aborted
 LOOP:
@@ -98,8 +114,8 @@ LOOP:
 
 	//send statistics
 	var gauge func(string, int64, float32) error
-	if r.Statter != nil {
-		gauge = r.Statter.Gauge
+	if statter != nil {
+		gauge = statter.Gauge
 	} else {
 		gauge = func(bucket string, value int64, rate float32) error { return nil }
 	}
