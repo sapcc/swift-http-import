@@ -60,8 +60,8 @@ func main() {
 	//setup the Report actor
 	reportChan := make(chan actors.ReportEvent)
 	report := actors.Report{
+		Context:   ctx,
 		Input:     reportChan,
-		Done:      ctx.Done(),
 		Statsd:    config.Statsd,
 		StartTime: startTime,
 	}
