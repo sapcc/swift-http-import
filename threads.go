@@ -24,7 +24,6 @@ import (
 
 	"github.com/sapcc/swift-http-import/pkg/actors"
 	"github.com/sapcc/swift-http-import/pkg/objects"
-	"github.com/sapcc/swift-http-import/pkg/util"
 
 	"golang.org/x/net/context"
 )
@@ -43,7 +42,12 @@ func Run(state *SharedState) {
 	//scale this out to multiple workers later)
 	queue := makeScraperThread(state)
 	for i := uint(0); i < state.WorkerCounts.Transfer; i++ {
-		makeTransferThread(state, queue)
+		t := actors.Transferor{
+			Context: state.Context,
+			Input:   queue,
+			Report:  state.Report,
+		}
+		go t.Run(&state.WaitGroup)
 	}
 
 	//wait for all of them to return
@@ -81,55 +85,4 @@ func makeScraperThread(state *SharedState) <-chan objects.File {
 	}()
 
 	return out
-}
-
-func makeTransferThread(state *SharedState, in <-chan objects.File) {
-	state.WaitGroup.Add(1)
-	done := state.Context.Done()
-
-	go func() {
-		defer state.WaitGroup.Done()
-
-		//main transfer loop - report successful and skipped transfers immediately,
-		//but push back failed transfers for later retry
-		aborted := false
-		var filesToRetry []objects.File
-	LOOP:
-		for {
-			select {
-			case <-done:
-				aborted = true
-				break LOOP
-			case file, ok := <-in:
-				if !ok {
-					break LOOP
-				}
-				result := file.PerformTransfer()
-				if result == objects.TransferFailed {
-					filesToRetry = append(filesToRetry, file)
-				} else {
-					state.Report <- actors.ReportEvent{IsFile: true, FileTransferResult: result}
-				}
-			}
-		}
-
-		//retry transfer of failed files one more time
-		if len(filesToRetry) == 0 {
-			return
-		}
-		if !aborted {
-			util.Log(util.LogInfo, "retrying %d failed file transfers...", len(filesToRetry))
-		}
-		for _, file := range filesToRetry {
-			result := objects.TransferFailed
-			//...but only if we were not aborted (this is checked in every loop
-			//iteration because the abort signal (i.e. Ctrl-C) could also happen
-			//during this loop)
-			if !aborted && state.Context.Err() == nil {
-				result = file.PerformTransfer()
-			}
-			state.Report <- actors.ReportEvent{IsFile: true, FileTransferResult: result}
-		}
-
-	}()
 }
