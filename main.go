@@ -45,6 +45,26 @@ func main() {
 		os.Exit(1)
 	}
 
+	//setup the Report actor
+	reportChan := make(chan actors.ReportEvent)
+	report := actors.Report{
+		Input:     reportChan,
+		Statsd:    config.Statsd,
+		StartTime: startTime,
+	}
+	var wgReport sync.WaitGroup
+	actors.Start(&report, &wgReport)
+
+	//do the work
+	runPipeline(config, reportChan)
+
+	//shutdown Report actor
+	close(reportChan)
+	wgReport.Wait()
+	os.Exit(report.ExitCode)
+}
+
+func runPipeline(config *objects.Configuration, report chan<- actors.ReportEvent) {
 	//receive SIGINT/SIGTERM signals
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, os.Interrupt, syscall.SIGTERM)
@@ -54,21 +74,11 @@ func main() {
 	defer cancelFunc()
 	go func() {
 		<-sigs
+		util.Log(util.LogError, "Interrupt received! Shutting down...")
 		cancelFunc()
 	}()
 
-	//setup the Report actor
-	reportChan := make(chan actors.ReportEvent)
-	report := actors.Report{
-		Context:   ctx,
-		Input:     reportChan,
-		Statsd:    config.Statsd,
-		StartTime: startTime,
-	}
-	var wgReport sync.WaitGroup
-	actors.Start(&report, &wgReport)
-
-	//setup the pipeline actors
+	//start the pipeline actors
 	var wg sync.WaitGroup
 	queue := make(chan objects.File, 10)
 
@@ -76,22 +86,18 @@ func main() {
 		Context: ctx,
 		Jobs:    config.Jobs,
 		Output:  queue,
-		Report:  reportChan,
+		Report:  report,
 	}, &wg)
 
 	for i := uint(0); i < config.WorkerCounts.Transfer; i++ {
 		actors.Start(&actors.Transferor{
 			Context: ctx,
 			Input:   queue,
-			Report:  reportChan,
+			Report:  report,
 		}, &wg)
 	}
 
 	//wait for pipeline actors to finish
 	wg.Wait()
-
-	//shutdown Report actor
-	close(reportChan)
-	wgReport.Wait()
-	os.Exit(report.ExitCode)
+	// signal.Reset(os.Interrupt, syscall.SIGTERM)
 }

@@ -26,7 +26,6 @@ import (
 	"github.com/cactus/go-statsd-client/statsd"
 	"github.com/sapcc/swift-http-import/pkg/objects"
 	"github.com/sapcc/swift-http-import/pkg/util"
-	"golang.org/x/net/context"
 )
 
 //ReportEvent counts either a directory that was scraped, or a file that was
@@ -49,7 +48,6 @@ type ReportEvent struct {
 //The `StartTime` is used to measure this run's duration at the end.
 //The `ExitCode` can be read after the actor is done.
 type Report struct {
-	Context   context.Context
 	Input     <-chan ReportEvent
 	Statsd    objects.StatsdConfiguration
 	StartTime time.Time
@@ -82,30 +80,20 @@ func (r *Report) Run() {
 	}
 
 	//collect tally marks until done or aborted
-	done := r.Context.Done()
-LOOP:
-	for {
-		select {
-		case <-done:
-			break LOOP
-		case mark, ok := <-r.Input:
-			if !ok {
-				break LOOP
+	for mark := range r.Input {
+		switch {
+		case mark.IsDirectory:
+			directoriesScanned++
+			if mark.DirectoryFailed {
+				directoriesFailed++
 			}
-			switch {
-			case mark.IsDirectory:
-				directoriesScanned++
-				if mark.DirectoryFailed {
-					directoriesFailed++
-				}
-			case mark.IsFile:
-				filesFound++
-				switch mark.FileTransferResult {
-				case objects.TransferSuccess:
-					filesTransferred++
-				case objects.TransferFailed:
-					filesFailed++
-				}
+		case mark.IsFile:
+			filesFound++
+			switch mark.FileTransferResult {
+			case objects.TransferSuccess:
+				filesTransferred++
+			case objects.TransferFailed:
+				filesFailed++
 			}
 		}
 	}
