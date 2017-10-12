@@ -95,9 +95,17 @@ type JobConfiguration struct {
 	Source SourceUnmarshaler `yaml:"from"`
 	Target *SwiftLocation    `yaml:"to"`
 	//behavior options
-	ExcludePattern       string `yaml:"except"`
-	IncludePattern       string `yaml:"only"`
-	ImmutableFilePattern string `yaml:"immutable"`
+	ExcludePattern       string                   `yaml:"except"`
+	IncludePattern       string                   `yaml:"only"`
+	ImmutableFilePattern string                   `yaml:"immutable"`
+	Segmenting           *SegmentingConfiguration `yaml:"segmenting"`
+}
+
+//SegmentingConfiguration contains the "segmenting" section of a JobConfiguration.
+type SegmentingConfiguration struct {
+	MinObjectSize uint64 `yaml:"min_bytes"`
+	SegmentSize   uint64 `yaml:"segment_bytes"`
+	ContainerName string `yaml:"container"`
 }
 
 //SourceUnmarshaler provides a yaml.Unmarshaler implementation for the Source interface.
@@ -125,9 +133,10 @@ func (u *SourceUnmarshaler) UnmarshalYAML(unmarshal func(interface{}) error) err
 
 //Job describes a transfer job at runtime.
 type Job struct {
-	Source  Source
-	Target  *SwiftLocation
-	Matcher Matcher
+	Source     Source
+	Target     *SwiftLocation
+	Matcher    Matcher
+	Segmenting *SegmentingConfiguration
 }
 
 //Compile validates the given JobConfiguration, then creates and prepares a Job from it.
@@ -151,9 +160,22 @@ func (cfg JobConfiguration) Compile(name string, swift SwiftLocation) (job *Job,
 		errors = append(errors, cfg.Target.Validate(name+".to")...)
 	}
 
+	if cfg.Segmenting != nil {
+		if cfg.Segmenting.MinObjectSize == 0 {
+			errors = append(errors, fmt.Errorf("missing value for %s.segmenting.min_bytes", name))
+		}
+		if cfg.Segmenting.SegmentSize == 0 {
+			errors = append(errors, fmt.Errorf("missing value for %s.segmenting.segment_bytes", name))
+		}
+		if cfg.Segmenting.ContainerName == "" {
+			cfg.Segmenting.ContainerName = cfg.Target.ContainerName + "_segments"
+		}
+	}
+
 	job = &Job{
-		Source: cfg.Source.src,
-		Target: cfg.Target,
+		Source:     cfg.Source.src,
+		Target:     cfg.Target,
+		Segmenting: cfg.Segmenting,
 	}
 
 	//compile patterns into regexes

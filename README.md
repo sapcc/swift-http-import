@@ -111,7 +111,7 @@ jobs:
       object_prefix: ubuntu-repos
 ```
 
-### Transfer behavior
+### File selection
 
 For each job, you may supply three [regular expressions](https://golang.org/pkg/regexp/syntax/) to influence which files
 are transferred:
@@ -162,6 +162,31 @@ jobs:
       object_prefix: ubuntu-repos
     immutable: '.*\.deb$'
 ```
+
+### Transfer behavior
+
+Swift rejects objects beyond a certain size (usually 5 GiB). To import larger files,
+[segmenting](https://docs.openstack.org/swift/latest/overview_large_objects.html) must be used. The configuration
+section `jobs[].segmenting` enables segmenting for the given job:
+
+```yaml
+jobs:
+  - from:
+      url: http://de.archive.ubuntu.com/ubuntu/
+    to:
+      container: mirror
+      object_prefix: ubuntu-repos
+    segmenting:
+      min_bytes:     2147483648      # import files larger than 2 GiB...
+      segment_bytes: 1073741824      # ...as segments of 1 GiB each...
+      container:     mirror_segments # ...which are stored in this container (optional, see below)
+```
+
+Segmenting behaves like the standard `swift` CLI client with the `--use-slo` option:
+
+- The segment container's name defaults to the target container's name plus a `_segments` prefix.
+- Segments are uploaded with the object name `$OBJECT_PATH/slo/$UPLOAD_TIMESTAMP/$OBJECT_SIZE_BYTES/$SEGMENT_SIZE_BYTES/$SEGMENT_INDEX`.
+- The target object uses an SLO manifest. DLO manifests are not supported.
 
 ### Performance
 
