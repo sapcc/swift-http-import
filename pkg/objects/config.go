@@ -198,7 +198,7 @@ func (cfg JobConfiguration) Compile(name string, swift SwiftLocation) (job *Job,
 		return
 	}
 
-	//ensure that connection to Swift exists and that target container is available
+	//ensure that connection to Swift exists and that target container(s) is/are available
 	err := job.Source.Connect()
 	if err != nil {
 		errors = append(errors, err)
@@ -206,6 +206,12 @@ func (cfg JobConfiguration) Compile(name string, swift SwiftLocation) (job *Job,
 	err = job.Target.Connect()
 	if err != nil {
 		errors = append(errors, err)
+	}
+	if job.Segmenting != nil {
+		err = job.Target.EnsureContainerExists(job.Segmenting.ContainerName)
+		if err != nil {
+			errors = append(errors, err)
+		}
 	}
 
 	err = job.Target.DiscoverExistingFiles(job.Matcher)

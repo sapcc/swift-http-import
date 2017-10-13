@@ -115,7 +115,7 @@ func (s *SwiftLocation) Connect() error {
 		}
 		err := s.Connection.Authenticate()
 		if err != nil {
-			return fmt.Errorf("cannot authenticate to %s in %s@%s as %s@s: %s",
+			return fmt.Errorf("cannot authenticate to %s in %s@%s as %s@%s: %s",
 				s.AuthURL,
 				s.ProjectName,
 				s.ProjectDomainName,
@@ -128,10 +128,16 @@ func (s *SwiftLocation) Connect() error {
 	}
 
 	//create target container if missing
-	err := s.Connection.ContainerCreate(s.ContainerName, nil)
+	return s.EnsureContainerExists(s.ContainerName)
+}
+
+//EnsureContainerExists creates the given container in this Swift account, if
+//it does not exist yet.
+func (s *SwiftLocation) EnsureContainerExists(containerName string) error {
+	err := s.Connection.ContainerCreate(containerName, nil)
 	if err != nil {
-		return fmt.Errorf("cannot create container %s in %s@%s as %s@s: %s",
-			s.ContainerName,
+		return fmt.Errorf("cannot create container %s in %s@%s as %s@%s: %s",
+			containerName,
 			s.ProjectName,
 			s.ProjectDomainName,
 			s.UserName,

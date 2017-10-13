@@ -1,6 +1,6 @@
 /*******************************************************************************
 *
-* Copyright 2016 SAP SE
+* Copyright 2016-2017 SAP SE
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -20,8 +20,11 @@
 package objects
 
 import (
+	"fmt"
+	"io"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/ncw/swift"
 	"github.com/sapcc/swift-http-import/pkg/util"
@@ -118,28 +121,105 @@ func (f File) PerformTransfer() TransferResult {
 	}
 
 	//upload file to target
-	_, err = f.Job.Target.Connection.ObjectPut(
-		f.Job.Target.ContainerName,
-		f.TargetObjectName(),
+	var ok bool
+	size := sourceState.SizeBytes
+	if f.Job.Segmenting != nil && size > 0 && uint64(size) >= f.Job.Segmenting.MinObjectSize {
+		ok = f.uploadLargeObject(body, sourceState, metadata.ObjectHeaders())
+	} else {
+		ok = f.uploadNormalObject(body, sourceState, metadata.ObjectHeaders())
+	}
+
+	if ok {
+		return TransferSuccess
+	}
+	return TransferFailed
+}
+
+func (f File) uploadNormalObject(body io.Reader, sourceState FileState, hdr swift.Headers) (ok bool) {
+	containerName := f.Job.Target.ContainerName
+	objectName := f.TargetObjectName()
+	_, err := f.Job.Target.Connection.ObjectPut(
+		containerName, objectName,
 		body,
 		false, "",
 		sourceState.ContentType,
-		metadata.ObjectHeaders(),
+		hdr,
 	)
-	if err != nil {
-		util.Log(util.LogError, "PUT %s/%s failed: %s", f.Job.Target.ContainerName, f.TargetObjectName(), err.Error())
-
-		//delete potentially incomplete upload
-		err := f.Job.Target.Connection.ObjectDelete(
-			f.Job.Target.ContainerName,
-			f.TargetObjectName(),
-		)
-		if err != nil {
-			util.Log(util.LogError, "DELETE %s/%s failed: %s", f.Job.Target.ContainerName, f.TargetObjectName(), err.Error())
-		}
-
-		return TransferFailed
+	if err == nil {
+		return true
 	}
 
-	return TransferSuccess
+	util.Log(util.LogError, "PUT %s/%s failed: %s", containerName, objectName, err.Error())
+
+	//delete potentially incomplete upload
+	err = f.Job.Target.Connection.ObjectDelete(containerName, objectName)
+	if err != nil {
+		util.Log(util.LogError, "DELETE %s/%s failed: %s", containerName, objectName, err.Error())
+	}
+
+	return false
+}
+
+func (f File) uploadLargeObject(body io.Reader, sourceState FileState, hdr swift.Headers) (ok bool) {
+	containerName := f.Job.Target.ContainerName
+	objectName := f.TargetObjectName()
+	segmentContainerName := f.Job.Segmenting.ContainerName
+
+	now := time.Now()
+	segmentPrefix := fmt.Sprintf("%s/slo/%d.%09d/%d/%d",
+		objectName, now.Unix(), now.Nanosecond(), sourceState.SizeBytes, f.Job.Segmenting.SegmentSize,
+	)
+
+	util.Log(util.LogDebug, "checkpoint 0: %s/%s", segmentContainerName, segmentPrefix)
+	largeObj, err := f.Job.Target.Connection.StaticLargeObjectCreate(&swift.LargeObjectOpts{
+		Container:        containerName,
+		ObjectName:       objectName,
+		ContentType:      sourceState.ContentType,
+		Headers:          hdr,
+		ChunkSize:        int64(f.Job.Segmenting.SegmentSize),
+		SegmentContainer: segmentContainerName,
+		SegmentPrefix:    segmentPrefix,
+	})
+	if err == nil {
+		_, err = io.CopyBuffer(largeObj, body, make([]byte, 1<<20))
+	}
+	if err == nil {
+		err = largeObj.Close()
+	}
+	if err == nil {
+		util.Log(util.LogInfo, "PUT %s/%s has created a Static Large Object with segments in %s/%s/",
+			containerName, objectName, segmentContainerName, segmentPrefix,
+		)
+		return true
+	}
+
+	util.Log(util.LogError, "PUT %s/%s as Static Large Object failed: %s", containerName, objectName, err.Error())
+
+	//file was not transferred correctly - cleanup manifest...
+	err = f.Job.Target.Connection.ObjectDelete(containerName, objectName)
+	if err != nil && err != swift.ObjectNotFound {
+		util.Log(util.LogError, "DELETE %s/%s failed: %s", containerName, objectName, err.Error())
+	}
+	//...and segments
+	segmentNames, err := f.Job.Target.Connection.ObjectNamesAll(segmentContainerName,
+		&swift.ObjectsOpts{Prefix: segmentPrefix + "/"},
+	)
+	if err != nil {
+		util.Log(util.LogError, "cannot enumerate SLO segments in %s/%s/ for cleanup: %s",
+			segmentContainerName, segmentPrefix, err.Error(),
+		)
+		segmentNames = nil
+	}
+	if len(segmentNames) > 0 {
+		result, err := f.Job.Target.Connection.BulkDelete(segmentContainerName, segmentNames)
+		if err != nil {
+			util.Log(util.LogError, "DELETE %s/%s/* failed: %s", segmentContainerName, segmentPrefix, err.Error())
+		} else {
+			for segmentName, err := range result.Errors {
+				util.Log(util.LogError, "DELETE %s/%s failed: %s", segmentContainerName, segmentName, err.Error())
+			}
+		}
+	}
+
+	return false
 }
