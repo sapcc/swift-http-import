@@ -185,11 +185,19 @@ func (s *SwiftLocation) GetFile(path string, targetState FileState) (io.ReadClos
 	}
 
 	body, respHeaders, err := s.Connection.ObjectOpen(s.ContainerName, objectPath, false, reqHeaders)
+
 	switch err {
 	case nil:
+		sizeBytes, err := body.Length() //this just reads Content-Length despite not looking like it
+		if err != nil {
+			util.Log(util.LogError, "invalid Content-Length header for object %s/%s", s.ContainerName, objectPath)
+			sizeBytes = -1
+		}
+
 		return body, FileState{
 			Etag:         respHeaders["Etag"],
 			LastModified: respHeaders["Last-Modified"],
+			SizeBytes:    sizeBytes,
 			ContentType:  respHeaders["Content-Type"],
 		}, nil
 	case swift.NotModified:

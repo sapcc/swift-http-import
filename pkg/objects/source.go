@@ -27,6 +27,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"golang.org/x/net/html"
@@ -62,6 +63,7 @@ type ListEntriesError struct {
 type FileState struct {
 	Etag         string
 	LastModified string
+	SizeBytes    int64 //-1 if not known
 	//the following fields are only used in `sourceState`, not `targetState`
 	SkipTransfer bool
 	ContentType  string
@@ -263,9 +265,20 @@ func (u URLSource) GetFile(path string, targetState FileState) (io.ReadCloser, F
 		)
 	}
 
+	//read Content-Length header (or report -1, i.e. unknown size, if header missing or corrupted)
+	var sizeBytes int64 = -1
+	if sizeBytesStr := response.Header.Get("Content-Length"); sizeBytesStr != "" {
+		sizeBytes, err = strconv.ParseInt(sizeBytesStr, 10, 64)
+		if err != nil {
+			util.Log(util.LogError, "invalid header \"Content-Length: %s\" in GET %s", sizeBytesStr, url)
+			sizeBytes = -1
+		}
+	}
+
 	return response.Body, FileState{
 		Etag:         response.Header.Get("Etag"),
 		LastModified: response.Header.Get("Last-Modified"),
+		SizeBytes:    sizeBytes,
 		SkipTransfer: response.StatusCode == 304,
 		ContentType:  response.Header.Get("Content-Type"),
 	}, nil
