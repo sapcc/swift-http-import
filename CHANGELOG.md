@@ -14,6 +14,10 @@ New features:
   mirror the expiry timestamp to the target side. The `jobs[].expiration` configuration section can be used to control
   this behavior.
 
+Changes:
+- The code has been restructured for better extensibility and high-level readability.
+- The README has been restructured to be less chaotic, and a TOC has been added for better discoverability.
+
 Bugfixes:
 - Interrupts (SIGTERM and SIGINT) are now ignored less often.
 

@@ -1,5 +1,16 @@
 # swift-http-import
 
+* [Implicit assumptions](#implicit-assumptions)
+* [Installation](#installation)
+* [Usage](#usage)
+** [Source specification](#source-specification)
+** [File selection](#file-selection)
+** [Transfer behavior: Segmenting](#transfer-behavior-segmenting)
+** [Transfer behavior: Expiring objects](#transfer-behavior-expiring-objects)
+** [Performance](#performance)
+* [Log output](#log-output)
+* [StatsD metrics](#statsd-metrics)
+
 This tool imports files from an HTTP server into a Swift container. Given an input URL, it recurses through the directory
 listings on that URL, and mirrors all files that it finds into Swift. It will take advantage of `Last-Modified` and
 `Etag` response headers to avoid repeated downloads of the same content, so best performance is ensured the HTTP server
