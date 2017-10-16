@@ -21,46 +21,83 @@ package main
 
 import (
 	"os"
-	"strconv"
+	"os/signal"
+	"sync"
+	"syscall"
 	"time"
 
 	"golang.org/x/net/context"
 
-	"github.com/cactus/go-statsd-client/statsd"
+	"github.com/sapcc/swift-http-import/pkg/actors"
+	"github.com/sapcc/swift-http-import/pkg/objects"
+	"github.com/sapcc/swift-http-import/pkg/util"
 )
 
 func main() {
 	startTime := time.Now()
 
 	//read configuration
-	config, errs := ReadConfiguration()
+	config, errs := objects.ReadConfiguration()
 	if len(errs) > 0 {
 		for _, err := range errs {
-			Log(LogError, err.Error())
+			util.Log(util.LogError, err.Error())
 		}
 		os.Exit(1)
 	}
 
-	// initialize statsd client
-	var err error
-	if config.Statsd.HostName != "" {
-		statsd_client, err = statsd.NewClient(config.Statsd.HostName+":"+strconv.Itoa(config.Statsd.Port), config.Statsd.Prefix)
-		// handle any errors
-		if err != nil {
-			Log(LogFatal, err.Error())
-		}
+	//setup the Report actor
+	reportChan := make(chan actors.ReportEvent)
+	report := actors.Report{
+		Input:     reportChan,
+		Statsd:    config.Statsd,
+		StartTime: startTime,
+	}
+	var wgReport sync.WaitGroup
+	actors.Start(&report, &wgReport)
 
-		// make sure to clean up
-		defer statsd_client.Close()
+	//do the work
+	runPipeline(config, reportChan)
+
+	//shutdown Report actor
+	close(reportChan)
+	wgReport.Wait()
+	os.Exit(report.ExitCode)
+}
+
+func runPipeline(config *objects.Configuration, report chan<- actors.ReportEvent) {
+	//receive SIGINT/SIGTERM signals
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, os.Interrupt, syscall.SIGTERM)
+
+	//setup a context that shuts down all pipeline actors when one of the signals above is received
+	ctx, cancelFunc := context.WithCancel(context.Background())
+	defer cancelFunc()
+	go func() {
+		<-sigs
+		util.Log(util.LogError, "Interrupt received! Shutting down...")
+		cancelFunc()
+	}()
+
+	//start the pipeline actors
+	var wg sync.WaitGroup
+	queue := make(chan objects.File, 10)
+
+	actors.Start(&actors.Scraper{
+		Context: ctx,
+		Jobs:    config.Jobs,
+		Output:  queue,
+		Report:  report,
+	}, &wg)
+
+	for i := uint(0); i < config.WorkerCounts.Transfer; i++ {
+		actors.Start(&actors.Transferor{
+			Context: ctx,
+			Input:   queue,
+			Report:  report,
+		}, &wg)
 	}
 
-	//start workers
-	exitCode := Run(&SharedState{
-		Configuration: *config,
-		Context:       context.Background(),
-	})
-
-	Gauge("last_run.duration_seconds", int64(time.Since(startTime).Seconds()), 1.0)
-	Log(LogInfo, "finished in %s", time.Since(startTime).String())
-	os.Exit(exitCode)
+	//wait for pipeline actors to finish
+	wg.Wait()
+	// signal.Reset(os.Interrupt, syscall.SIGTERM)
 }

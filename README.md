@@ -51,14 +51,17 @@ swift:
   password: 20g82rzg235oughq
 
 jobs:
-  - from: http://de.archive.ubuntu.com/ubuntu/
-    to:   mirror/ubuntu-repos
+  - from:
+      url: http://de.archive.ubuntu.com/ubuntu/
+    to:
+      container: mirror
+      object_prefix: ubuntu-repos
 ```
 
 The first paragraph contains the authentication parameters for OpenStack's Identity v3 API. Optionally a `region_name`
 can be specified, but this is only required if there are multiple regions to choose from.
 
-Each sync job contains the source URL as `from`, and `to` has the target container name, optionally followed by an 
+Each sync job contains the source URL as `from.url`, and `to.container` has the target container name, optionally paired with an
 object name prefix in the target container. For example, in the case above, the file
 
 ```
@@ -73,28 +76,9 @@ ubuntu-repos/pool/main/p/pam/pam_1.1.8.orig.tar.gz
 
 The order of jobs is significant: Source trees will be scraped in the order indicated by the `jobs` list.
 
-When a regex is given in the `immutable` key, files with names matching this regex will be considered immutable, and
-`swift-http-import` will not check them for updates after having synced them once. This is especially useful for package
-repositories because package files, once uploaded, will never change:
+### Source specification
 
-```yaml
-jobs:
-  - from: http://de.archive.ubuntu.com/ubuntu/
-    to:   mirror/ubuntu-repos
-    immutable: '.*\.deb$'
-```
-
-There is also support for SSL client based authentication against the source. Hereby the server CA is optional.
-```yaml
-jobs:
-  - from: http://de.archive.ubuntu.com/ubuntu/
-    to:   mirror/ubuntu-repos
-    cert: /path/to/client.pem
-    key:  /path/to/client-key.pem
-    ca:   /path/to/server-ca.pem
-```
-
-Furthermore, the source can also be a private Swift container if Swift credentials are specified instead of a source URL:
+The source in `jobs[].from` can also be a private Swift container if Swift credentials are specified instead of a source URL.
 
 ```yaml
 jobs:
@@ -107,9 +91,138 @@ jobs:
       password:            20g82rzg235oughq
       container:           upstream-mirror
       object_prefix:       repos/ubuntu
-    to: mirror/ubuntu-repos
+    to:
+      container: mirror
+      object_prefix: ubuntu-repos
+```
+
+If a source URL is used, you can also pin the server's CA certificate, and specify a TLS client certificate (including
+private key) that will be used by the HTTP client.
+
+```yaml
+jobs:
+  - from:
+      url:  http://de.archive.ubuntu.com/ubuntu/
+      cert: /path/to/client.pem
+      key:  /path/to/client-key.pem
+      ca:   /path/to/server-ca.pem
+    to:
+      container: mirror
+      object_prefix: ubuntu-repos
+```
+
+### File selection
+
+For each job, you may supply three [regular expressions](https://golang.org/pkg/regexp/syntax/) to influence which files
+are transferred:
+
+* `except`: Files and subdirectories whose path matches this regex will not be transferred.
+* `only`: Only files and subdirectories whose path matches this regex will be transferred. (Note that `except` takes
+  precedence over `only`. If both are supplied, a file or subdirectory matching both regexes will be excluded.)
+* `immutable`: Files whose path matches this regex will be considered immutable, and `swift-http-import` will not check
+  them for updates after having synced them once.
+
+For `except` and `only`, you can distinguish between subdirectories and files because directory paths end with a slash,
+whereas file paths don't.
+
+For example, with the configuration below, directories called `sub_dir` and files with a `.gz` extension are excluded on
+every level in the source tree:
+
+```yaml
+jobs:
+  - from:
+      url: http://de.archive.ubuntu.com/ubuntu/
+    to:
+      container: mirror
+      object_prefix: ubuntu-repos
+    except: "sub_dir/$|.gz$"
+```
+
+When using `only` to select files, you will usually want to include an alternative `/$` in the regex to match all
+directories. Otherwise all directories will be excluded and you will only include files in the toplevel directory.
+
+```yaml
+jobs:
+  - from:
+      url: http://de.archive.ubuntu.com/ubuntu/
+    to:
+      container: mirror
+      object_prefix: ubuntu-repos
+    only: "/$|.amd64.deb$"
+```
+
+The `immutable` regex is especially useful for package repositories because package files, once uploaded, will never change:
+
+```yaml
+jobs:
+  - from:
+      url: http://de.archive.ubuntu.com/ubuntu/
+    to:
+      container: mirror
+      object_prefix: ubuntu-repos
     immutable: '.*\.deb$'
 ```
+
+### Transfer behavior: Segmenting
+
+Swift rejects objects beyond a certain size (usually 5 GiB). To import larger files,
+[segmenting](https://docs.openstack.org/swift/latest/overview_large_objects.html) must be used. The configuration
+section `jobs[].segmenting` enables segmenting for the given job:
+
+```yaml
+jobs:
+  - from:
+      url: http://de.archive.ubuntu.com/ubuntu/
+    to:
+      container: mirror
+      object_prefix: ubuntu-repos
+    segmenting:
+      min_bytes:     2147483648      # import files larger than 2 GiB...
+      segment_bytes: 1073741824      # ...as segments of 1 GiB each...
+      container:     mirror_segments # ...which are stored in this container (optional, see below)
+```
+
+Segmenting behaves like the standard `swift` CLI client with the `--use-slo` option:
+
+- The segment container's name defaults to the target container's name plus a `_segments` prefix.
+- Segments are uploaded with the object name `$OBJECT_PATH/slo/$UPLOAD_TIMESTAMP/$OBJECT_SIZE_BYTES/$SEGMENT_SIZE_BYTES/$SEGMENT_INDEX`.
+- The target object uses an SLO manifest. DLO manifests are not supported.
+
+### Transfer behavior: Expiring objects
+
+Swift allows for files to be set to
+[expire at a user-configured time](https://docs.openstack.org/swift/latest/overview_expiring_objects.html), at which
+point they will be deleted automatically. When transfering files from a Swift source, `swift-http-import` will copy any
+expiration dates to the target, unless the `jobs[].expiration.enabled` configuration option is set to `false`.
+
+```yaml
+jobs:
+  - from:
+      ... # not shown: credentials for Swift source
+      container: source-container
+    to:
+      container: target-container
+    expiration:
+      enabled: false
+```
+
+In some cases, it may be desirable for target objects to live longer than source objects. For example, when syncing from
+an on-site backup to an off-site backup, it may be useful to retain the off-site backup for a longer period of time than
+the on-site backup. Use the `jobs[].expiration.delay_seconds` configuration option to shift all expiration dates on the
+target side by a fixed amount of time compared to the source side.
+
+```yaml
+jobs:
+  - from:
+      ... # not shown: credentials for Swift source
+      container: on-site-backup
+    to:
+      container: off-site-backup
+    expiration:
+      delay_seconds: 1209600 # retain off-site backups for 14 days longer than on-site backup
+```
+
+### Performance
 
 By default, only a single worker thread will be transferring files. You can scale this up by including a `workers` section like so:
 
@@ -117,32 +230,6 @@ By default, only a single worker thread will be transferring files. You can scal
 workers:
   transfer: 10
 ```
-
-Restricting the scraped files before transferring them to the target can be reached with two optional job configurations:
-* `except`: Exclude directories and files which are matched by `except`
-* `only`: Exclude directories and files which are not matched by `only`
-
-The evaluation precedence is as listed.
-
-Example 1:
-```yaml
-jobs:
-  - from:   http://de.archive.ubuntu.com/ubuntu/
-    to:     mirror/ubuntu-repos
-    except: "sub_dir/$|.gz$"
-```
-This would exclude directories named `sub_dir` and files with extension `gz` on every level from scraping.
-
-Example 2:
-
-```yaml
-jobs:
-  - from:   http://de.archive.ubuntu.com/ubuntu/
-    to:     mirror/ubuntu-repos
-    only:   "/$|.amd64.deb$"
-```
-This would only transfer amd64 debian packages. Consider that you should allow all directories in `only` by `/$`,
-if you want to traverse the whole tree.
 
 ## Log output
 

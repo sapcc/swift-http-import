@@ -5,12 +5,16 @@
 # variables, and the source and target for the first sync job can be given as
 # arguments.
 
-if [ $# -ne 2 ]; then
-    echo "Usage: $0 <from-url> <to-container-and-path>" >&2
+if [ $# -lt 2 -o $# -gt 3 ]; then
+    echo "Usage: $0 <from-url> <to-container> [<object-prefix>]" >&2
+    exit 1
+fi
+if [[ "$2" == */* ]]; then # container name may not contain slash
+    echo "Usage: $0 <from-url> <to-container> [<object-prefix>]" >&2
     exit 1
 fi
 
-sed '/region_name:\s*$/d' <<-EOF
+sed '/\(region_name\|object_prefix\):\s*$/d' <<-EOF
 swift:
   auth_url:            ${OS_AUTH_URL}
   user_name:           ${OS_USERNAME}
@@ -24,6 +28,9 @@ workers:
   transfer: 1
 
 jobs:
-  - from: $1
-    to:   $2
+  - from:
+      url: $1
+    to:
+     container: $2
+     object_prefix: $3
 EOF

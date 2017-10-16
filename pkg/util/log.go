@@ -1,6 +1,6 @@
 /*******************************************************************************
 *
-* Copyright 2016 SAP SE
+* Copyright 2016-2017 SAP SE
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -17,24 +17,12 @@
 *
 *******************************************************************************/
 
-package main
+package util
 
 import (
 	"log"
 	"os"
-	"strings"
-	"github.com/cactus/go-statsd-client/statsd"
 )
-
-//URLPathJoin appends a path to a URL.
-func URLPathJoin(url, path string) string {
-	result := url
-	if !strings.HasSuffix(result, "/") {
-		result += "/"
-	}
-
-	return result + strings.TrimPrefix(path, "/")
-}
 
 type LogLevel int
 
@@ -65,13 +53,4 @@ func Log(level LogLevel, msg string, args ...interface{}) {
 	if level == LogFatal {
 		os.Exit(1)
 	}
-}
-
-var statsd_client statsd.Statter
-
-func Gauge(bucket string, value int64, rate float32) error {
-	if statsd_client != nil {
-		return statsd_client.Gauge(bucket, value, rate)
-	}
-	return nil
 }
