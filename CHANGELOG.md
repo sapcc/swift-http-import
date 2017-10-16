@@ -1,4 +1,4 @@
-# v2.0 (TBD)
+# v2.0 (2017-10-16)
 
 **Backwards-incompatible changes:**
 - The configuration format has changed slightly to be more consistent with itself.
