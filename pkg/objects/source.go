@@ -29,6 +29,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"golang.org/x/net/html"
 	"golang.org/x/net/html/atom"
@@ -63,7 +64,8 @@ type ListEntriesError struct {
 type FileState struct {
 	Etag         string
 	LastModified string
-	SizeBytes    int64 //-1 if not known
+	SizeBytes    int64      //-1 if not known
+	ExpiryTime   *time.Time //nil if not set
 	//the following fields are only used in `sourceState`, not `targetState`
 	SkipTransfer bool
 	ContentType  string
@@ -279,6 +281,7 @@ func (u URLSource) GetFile(path string, targetState FileState) (io.ReadCloser, F
 		Etag:         response.Header.Get("Etag"),
 		LastModified: response.Header.Get("Last-Modified"),
 		SizeBytes:    sizeBytes,
+		ExpiryTime:   nil, //no way to get this information via HTTP only
 		SkipTransfer: response.StatusCode == 304,
 		ContentType:  response.Header.Get("Content-Type"),
 	}, nil

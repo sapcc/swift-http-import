@@ -163,7 +163,7 @@ jobs:
     immutable: '.*\.deb$'
 ```
 
-### Transfer behavior
+### Transfer behavior: Segmenting
 
 Swift rejects objects beyond a certain size (usually 5 GiB). To import larger files,
 [segmenting](https://docs.openstack.org/swift/latest/overview_large_objects.html) must be used. The configuration
@@ -187,6 +187,40 @@ Segmenting behaves like the standard `swift` CLI client with the `--use-slo` opt
 - The segment container's name defaults to the target container's name plus a `_segments` prefix.
 - Segments are uploaded with the object name `$OBJECT_PATH/slo/$UPLOAD_TIMESTAMP/$OBJECT_SIZE_BYTES/$SEGMENT_SIZE_BYTES/$SEGMENT_INDEX`.
 - The target object uses an SLO manifest. DLO manifests are not supported.
+
+### Transfer behavior: Expiring objects
+
+Swift allows for files to be set to
+[expire at a user-configured time](https://docs.openstack.org/swift/latest/overview_expiring_objects.html), at which
+point they will be deleted automatically. When transfering files from a Swift source, `swift-http-import` will copy any
+expiration dates to the target, unless the `jobs[].expiration.enabled` configuration option is set to `false`.
+
+```yaml
+jobs:
+  - from:
+      ... # not shown: credentials for Swift source
+      container: source-container
+    to:
+      container: target-container
+    expiration:
+      enabled: false
+```
+
+In some cases, it may be desirable for target objects to live longer than source objects. For example, when syncing from
+an on-site backup to an off-site backup, it may be useful to retain the off-site backup for a longer period of time than
+the on-site backup. Use the `jobs[].expiration.delay_seconds` configuration option to shift all expiration dates on the
+target side by a fixed amount of time compared to the source side.
+
+```yaml
+jobs:
+  - from:
+      ... # not shown: credentials for Swift source
+      container: on-site-backup
+    to:
+      container: off-site-backup
+    expiration:
+      delay_seconds: 1209600 # retain off-site backups for 14 days longer than on-site backup
+```
 
 ### Performance
 

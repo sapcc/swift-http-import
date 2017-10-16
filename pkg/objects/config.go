@@ -99,6 +99,7 @@ type JobConfiguration struct {
 	IncludePattern       string                   `yaml:"only"`
 	ImmutableFilePattern string                   `yaml:"immutable"`
 	Segmenting           *SegmentingConfiguration `yaml:"segmenting"`
+	Expiration           ExpirationConfiguration  `yaml:"expiration"`
 }
 
 //SegmentingConfiguration contains the "segmenting" section of a JobConfiguration.
@@ -106,6 +107,13 @@ type SegmentingConfiguration struct {
 	MinObjectSize uint64 `yaml:"min_bytes"`
 	SegmentSize   uint64 `yaml:"segment_bytes"`
 	ContainerName string `yaml:"container"`
+}
+
+//ExpirationConfiguration contains the "expiration" section of a JobConfiguration.
+type ExpirationConfiguration struct {
+	EnabledIn    *bool  `yaml:"enabled"`
+	Enabled      bool   `yaml:"-"`
+	DelaySeconds uint32 `yaml:"delay_seconds"`
 }
 
 //SourceUnmarshaler provides a yaml.Unmarshaler implementation for the Source interface.
@@ -137,6 +145,7 @@ type Job struct {
 	Target     *SwiftLocation
 	Matcher    Matcher
 	Segmenting *SegmentingConfiguration
+	Expiration ExpirationConfiguration
 }
 
 //Compile validates the given JobConfiguration, then creates and prepares a Job from it.
@@ -172,10 +181,17 @@ func (cfg JobConfiguration) Compile(name string, swift SwiftLocation) (job *Job,
 		}
 	}
 
+	if cfg.Expiration.EnabledIn == nil {
+		cfg.Expiration.Enabled = true
+	} else {
+		cfg.Expiration.Enabled = *cfg.Expiration.EnabledIn
+	}
+
 	job = &Job{
 		Source:     cfg.Source.src,
 		Target:     cfg.Target,
 		Segmenting: cfg.Segmenting,
+		Expiration: cfg.Expiration,
 	}
 
 	//compile patterns into regexes

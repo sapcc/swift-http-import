@@ -63,7 +63,9 @@ upload_file_from_stdin() {
   # `swift upload` is stupid; it will stubbornly refuse any pipes or FIFOs and
   # only accept plain regular files, so I have to use a temp file here
   sed 's/^  //' > "${TEST_FILENAME}"
-  swift upload "${CONTAINER_PUBLIC}" "${TEST_FILENAME}" --object-name "${DISAMBIGUATOR}/$1"
+  OBJECT_NAME="$1"
+  shift
+  swift upload "${CONTAINER_PUBLIC}" "${TEST_FILENAME}" --object-name "${DISAMBIGUATOR}/${OBJECT_NAME}" "$@"
 }
 
 upload_file_from_stdin just/some/files/1.txt <<-EOF
@@ -306,7 +308,44 @@ SEGMENT_COUNT="$(swift list ${CONTAINER_BASE}-test6-segments | wc -l)"
 if [ "${SEGMENT_COUNT}" -ne 5 ]; then
   echo -e "\e[1;31m>>\e[0;31m Expected SLO to have 5 segments, but got ${SEGMENT_COUNT} instead:\e[0m"
   swift list ${CONTAINER_BASE}-test6-segments | sed 's/^/    /'
+  exit 1
 fi
+# NOTE: This also ensures that the small files are not uploaded in segments,
+# because then the segment count would be much more than 5.
+
+################################################################################
+step 'Test 7: Object expiration'
+
+if [ "$1" = http ]; then
+  echo ">> Test skipped (works only with Swift source)."
+else
+
+upload_file_from_stdin expires.txt -H 'X-Delete-At: 2000000000' <<-EOF
+  This will expire soon.
+EOF
+
+mirror <<-EOF
+  swift: { $AUTH_PARAMS }
+  jobs:
+    - from: ${SOURCE_SPEC}
+      to: { container: ${CONTAINER_BASE}-test7 }
+      only: 'expires.txt'
+      expiration:
+        delay_seconds: 42
+EOF
+
+expect test7 <<-EOF
+>> expires.txt
+This will expire soon.
+EOF
+
+EXPIRY_TIMESTAMP="$(swift stat ${CONTAINER_BASE}-test7 expires.txt | awk '/X-Delete-At:/ { print $2 }')"
+if [ "${EXPIRY_TIMESTAMP}" != 2000000042 ]; then
+  echo -e "\e[1;31m>>\e[0;31m Expected file to expire at timestamp 2000000042, but expires at timestamp '${EXPIRY_TIMESTAMP}' instead.\e[0m"
+  exit 1
+fi
+
+fi # end of: if [ "$1" = http ]
 
 ################################################################################
 # cleanup before exiting

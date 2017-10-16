@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -119,14 +120,19 @@ func (f File) PerformTransfer() TransferResult {
 	if sourceState.LastModified != "" {
 		metadata["source-last-modified"] = sourceState.LastModified
 	}
+	headers = metadata.ObjectHeaders()
+	if f.Job.Expiration.Enabled && sourceState.ExpiryTime != nil {
+		delay := int64(f.Job.Expiration.DelaySeconds)
+		headers["X-Delete-At"] = strconv.FormatInt(sourceState.ExpiryTime.Unix()+delay, 10)
+	}
 
 	//upload file to target
 	var ok bool
 	size := sourceState.SizeBytes
 	if f.Job.Segmenting != nil && size > 0 && uint64(size) >= f.Job.Segmenting.MinObjectSize {
-		ok = f.uploadLargeObject(body, sourceState, metadata.ObjectHeaders())
+		ok = f.uploadLargeObject(body, sourceState, headers)
 	} else {
-		ok = f.uploadNormalObject(body, sourceState, metadata.ObjectHeaders())
+		ok = f.uploadNormalObject(body, sourceState, headers)
 	}
 
 	if ok {
@@ -170,7 +176,6 @@ func (f File) uploadLargeObject(body io.Reader, sourceState FileState, hdr swift
 		objectName, now.Unix(), now.Nanosecond(), sourceState.SizeBytes, f.Job.Segmenting.SegmentSize,
 	)
 
-	util.Log(util.LogDebug, "checkpoint 0: %s/%s", segmentContainerName, segmentPrefix)
 	largeObj, err := f.Job.Target.Connection.StaticLargeObjectCreate(&swift.LargeObjectOpts{
 		Container:        containerName,
 		ObjectName:       objectName,

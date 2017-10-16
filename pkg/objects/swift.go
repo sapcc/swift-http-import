@@ -23,7 +23,9 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/ncw/swift"
 	"github.com/sapcc/swift-http-import/pkg/util"
@@ -199,11 +201,22 @@ func (s *SwiftLocation) GetFile(path string, targetState FileState) (io.ReadClos
 			util.Log(util.LogError, "invalid Content-Length header for object %s/%s", s.ContainerName, objectPath)
 			sizeBytes = -1
 		}
+		var expiryTime *time.Time
+		if expiryStr := respHeaders["X-Delete-At"]; expiryStr != "" {
+			expiryUnix, err := strconv.ParseInt(expiryStr, 10, 64)
+			if err == nil {
+				t := time.Unix(expiryUnix, 0)
+				expiryTime = &t
+			} else {
+				util.Log(util.LogError, "invalid X-Delete-At header for object %s/%s", s.ContainerName, objectPath)
+			}
+		}
 
 		return body, FileState{
 			Etag:         respHeaders["Etag"],
 			LastModified: respHeaders["Last-Modified"],
 			SizeBytes:    sizeBytes,
+			ExpiryTime:   expiryTime,
 			ContentType:  respHeaders["Content-Type"],
 		}, nil
 	case swift.NotModified:
