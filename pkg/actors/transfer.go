@@ -80,6 +80,6 @@ LOOP:
 	//if interrupt was received, consume all remaining input to get the Scraper
 	//moving (it might be stuck trying to send into the File channel while the
 	//channel's buffer is full)
-	for _ = range t.Input {
+	for range t.Input {
 	}
 }
