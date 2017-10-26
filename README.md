@@ -235,7 +235,7 @@ jobs:
 
 ### Performance
 
-By default, only a single worker thread will be transferring files. You can scale this up by including a `workers` section like so:
+By default, only a single worker thread will be transferring files. You can scale this up by including a `workers` section at the top level like so:
 
 ```yaml
 workers:
