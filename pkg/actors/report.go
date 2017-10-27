@@ -114,6 +114,7 @@ func (r *Report) Run() {
 		r.ExitCode = 1
 	} else {
 		gauge("last_run.success", 1, 1.0)
+		gauge("last_run.success_timestamp", time.Now().Unix(), 1.0)
 		r.ExitCode = 0
 	}
 
