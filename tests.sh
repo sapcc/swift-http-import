@@ -90,7 +90,7 @@ fi
 
 mirror() {
   # config file comes from stdin
-  ./build/swift-http-import /proc/self/fd/0
+  ./build/swift-http-import /dev/fd/0
   # wait for container listing to get updated
   sleep 15
 }
