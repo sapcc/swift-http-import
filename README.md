@@ -267,11 +267,12 @@ statsd:
 
 The following metric are sent:
 
-| Kind    | Name                        |
-| ------- | --------------------------- |
-| Gauge   | `last_run.success`          |
-| Gauge   | `last_run.duration_seconds` |
-| Gauge   | `last_run.dirs_scanned`     |
-| Gauge   | `last_run.files_found`      |
-| Gauge   | `last_run.files_transfered` |
-| Gauge   | `last_run.files_failed`     |
+| Kind    | Name                         | Description
+| ------- | ---------------------------- | --------------------------------------------
+| Gauge   | `last_run.success`           | `1` if no error occured, otherwise 0
+| Gauge   | `last_run.success_timestamp` | UNIX timestamp of last succesful run
+| Gauge   | `last_run.duration_seconds`  | Runtime in seconds
+| Gauge   | `last_run.dirs_scanned`      | Number of directories scanned
+| Gauge   | `last_run.files_found`       | Number of files found
+| Gauge   | `last_run.files_transfered`  | Number of files actually transfered
+| Gauge   | `last_run.files_failed`      | Number of files failed (download or upload)
