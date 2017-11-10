@@ -1,3 +1,15 @@
+# v2.1 (TBD)
+
+Changes:
+- Giving an invalid URL in `jobs[].from.url` now results in immediate failure during configuration parsing instead of
+  indeterministic errors later on.
+- It is now an error for `jobs[].from.url` to not have a trailing slash. For now, a missing trailing slash will be added
+  and execution will continue, but this error will become fatal in a future version.
+- The README now includes anti-usecases, in the "Do NOT use if..." section.
+
+Bugfixes:
+- Percent-encoded URLs in directory listings are now decoded correctly.
+
 # v2.0 (2017-10-16)
 
 **Backwards-incompatible changes:**

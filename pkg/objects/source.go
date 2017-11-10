@@ -26,6 +26,8 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/url"
+	"path"
 	"regexp"
 	"strconv"
 	"strings"
@@ -46,10 +48,10 @@ type Source interface {
 	//ListEntries returns all files and subdirectories at this path in the
 	//source. Each result value must have a "/" prefix for subdirectories, or
 	//none for files.
-	ListEntries(path string) ([]string, *ListEntriesError)
+	ListEntries(directoryPath string) ([]string, *ListEntriesError)
 	//GetFile retrieves the contents and metadata for the file at the given path
 	//in the source.
-	GetFile(path string, targetState FileState) (body io.ReadCloser, sourceState FileState, err error)
+	GetFile(directoryPath string, targetState FileState) (body io.ReadCloser, sourceState FileState, err error)
 }
 
 //ListEntriesError is an error that occurs while scraping a directory.
@@ -75,7 +77,8 @@ type FileState struct {
 
 //URLSource describes a source that's accessible via HTTP.
 type URLSource struct {
-	URL string `yaml:"url"`
+	URLString string   `yaml:"url"`
+	URL       *url.URL `yaml:"-"`
 	//auth options
 	ClientCertificatePath    string       `yaml:"cert"`
 	ClientCertificateKeyPath string       `yaml:"key"`
@@ -85,8 +88,28 @@ type URLSource struct {
 
 //Validate implements the Source interface.
 func (u *URLSource) Validate(name string) (result []error) {
-	if u.URL == "" {
+	if u.URLString == "" {
 		result = append(result, fmt.Errorf("missing value for %s.url", name))
+	} else {
+		//parse URL
+		var err error
+		u.URL, err = url.Parse(u.URLString)
+		if err != nil {
+			result = append(result, fmt.Errorf("invalid value for %s.url: %s", name, err.Error()))
+		}
+
+		//URL must refer to a directory, i.e. have a trailing slash
+		if u.URL.Path == "" {
+			u.URL.Path = "/"
+			u.URL.RawPath = ""
+		}
+		if !strings.HasSuffix(u.URL.Path, "/") {
+			util.Log(util.LogError, "source URL '%s' does not have a trailing slash (adding one for now; this will become a fatal error in future versions)", u.URLString)
+			u.URL.Path += "/"
+			if u.URL.RawPath != "" {
+				u.URL.RawPath += "/"
+			}
+		}
 	}
 
 	// If one of the following is set, the other one needs also to be set
@@ -144,23 +167,22 @@ func (u *URLSource) Connect() error {
 	return nil
 }
 
-//matches scheme prefix (e.g. "http:" or "git+ssh:") at the start of a full URL
-//[RFC 3986, 3.1]
-var schemeRx = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9+.-]*:`)
-
 //matches ".." path element
 var dotdotRx = regexp.MustCompile(`(?:^|/)\.\.(?:$|/)`)
 
 //ListEntries implements the Source interface.
-func (u URLSource) ListEntries(path string) ([]string, *ListEntriesError) {
+func (u URLSource) ListEntries(directoryPath string) ([]string, *ListEntriesError) {
 	//get full URL of this subdirectory
-	uri := u.getURLForPath(path)
+	uri := u.getURLForPath(directoryPath)
 	//to get a well-formatted directory listing, the directory URL must have a
 	//trailing slash (most web servers automatically redirect from the URL
 	//without trailing slash to the URL with trailing slash; others show a
 	//slightly different directory listing that we cannot parse correctly)
-	if !strings.HasSuffix(uri, "/") {
-		uri += "/"
+	if !strings.HasSuffix(uri.Path, "/") {
+		uri.Path += "/"
+		if uri.RawPath != "" {
+			uri.RawPath += "/"
+		}
 	}
 
 	util.Log(util.LogDebug, "scraping %s", uri)
@@ -168,19 +190,19 @@ func (u URLSource) ListEntries(path string) ([]string, *ListEntriesError) {
 	//retrieve directory listing
 	//TODO: This should send "Accept: text/html", but at least Apache and nginx
 	//don't care about the Accept header, anyway, as far as my testing showed.
-	response, err := u.HTTPClient.Get(uri)
+	response, err := u.HTTPClient.Get(uri.String())
 	if err != nil {
-		return nil, &ListEntriesError{uri, "GET failed: " + err.Error()}
+		return nil, &ListEntriesError{uri.String(), "GET failed: " + err.Error()}
 	}
 	defer response.Body.Close()
 
 	//check that we actually got a directory listing
 	if !strings.HasPrefix(response.Status, "2") {
-		return nil, &ListEntriesError{uri, "GET returned status " + response.Status}
+		return nil, &ListEntriesError{uri.String(), "GET returned status " + response.Status}
 	}
 	contentType := response.Header.Get("Content-Type")
 	if !strings.HasPrefix(contentType, "text/html") {
-		return nil, &ListEntriesError{uri, "GET returned unexpected Content-Type: " + contentType}
+		return nil, &ListEntriesError{uri.String(), "GET returned unexpected Content-Type: " + contentType}
 	}
 
 	//find links inside the HTML document
@@ -209,38 +231,45 @@ func (u URLSource) ListEntries(path string) ([]string, *ListEntriesError) {
 					continue
 				}
 
-				//filter external links with full URLs
-				if schemeRx.MatchString(href) {
-					continue
-				}
-				//links with trailing slashes are absolute paths as well; either to
-				//another server, e.g. "//ajax.googleapis.com/jquery.js", or to the
-				//toplevel of this server, e.g. "/static/site.css")
-				if strings.HasPrefix(href, "/") {
-					continue
-				}
-				//links with ".." path elements cannot be guaranteed to be pointing to a
-				//resource below this directory, so skip them as well (this assumes that
-				//the sender did already clean his relative links so that no ".." appears
-				//in legitimate downward links)
-				if dotdotRx.MatchString(href) {
-					continue
-				}
-				//ignore links with a query part (Apache directory listings use these for
-				//adjustable sorting)
-				if strings.Contains(href, "?") {
+				hrefURL, err := url.Parse(href)
+				if err != nil {
+					util.Log(util.LogError, "scrape %s: ignoring href attribute '%s' which is not a valid URL", uri.String(), href)
 					continue
 				}
 
-				result = append(result, href)
+				//filter external links with full URLs
+				if hrefURL.Scheme != "" || hrefURL.Host != "" {
+					continue
+				}
+				//ignore internal links, and links with a query part (Apache directory
+				//listings use these for adjustable sorting)
+				if hrefURL.RawQuery != "" || hrefURL.Fragment != "" {
+					continue
+				}
+				//ignore absolute paths to the toplevel of this server, e.g. "/static/site.css")
+				if strings.HasPrefix(hrefURL.Path, "/") {
+					continue
+				}
+
+				//cleanup path, but retain trailing slash to tell directories and files apart
+				linkPath := path.Clean(hrefURL.Path)
+				if strings.HasSuffix(hrefURL.Path, "/") {
+					linkPath += "/"
+				}
+				//ignore links leading outside the current directory
+				if dotdotRx.MatchString(hrefURL.Path) {
+					continue
+				}
+
+				result = append(result, linkPath)
 			}
 		}
 	}
 }
 
 //GetFile implements the Source interface.
-func (u URLSource) GetFile(path string, targetState FileState) (io.ReadCloser, FileState, error) {
-	uri := u.getURLForPath(path)
+func (u URLSource) GetFile(directoryPath string, targetState FileState) (io.ReadCloser, FileState, error) {
+	uri := u.getURLForPath(directoryPath).String()
 
 	//prepare request to retrieve from source, taking advantage of Etag and
 	//Last-Modified where possible
@@ -287,12 +316,7 @@ func (u URLSource) GetFile(path string, targetState FileState) (io.ReadCloser, F
 	}, nil
 }
 
-//Return the URL for the given path below this URLSource.
-func (u URLSource) getURLForPath(path string) string {
-	result := u.URL
-	if !strings.HasSuffix(result, "/") {
-		result += "/"
-	}
-
-	return result + strings.TrimPrefix(path, "/")
+//Return the URL for the given directoryPath below this URLSource.
+func (u URLSource) getURLForPath(directoryPath string) *url.URL {
+	return u.URL.ResolveReference(&url.URL{Path: strings.TrimPrefix(directoryPath, "/")})
 }
