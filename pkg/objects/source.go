@@ -154,33 +154,33 @@ var dotdotRx = regexp.MustCompile(`(?:^|/)\.\.(?:$|/)`)
 //ListEntries implements the Source interface.
 func (u URLSource) ListEntries(path string) ([]string, *ListEntriesError) {
 	//get full URL of this subdirectory
-	url := u.getURLForPath(path)
+	uri := u.getURLForPath(path)
 	//to get a well-formatted directory listing, the directory URL must have a
 	//trailing slash (most web servers automatically redirect from the URL
 	//without trailing slash to the URL with trailing slash; others show a
 	//slightly different directory listing that we cannot parse correctly)
-	if !strings.HasSuffix(url, "/") {
-		url += "/"
+	if !strings.HasSuffix(uri, "/") {
+		uri += "/"
 	}
 
-	util.Log(util.LogDebug, "scraping %s", url)
+	util.Log(util.LogDebug, "scraping %s", uri)
 
 	//retrieve directory listing
 	//TODO: This should send "Accept: text/html", but at least Apache and nginx
 	//don't care about the Accept header, anyway, as far as my testing showed.
-	response, err := u.HTTPClient.Get(url)
+	response, err := u.HTTPClient.Get(uri)
 	if err != nil {
-		return nil, &ListEntriesError{url, "GET failed: " + err.Error()}
+		return nil, &ListEntriesError{uri, "GET failed: " + err.Error()}
 	}
 	defer response.Body.Close()
 
 	//check that we actually got a directory listing
 	if !strings.HasPrefix(response.Status, "2") {
-		return nil, &ListEntriesError{url, "GET returned status " + response.Status}
+		return nil, &ListEntriesError{uri, "GET returned status " + response.Status}
 	}
 	contentType := response.Header.Get("Content-Type")
 	if !strings.HasPrefix(contentType, "text/html") {
-		return nil, &ListEntriesError{url, "GET returned unexpected Content-Type: " + contentType}
+		return nil, &ListEntriesError{uri, "GET returned unexpected Content-Type: " + contentType}
 	}
 
 	//find links inside the HTML document
@@ -240,13 +240,13 @@ func (u URLSource) ListEntries(path string) ([]string, *ListEntriesError) {
 
 //GetFile implements the Source interface.
 func (u URLSource) GetFile(path string, targetState FileState) (io.ReadCloser, FileState, error) {
-	url := u.getURLForPath(path)
+	uri := u.getURLForPath(path)
 
 	//prepare request to retrieve from source, taking advantage of Etag and
 	//Last-Modified where possible
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest("GET", uri, nil)
 	if err != nil {
-		return nil, FileState{}, fmt.Errorf("skipping %s: GET failed: %s", url, err.Error())
+		return nil, FileState{}, fmt.Errorf("skipping %s: GET failed: %s", uri, err.Error())
 	}
 	if targetState.Etag != "" {
 		req.Header.Set("If-None-Match", targetState.Etag)
@@ -258,12 +258,12 @@ func (u URLSource) GetFile(path string, targetState FileState) (io.ReadCloser, F
 	//retrieve file from source
 	response, err := u.HTTPClient.Do(req)
 	if err != nil {
-		return nil, FileState{}, fmt.Errorf("skipping %s: GET failed: %s", url, err.Error())
+		return nil, FileState{}, fmt.Errorf("skipping %s: GET failed: %s", uri, err.Error())
 	}
 	if response.StatusCode != 200 && response.StatusCode != 304 {
 		return nil, FileState{}, fmt.Errorf(
 			"skipping %s: GET returned unexpected status code: expected 200 or 304, but got %d",
-			url, response.StatusCode,
+			uri, response.StatusCode,
 		)
 	}
 
@@ -272,7 +272,7 @@ func (u URLSource) GetFile(path string, targetState FileState) (io.ReadCloser, F
 	if sizeBytesStr := response.Header.Get("Content-Length"); sizeBytesStr != "" {
 		sizeBytes, err = strconv.ParseInt(sizeBytesStr, 10, 64)
 		if err != nil {
-			util.Log(util.LogError, "invalid header \"Content-Length: %s\" in GET %s", sizeBytesStr, url)
+			util.Log(util.LogError, "invalid header \"Content-Length: %s\" in GET %s", sizeBytesStr, uri)
 			sizeBytes = -1
 		}
 	}
