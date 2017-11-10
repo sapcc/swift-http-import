@@ -16,6 +16,11 @@ listings on that URL, and mirrors all files that it finds into Swift. It will ta
 `Etag` response headers to avoid repeated downloads of the same content, so best performance is ensured the HTTP server
 handles `If-Modified-Since` and `If-None-Match` request headers correctly.
 
+## Do NOT use if...
+
+* ...you have access to the source filesystem. Just use the normal [`swift upload`](https://docs.openstack.org/python-swiftclient/latest/) instead, it's much more efficient.
+* ...you need to import a lot of small files exactly once. Download them all and pack them into a tarball, and send them to Swift in one step with a [bulk upload](https://www.swiftstack.com/docs/admin/middleware/bulk.html#uploading-archives).
+
 ## Implicit assumptions
 
 The HTTP server must present the contents of directories using standard directory listings, as can be generated
