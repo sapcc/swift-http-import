@@ -1,5 +1,6 @@
 # swift-http-import
 
+* [Do NOT use if...](#do-not-use-if)
 * [Implicit assumptions](#implicit-assumptions)
 * [Installation](#installation)
 * [Usage](#usage)
