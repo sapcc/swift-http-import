@@ -350,5 +350,8 @@ fi # end of: if [ "$1" = http ]
 ################################################################################
 # cleanup before exiting
 
+# do not make an error during cleanup_containers fail the test
+set +e
+
 cleanup_containers
 rm -f "${TEST_FILENAME}"
