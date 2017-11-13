@@ -76,7 +76,7 @@ upload_file_from_stdin just/some/files/2.txt <<-EOF
 EOF
 
 swift post "${CONTAINER_PUBLIC}" -r '.r:*,.rlistings' -m 'web-listings: true'
-sleep 15 # wait for container listing to get updated
+sleep 10 # wait for container listing to get updated
 
 if [ "$1" = swift ]; then
   SOURCE_SPEC="{ container: \"${CONTAINER_PUBLIC}\", object_prefix: \"${DISAMBIGUATOR}\", ${AUTH_PARAMS} }"
@@ -92,7 +92,7 @@ mirror() {
   # config file comes from stdin
   ./build/swift-http-import /dev/fd/0
   # wait for container listing to get updated
-  sleep 15
+  sleep 10
 }
 
 dump() {
@@ -136,7 +136,7 @@ step 'Test 1 (cont.): Add another file and sync again'
 upload_file_from_stdin just/another/file.txt <<-EOF
   Hello Another World.
 EOF
-sleep 15 # wait for container listing to get updated
+sleep 10 # wait for container listing to get updated
 
 mirror <<-EOF
   swift: { $AUTH_PARAMS }
