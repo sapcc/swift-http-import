@@ -33,7 +33,7 @@ AUTH_PARAMS="
 "
 
 # speed up swiftclient
-export OS_AUTH_TOKEN="$(openstack token issue -f value -c id)"
+eval "$(swift auth)"
 
 ################################################################################
 # cleanup from previous test runs
