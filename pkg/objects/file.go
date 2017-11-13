@@ -111,6 +111,10 @@ func (f File) PerformTransfer() TransferResult {
 		return TransferSkipped
 	}
 
+	if util.LogIndividualTransfers {
+		util.Log(util.LogInfo, "transferring to %s/%s", f.Job.Target.ContainerName, f.TargetObjectName())
+	}
+
 	//store some headers from the source to later identify whether this
 	//resource has changed
 	metadata = make(swift.Metadata)

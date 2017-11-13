@@ -22,10 +22,13 @@ package util
 import (
 	"log"
 	"os"
+	"strconv"
 )
 
+//LogLevel is the first argument to Log().
 type LogLevel int
 
+//Acceptable log levels.
 const (
 	LogFatal LogLevel = iota
 	LogError
@@ -35,7 +38,11 @@ const (
 
 var logLevelNames = []string{"FATAL", "ERROR", "INFO", "DEBUG"}
 
-var isDebug = os.Getenv("DEBUG") != ""
+var isDebug = parseBool(os.Getenv("DEBUG"))
+
+//LogIndividualTransfers is set to the boolean value of the
+//LOG_TRANSFERS environment variable.
+var LogIndividualTransfers = parseBool(os.Getenv("LOG_TRANSFERS"))
 
 //Log writes a log message. LogDebug messages are only written if
 //the environment variable `DEBUG` is set.
@@ -53,4 +60,12 @@ func Log(level LogLevel, msg string, args ...interface{}) {
 	if level == LogFatal {
 		os.Exit(1)
 	}
+}
+
+func parseBool(str string) bool {
+	b, err := strconv.ParseBool(str)
+	if err != nil {
+		b = false
+	}
+	return b
 }

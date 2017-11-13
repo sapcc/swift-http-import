@@ -261,6 +261,12 @@ In this case, all sources contain 103 directories and 1496 files. 170 files were
 thus need transfer. Of those, 167 were successfully transferred, and the remaining 3 file transfers failed (so there
 should be 3 errors in the log).
 
+When the environment variable `LOG_TRANSFERS=true` is set, a log line will be printed for each transferred file:
+
+```
+2016/12/19 14:28:19 INFO: transferring to container-name/path/to/object
+```
+
 ## StatsD metrics
 
 Adding an optional statsd config section enables submitting StatsD metrics.

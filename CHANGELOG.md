@@ -6,6 +6,8 @@ Changes:
 - It is now an error for `jobs[].from.url` to not have a trailing slash. For now, a missing trailing slash will be added
   and execution will continue, but this error will become fatal in a future version.
 - The README now includes anti-usecases, in the "Do NOT use if..." section.
+- If the environment variable `LOG_TRANSFERS=true` is now given, transferred files will be logged as they are being transferred.
+  Logging only occurs if the file is actually transferred, not if the target is found to be up-to-date.
 
 Bugfixes:
 - Percent-encoded URLs in directory listings are now decoded correctly.
