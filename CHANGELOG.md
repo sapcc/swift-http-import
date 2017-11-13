@@ -11,6 +11,7 @@ Changes:
 
 Bugfixes:
 - Percent-encoded URLs in directory listings are now decoded correctly.
+- An issue was fixed where the immutability regex was not always respected for large containers.
 
 # v2.0 (2017-10-16)
 

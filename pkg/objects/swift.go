@@ -239,7 +239,7 @@ func (s *SwiftLocation) DiscoverExistingFiles(matcher Matcher) error {
 		prefix += "/"
 	}
 
-	paths, err := s.Connection.ObjectNames(s.ContainerName, &swift.ObjectsOpts{
+	paths, err := s.Connection.ObjectNamesAll(s.ContainerName, &swift.ObjectsOpts{
 		Prefix: prefix,
 	})
 	if err != nil {
