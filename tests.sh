@@ -82,7 +82,7 @@ if [ "$1" = swift ]; then
   SOURCE_SPEC="{ container: \"${CONTAINER_PUBLIC}\", object_prefix: \"${DISAMBIGUATOR}\", ${AUTH_PARAMS} }"
 else
   # get public HTTP URL for container
-  SOURCE_SPEC="{ url: \"$(swift stat -v "${CONTAINER_PUBLIC}" | awk '$1=="URL:"{print$2}')/${DISAMBIGUATOR}\" }"
+  SOURCE_SPEC="{ url: \"$(swift stat -v "${CONTAINER_PUBLIC}" | awk '$1=="URL:"{print$2}')/${DISAMBIGUATOR}/\" }"
 fi
 
 ################################################################################
