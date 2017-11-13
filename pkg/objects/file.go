@@ -161,6 +161,14 @@ func (f File) uploadNormalObject(body io.Reader, sourceState FileState, hdr swif
 
 	util.Log(util.LogError, "PUT %s/%s failed: %s", containerName, objectName, err.Error())
 
+	if serr, ok := err.(*swift.Error); ok {
+		//upload failed due to rate limit, object is definitely not uploaded
+		//prevent additional rate limit caused by an unnecessary delete request
+		if serr.StatusCode == 498 {
+			return false
+		}
+	}
+
 	//delete potentially incomplete upload
 	err = f.Job.Target.Connection.ObjectDelete(containerName, objectName)
 	if err != nil {
