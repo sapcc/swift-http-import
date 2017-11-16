@@ -1,4 +1,8 @@
-# v2.1 (TBD)
+# v2.1 (2017-11-16)
+
+New features:
+- If the environment variable `LOG_TRANSFERS=true` is given, transferred files will now be logged as they are being transferred.
+  Logging only occurs if the file is actually transferred, not if the target is found to be up-to-date.
 
 Changes:
 - Giving an invalid URL in `jobs[].from.url` now results in immediate failure during configuration parsing instead of
@@ -6,8 +10,6 @@ Changes:
 - It is now an error for `jobs[].from.url` to not have a trailing slash. For now, a missing trailing slash will be added
   and execution will continue, but this error will become fatal in a future version.
 - The README now includes anti-usecases, in the "Do NOT use if..." section.
-- If the environment variable `LOG_TRANSFERS=true` is now given, transferred files will be logged as they are being transferred.
-  Logging only occurs if the file is actually transferred, not if the target is found to be up-to-date.
 
 Bugfixes:
 - Percent-encoded URLs in directory listings are now decoded correctly.
@@ -38,12 +40,14 @@ Bugfixes:
 
 # v1.1 (2017-08-21)
 
-Changes:
+New features:
 - Add a simple retry logic:
   - A failed directory listing will be postponed and retried up to two times at the end of scraping.
   - A failed file transfer will be postponed and retried once when all other transfers have completed.
-- Exit with non-zero status when any directory listing or file transfer fails.
 - Report number of failed directory listings.
+
+Changes:
+- Exit with non-zero status when any directory listing or file transfer fails.
 
 Bugfixes:
 - Report failure when a source file cannot be retrieved (instead of uploading the error message to the target).
