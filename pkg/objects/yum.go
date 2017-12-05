@@ -60,6 +60,7 @@ func (s *YumSource) GetFile(directoryPath string, targetState FileState) (body i
 //ListAllFiles implements the Source interface.
 func (s *YumSource) ListAllFiles() ([]FileSpec, *ListEntriesError) {
 	repomdPath := "repodata/repomd.xml"
+	cache := make(map[string]FileSpec)
 
 	//parse repomd.xml to find paths of all other metadata files
 	var repomd struct {
@@ -70,18 +71,16 @@ func (s *YumSource) ListAllFiles() ([]FileSpec, *ListEntriesError) {
 			} `xml:"location"`
 		} `xml:"data"`
 	}
-	repomdURL, lerr := s.downloadAndParseXML(repomdPath, &repomd)
+	repomdURL, lerr := s.downloadAndParseXML(repomdPath, &repomd, cache)
 	if lerr != nil {
 		return nil, lerr
 	}
 
 	//note metadata files for transfer
 	hrefsByType := make(map[string]string)
-	allFiles := []FileSpec{
-		{Path: repomdPath},
-	}
+	allFiles := []string{repomdPath}
 	for _, entry := range repomd.Entries {
-		allFiles = append(allFiles, FileSpec{Path: entry.Location.Href})
+		allFiles = append(allFiles, entry.Location.Href)
 		hrefsByType[entry.Type] = entry.Location.Href
 	}
 
@@ -100,12 +99,12 @@ func (s *YumSource) ListAllFiles() ([]FileSpec, *ListEntriesError) {
 			} `xml:"location"`
 		} `xml:"package"`
 	}
-	_, lerr = s.downloadAndParseXML(href, &primary)
+	_, lerr = s.downloadAndParseXML(href, &primary, cache)
 	if lerr != nil {
 		return nil, lerr
 	}
 	for _, pkg := range primary.Packages {
-		allFiles = append(allFiles, FileSpec{Path: pkg.Location.Href})
+		allFiles = append(allFiles, pkg.Location.Href)
 	}
 
 	//parse prestodelta.xml.gz (if present) to find paths of DRPMs
@@ -118,22 +117,37 @@ func (s *YumSource) ListAllFiles() ([]FileSpec, *ListEntriesError) {
 				} `xml:"delta"`
 			} `xml:"newpackage"`
 		}
-		_, lerr = s.downloadAndParseXML(href, &prestodelta)
+		_, lerr = s.downloadAndParseXML(href, &prestodelta, cache)
 		if lerr != nil {
 			return nil, lerr
 		}
 		for _, pkg := range prestodelta.Packages {
-			allFiles = append(allFiles, FileSpec{Path: pkg.Delta.Href})
+			allFiles = append(allFiles, pkg.Delta.Href)
 		}
 	}
 
-	//TODO since we downloaded some metadata files already, it would be nice to pass the downloaded contents on to the transfer workers (esp. to ensure consistency with the scraped set of packages)
-	return allFiles, nil
+	//for files that were already downloaded, pass the contents and HTTP headers
+	//into the transfer phase to avoid double download
+	//
+	//This also ensures that the transferred set of packages is consistent with
+	//the transferred repo metadata. If we were to download repomd.xml et al
+	//again during the transfer step, there is a chance that new metadata has
+	//been uploaded to the source in the meantime. In this case, we would be
+	//missing the packages referenced only in the new metadata.
+	result := make([]FileSpec, len(allFiles))
+	for idx, path := range allFiles {
+		var exists bool
+		result[idx], exists = cache[path]
+		if !exists {
+			result[idx] = FileSpec{Path: path}
+		}
+	}
+	return result, nil
 }
 
 //Helper function for YumSource.ListAllFiles().
-func (s *YumSource) downloadAndParseXML(path string, data interface{}) (uri string, e *ListEntriesError) {
-	buf, uri, lerr := s.getFileContents(path)
+func (s *YumSource) downloadAndParseXML(path string, data interface{}, cache map[string]FileSpec) (uri string, e *ListEntriesError) {
+	buf, uri, lerr := s.getFileContents(path, cache)
 	if lerr != nil {
 		return uri, lerr
 	}
@@ -164,7 +178,7 @@ func (s *YumSource) downloadAndParseXML(path string, data interface{}) (uri stri
 }
 
 //Helper function for YumSource.ListAllFiles().
-func (s *YumSource) getFileContents(path string) (contents []byte, uri string, e *ListEntriesError) {
+func (s *YumSource) getFileContents(path string, cache map[string]FileSpec) (contents []byte, uri string, e *ListEntriesError) {
 	u := (*URLSource)(s)
 	uri = u.getURLForPath(path).String()
 
@@ -183,5 +197,12 @@ func (s *YumSource) getFileContents(path string) (contents []byte, uri string, e
 	if err != nil {
 		return nil, uri, &ListEntriesError{uri, "GET failed: " + err.Error()}
 	}
+
+	cache[path] = FileSpec{
+		Path:     path,
+		Contents: result,
+		Headers:  resp.Header,
+	}
+
 	return result, uri, nil
 }

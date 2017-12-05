@@ -95,7 +95,6 @@ func (s *Scraper) Run() {
 				continue
 			}
 
-			//consider the link a directory if it ends with "/"
 			if entry.IsDirectory {
 				stack = stack.Push(objects.Directory{
 					Job:  directory.Job,

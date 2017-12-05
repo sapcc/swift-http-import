@@ -20,8 +20,11 @@
 package objects
 
 import (
+	"bytes"
 	"fmt"
 	"io"
+	"io/ioutil"
+	"net/http"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -44,6 +47,9 @@ type File struct {
 type FileSpec struct {
 	Path        string
 	IsDirectory bool
+	//results of GET on this file
+	Contents []byte
+	Headers  http.Header
 }
 
 //TargetObjectName returns the object name of this file in the target container.
@@ -108,7 +114,17 @@ func (f File) PerformTransfer() TransferResult {
 		Etag:         metadata["source-etag"],
 		LastModified: metadata["source-last-modified"],
 	}
-	body, sourceState, err := f.Job.Source.GetFile(f.Spec.Path, targetState)
+
+	var (
+		body        io.ReadCloser
+		sourceState FileState
+	)
+	if f.Spec.Contents == nil {
+		body, sourceState, err = f.Job.Source.GetFile(f.Spec.Path, targetState)
+	} else {
+		util.Log(util.LogDebug, "using cached contents for %s", f.Spec.Path)
+		body, sourceState, err = f.Spec.toTransferFormat(targetState)
+	}
 	if err != nil {
 		util.Log(util.LogError, err.Error())
 		return TransferFailed
@@ -152,6 +168,33 @@ func (f File) PerformTransfer() TransferResult {
 		return TransferSuccess
 	}
 	return TransferFailed
+}
+
+func (s FileSpec) toTransferFormat(targetState FileState) (io.ReadCloser, FileState, error) {
+	sourceState := FileState{
+		Etag:         s.Headers.Get("Etag"),
+		LastModified: s.Headers.Get("Last-Modified"),
+		SizeBytes:    int64(len(s.Contents)),
+		ExpiryTime:   nil,
+		ContentType:  s.Headers.Get("Content-Type"),
+	}
+
+	if targetState.Etag != "" && sourceState.Etag != "" {
+		sourceState.SkipTransfer = targetState.Etag == sourceState.Etag
+	} else if targetState.LastModified != "" && sourceState.LastModified != "" {
+		//need to parse Last-Modified timestamps to compare between target and source
+		targetMtime, err := http.ParseTime(targetState.LastModified)
+		if err != nil {
+			return nil, sourceState, err
+		}
+		sourceMtime, err := http.ParseTime(sourceState.LastModified)
+		if err != nil {
+			return nil, sourceState, err
+		}
+		sourceState.SkipTransfer = targetMtime.Equal(sourceMtime)
+	}
+
+	return ioutil.NopCloser(bytes.NewReader(s.Contents)), sourceState, nil
 }
 
 func (f File) uploadNormalObject(body io.Reader, sourceState FileState, hdr swift.Headers) (ok bool) {
