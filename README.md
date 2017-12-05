@@ -95,7 +95,41 @@ The order of jobs is significant: Source trees will be scraped in the order indi
 
 ### Source specification
 
-The source in `jobs[].from` can also be a private Swift container if Swift credentials are specified instead of a source URL.
+In `jobs[].from`, you can pin the server's CA certificate, and specify a TLS client certificate (including private key)
+that will be used by the HTTP client.
+
+```yaml
+jobs:
+  - from:
+      url:  http://de.archive.ubuntu.com/ubuntu/
+      cert: /path/to/client.pem
+      key:  /path/to/client-key.pem
+      ca:   /path/to/server-ca.pem
+    to:
+      container: mirror
+      object_prefix: ubuntu-repos
+```
+
+If `jobs[].from.url` refers to a Yum repository (as used by most RPM-based Linux distributions), setting
+`jobs[].from.type` to Yum will cause `swift-http-import` to parse repository metadata to discover files to transfer,
+instead of relying on directory listings.
+
+```yaml
+jobs:
+  - from:
+      url:  https://dl.fedoraproject.org/pub/epel/7Server/x86_64/
+      type: yum
+      # SSL certs are optionally supported here, too
+      cert: /path/to/client.pem
+      key:  /path/to/client-key.pem
+      ca:   /path/to/server-ca.pem
+    to:
+      container: mirror
+      object_prefix: redhat/server/7/epel
+```
+
+Alternatively, the source in `jobs[].from` can also be a private Swift container if Swift credentials are specified
+instead of a source URL.
 
 ```yaml
 jobs:
@@ -108,21 +142,6 @@ jobs:
       password:            20g82rzg235oughq
       container:           upstream-mirror
       object_prefix:       repos/ubuntu
-    to:
-      container: mirror
-      object_prefix: ubuntu-repos
-```
-
-If a source URL is used, you can also pin the server's CA certificate, and specify a TLS client certificate (including
-private key) that will be used by the HTTP client.
-
-```yaml
-jobs:
-  - from:
-      url:  http://de.archive.ubuntu.com/ubuntu/
-      cert: /path/to/client.pem
-      key:  /path/to/client-key.pem
-      ca:   /path/to/server-ca.pem
     to:
       container: mirror
       object_prefix: ubuntu-repos
