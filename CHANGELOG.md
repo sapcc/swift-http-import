@@ -4,6 +4,9 @@ New features:
 - When syncing a Yum repository, the `jobs[].from.type` may be set to `"yum"` to instruct `swift-http-import` to parse
   the repository metadata instead of the HTTP server's directory listings to find which files to transfer. Note that any
   files below the repository URL which are not referenced in the repository metadata will not be transferred.
+- When syncing a Yum repository like described above, the `repodata/repomd.xml` will be downloaded first, but uploaded
+  last. This ensures that (barring unexpected transfer errors) clients using the target repository will never observe it
+  in an inconsistent state, i.e., metadata will only start referencing packages once they have been transferred.
 
 # v2.1 (2017-11-16)
 

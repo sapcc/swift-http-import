@@ -78,7 +78,7 @@ func (s *YumSource) ListAllFiles() ([]FileSpec, *ListEntriesError) {
 
 	//note metadata files for transfer
 	hrefsByType := make(map[string]string)
-	allFiles := []string{repomdPath}
+	var allFiles []string
 	for _, entry := range repomd.Entries {
 		allFiles = append(allFiles, entry.Location.Href)
 		hrefsByType[entry.Type] = entry.Location.Href
@@ -125,6 +125,11 @@ func (s *YumSource) ListAllFiles() ([]FileSpec, *ListEntriesError) {
 			allFiles = append(allFiles, pkg.Delta.Href)
 		}
 	}
+
+	//transfer repomd.xml at the very end, when everything else has already been
+	//uploaded (to avoid situations where a client might see repository metadata
+	//without being able to see the referenced packages)
+	allFiles = append(allFiles, repomdPath)
 
 	//for files that were already downloaded, pass the contents and HTTP headers
 	//into the transfer phase to avoid double download
