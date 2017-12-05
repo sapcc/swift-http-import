@@ -123,18 +123,28 @@ type SourceUnmarshaler struct {
 
 //UnmarshalYAML implements the yaml.Unmarshaler interface.
 func (u *SourceUnmarshaler) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	//unmarshal as map
-	var data map[string]interface{}
-	err := unmarshal(&data)
+	//unmarshal a few indicative fields
+	var probe struct {
+		URL  string `yaml:"url"`
+		Type string `yaml:"type"`
+	}
+	err := unmarshal(&probe)
 	if err != nil {
 		return err
 	}
 
 	//look at keys to determine whether this is a URLSource or a SwiftSource
-	if _, exists := data["url"]; exists {
-		u.src = &URLSource{}
-	} else {
+	if probe.URL == "" {
 		u.src = &SwiftLocation{}
+	} else {
+		switch probe.Type {
+		case "":
+			u.src = &URLSource{}
+		case "yum":
+			u.src = &YumSource{}
+		default:
+			return fmt.Errorf("unexpected value: type = %q", probe.Type)
+		}
 	}
 	return unmarshal(u.src)
 }
