@@ -112,7 +112,8 @@ jobs:
 
 If `jobs[].from.url` refers to a Yum repository (as used by most RPM-based Linux distributions), setting
 `jobs[].from.type` to Yum will cause `swift-http-import` to parse repository metadata to discover files to transfer,
-instead of relying on directory listings.
+instead of looking at directory listings. *Warning:* With this option set, files below the given URL which are not
+referenced by the Yum repository metadata will **not** be picked up.
 
 ```yaml
 jobs:

@@ -1,3 +1,10 @@
+# v2.2 (TBD)
+
+New features:
+- When syncing a Yum repository, the `jobs[].from.type` may be set to `"yum"` to instruct `swift-http-import` to parse
+  the repository metadata instead of the HTTP server's directory listings to find which files to transfer. Note that any
+  files below the repository URL which are not referenced in the repository metadata will not be transferred.
+
 # v2.1 (2017-11-16)
 
 New features:
