@@ -45,6 +45,10 @@ type Source interface {
 	Validate(name string) []error
 	//Connect performs source-specific one-time setup.
 	Connect() error
+	//ListAllFiles returns all files in the source (as paths relative to the
+	//source's root). If this returns ErrListAllFilesNotSupported, ListEntries
+	//must be used instead.
+	ListAllFiles() ([]string, *ListEntriesError)
 	//ListEntries returns all files and subdirectories at this path in the
 	//source. Each result value must have a "/" prefix for subdirectories, or
 	//none for files.
@@ -60,6 +64,12 @@ type ListEntriesError struct {
 	Location string
 	//error message
 	Message string
+}
+
+//ErrListAllFilesNotSupported is returned by ListAllFiles() for sources that do
+//not support it.
+var ErrListAllFilesNotSupported = &ListEntriesError{
+	Message: "ListAllFiles not supported by this source",
 }
 
 //FileState is used by Source.GetFile() to describe the state of a file.
@@ -169,6 +179,11 @@ func (u *URLSource) Connect() error {
 
 //matches ".." path element
 var dotdotRx = regexp.MustCompile(`(?:^|/)\.\.(?:$|/)`)
+
+//ListAllFiles implements the Source interface.
+func (u URLSource) ListAllFiles() ([]string, *ListEntriesError) {
+	return nil, ErrListAllFilesNotSupported
+}
 
 //ListEntries implements the Source interface.
 func (u URLSource) ListEntries(directoryPath string) ([]string, *ListEntriesError) {

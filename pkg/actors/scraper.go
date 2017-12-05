@@ -62,7 +62,20 @@ func (s *Scraper) Run() {
 		var directory objects.Directory
 		stack, directory = stack.Pop()
 		job := directory.Job //shortcut
-		entries, err := job.Source.ListEntries(directory.Path)
+
+		//at the top level, try ListAllFiles if supported by job.Source
+		var (
+			entries []string
+			err     *objects.ListEntriesError
+		)
+		if directory.Path == "/" {
+			entries, err = job.Source.ListAllFiles()
+			if err == objects.ErrListAllFilesNotSupported {
+				entries, err = job.Source.ListEntries(directory.Path)
+			}
+		} else {
+			entries, err = job.Source.ListEntries(directory.Path)
+		}
 
 		//if listing failed, maybe retry later
 		if err != nil {

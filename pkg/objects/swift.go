@@ -150,6 +150,11 @@ func (s *SwiftLocation) EnsureContainerExists(containerName string) error {
 	return nil
 }
 
+//ListAllFiles implements the Source interface.
+func (s *SwiftLocation) ListAllFiles() ([]string, *ListEntriesError) {
+	return nil, ErrListAllFilesNotSupported
+}
+
 //ListEntries implements the Source interface.
 func (s *SwiftLocation) ListEntries(path string) ([]string, *ListEntriesError) {
 	objectPath := filepath.Join(s.ObjectNamePrefix, strings.TrimPrefix(path, "/"))
