@@ -20,9 +20,6 @@
 package actors
 
 import (
-	"path/filepath"
-	"strings"
-
 	"github.com/sapcc/swift-http-import/pkg/objects"
 	"github.com/sapcc/swift-http-import/pkg/util"
 	"golang.org/x/net/context"
@@ -65,7 +62,7 @@ func (s *Scraper) Run() {
 
 		//at the top level, try ListAllFiles if supported by job.Source
 		var (
-			entries []string
+			entries []objects.FileSpec
 			err     *objects.ListEntriesError
 		)
 		if directory.Path == "/" {
@@ -91,28 +88,23 @@ func (s *Scraper) Run() {
 		}
 
 		//handle each file/subdirectory that was found
-		for _, entryName := range entries {
-			pathForMatching := filepath.Join(directory.Path, entryName)
-			if strings.HasSuffix(entryName, "/") {
-				pathForMatching += "/"
-			}
-
-			excludeReason := job.Matcher.Check(pathForMatching)
+		for _, entry := range entries {
+			excludeReason := job.Matcher.CheckFile(entry)
 			if excludeReason != "" {
-				util.Log(util.LogDebug, "skipping %s: %s", pathForMatching, excludeReason)
+				util.Log(util.LogDebug, "skipping %s: %s", entry.Path, excludeReason)
 				continue
 			}
 
 			//consider the link a directory if it ends with "/"
-			if strings.HasSuffix(entryName, "/") {
+			if entry.IsDirectory {
 				stack = stack.Push(objects.Directory{
 					Job:  directory.Job,
-					Path: filepath.Join(directory.Path, entryName),
+					Path: entry.Path,
 				})
 			} else {
 				s.Output <- objects.File{
 					Job:  job,
-					Path: filepath.Join(directory.Path, entryName),
+					Spec: entry,
 				}
 			}
 		}

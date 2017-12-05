@@ -34,12 +34,21 @@ import (
 //File describes a single file which is mirrored as part of a Job.
 type File struct {
 	Job  *Job
-	Path string
+	Spec FileSpec
+}
+
+//FileSpec contains metadata for a File. The only required field is Path.
+//Sources that download some files early (during scraping) can pass the
+//downloaded contents and metadata in the remaining fields of the FileSpec to
+//avoid double download.
+type FileSpec struct {
+	Path        string
+	IsDirectory bool
 }
 
 //TargetObjectName returns the object name of this file in the target container.
 func (f File) TargetObjectName() string {
-	objectName := strings.TrimPrefix(f.Path, "/")
+	objectName := strings.TrimPrefix(f.Spec.Path, "/")
 	if f.Job.Target.ObjectNamePrefix == "" {
 		return objectName
 	}
@@ -64,7 +73,7 @@ const (
 //The return value indicates if the transfer finished successfully.
 func (f File) PerformTransfer() TransferResult {
 	//check if this file needs transfer
-	if f.Job.Matcher.ImmutableFileRx != nil && f.Job.Matcher.ImmutableFileRx.MatchString(f.Path) {
+	if f.Job.Matcher.ImmutableFileRx != nil && f.Job.Matcher.ImmutableFileRx.MatchString(f.Spec.Path) {
 		if f.Job.Target.FileExists[f.TargetObjectName()] {
 			util.Log(util.LogDebug, "skipping %s/%s: already transferred", f.Job.Target.ContainerName, f.TargetObjectName())
 			return TransferSkipped
@@ -99,7 +108,7 @@ func (f File) PerformTransfer() TransferResult {
 		Etag:         metadata["source-etag"],
 		LastModified: metadata["source-last-modified"],
 	}
-	body, sourceState, err := f.Job.Source.GetFile(f.Path, targetState)
+	body, sourceState, err := f.Job.Source.GetFile(f.Spec.Path, targetState)
 	if err != nil {
 		util.Log(util.LogError, err.Error())
 		return TransferFailed

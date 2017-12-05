@@ -49,6 +49,14 @@ func (m Matcher) Check(path string) string {
 	return ""
 }
 
+//CheckFile is like Check, but uses `spec.Path` and appends a slash if `spec.IsDirectory`.
+func (m Matcher) CheckFile(spec FileSpec) string {
+	if spec.IsDirectory {
+		return m.Check(spec.Path + "/")
+	}
+	return m.Check(spec.Path)
+}
+
 //CheckRecursive is like Check(), but also checks each directory along the way
 //as well.
 func (m Matcher) CheckRecursive(path string) string {

@@ -151,12 +151,12 @@ func (s *SwiftLocation) EnsureContainerExists(containerName string) error {
 }
 
 //ListAllFiles implements the Source interface.
-func (s *SwiftLocation) ListAllFiles() ([]string, *ListEntriesError) {
+func (s *SwiftLocation) ListAllFiles() ([]FileSpec, *ListEntriesError) {
 	return nil, ErrListAllFilesNotSupported
 }
 
 //ListEntries implements the Source interface.
-func (s *SwiftLocation) ListEntries(path string) ([]string, *ListEntriesError) {
+func (s *SwiftLocation) ListEntries(path string) ([]FileSpec, *ListEntriesError) {
 	objectPath := filepath.Join(s.ObjectNamePrefix, strings.TrimPrefix(path, "/"))
 	if objectPath != "" && !strings.HasSuffix(objectPath, "/") {
 		objectPath += "/"
@@ -174,15 +174,13 @@ func (s *SwiftLocation) ListEntries(path string) ([]string, *ListEntriesError) {
 		}
 	}
 
-	//ObjectNamesAll returns full names, but we want only the basenames
+	//ObjectNamesAll returns full names, but we need to strip the objectPrefix
+	result := make([]FileSpec, len(names))
 	for idx, name := range names {
-		isDir := strings.HasSuffix(name, "/")
-		names[idx] = filepath.Base(name)
-		if isDir {
-			names[idx] += "/"
-		}
+		result[idx].Path = filepath.Join(path, filepath.Base(name))
+		result[idx].IsDirectory = strings.HasSuffix(name, "/")
 	}
-	return names, nil
+	return result, nil
 }
 
 //GetFile implements the Source interface.

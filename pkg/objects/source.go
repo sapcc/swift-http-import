@@ -28,6 +28,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -48,11 +49,11 @@ type Source interface {
 	//ListAllFiles returns all files in the source (as paths relative to the
 	//source's root). If this returns ErrListAllFilesNotSupported, ListEntries
 	//must be used instead.
-	ListAllFiles() ([]string, *ListEntriesError)
+	ListAllFiles() ([]FileSpec, *ListEntriesError)
 	//ListEntries returns all files and subdirectories at this path in the
 	//source. Each result value must have a "/" prefix for subdirectories, or
 	//none for files.
-	ListEntries(directoryPath string) ([]string, *ListEntriesError)
+	ListEntries(directoryPath string) ([]FileSpec, *ListEntriesError)
 	//GetFile retrieves the contents and metadata for the file at the given path
 	//in the source.
 	GetFile(directoryPath string, targetState FileState) (body io.ReadCloser, sourceState FileState, err error)
@@ -181,12 +182,12 @@ func (u *URLSource) Connect() error {
 var dotdotRx = regexp.MustCompile(`(?:^|/)\.\.(?:$|/)`)
 
 //ListAllFiles implements the Source interface.
-func (u URLSource) ListAllFiles() ([]string, *ListEntriesError) {
+func (u URLSource) ListAllFiles() ([]FileSpec, *ListEntriesError) {
 	return nil, ErrListAllFilesNotSupported
 }
 
 //ListEntries implements the Source interface.
-func (u URLSource) ListEntries(directoryPath string) ([]string, *ListEntriesError) {
+func (u URLSource) ListEntries(directoryPath string) ([]FileSpec, *ListEntriesError) {
 	//get full URL of this subdirectory
 	uri := u.getURLForPath(directoryPath)
 	//to get a well-formatted directory listing, the directory URL must have a
@@ -222,7 +223,7 @@ func (u URLSource) ListEntries(directoryPath string) ([]string, *ListEntriesErro
 
 	//find links inside the HTML document
 	tokenizer := html.NewTokenizer(response.Body)
-	var result []string
+	var result []FileSpec
 	for {
 		tokenType := tokenizer.Next()
 
@@ -276,7 +277,10 @@ func (u URLSource) ListEntries(directoryPath string) ([]string, *ListEntriesErro
 					continue
 				}
 
-				result = append(result, linkPath)
+				result = append(result, FileSpec{
+					Path:        filepath.Join(directoryPath, linkPath),
+					IsDirectory: strings.HasSuffix(linkPath, "/"),
+				})
 			}
 		}
 	}

@@ -45,7 +45,7 @@ func (s *YumSource) Connect() error {
 }
 
 //ListEntries implements the Source interface.
-func (s *YumSource) ListEntries(directoryPath string) ([]string, *ListEntriesError) {
+func (s *YumSource) ListEntries(directoryPath string) ([]FileSpec, *ListEntriesError) {
 	return nil, &ListEntriesError{
 		Location: (*URLSource)(s).getURLForPath(directoryPath).String(),
 		Message:  "ListEntries is not implemented for YumSource",
@@ -58,7 +58,7 @@ func (s *YumSource) GetFile(directoryPath string, targetState FileState) (body i
 }
 
 //ListAllFiles implements the Source interface.
-func (s *YumSource) ListAllFiles() ([]string, *ListEntriesError) {
+func (s *YumSource) ListAllFiles() ([]FileSpec, *ListEntriesError) {
 	repomdPath := "repodata/repomd.xml"
 
 	//parse repomd.xml to find paths of all other metadata files
@@ -77,9 +77,11 @@ func (s *YumSource) ListAllFiles() ([]string, *ListEntriesError) {
 
 	//note metadata files for transfer
 	hrefsByType := make(map[string]string)
-	allFiles := []string{repomdPath}
+	allFiles := []FileSpec{
+		{Path: repomdPath},
+	}
 	for _, entry := range repomd.Entries {
-		allFiles = append(allFiles, entry.Location.Href)
+		allFiles = append(allFiles, FileSpec{Path: entry.Location.Href})
 		hrefsByType[entry.Type] = entry.Location.Href
 	}
 
@@ -103,7 +105,7 @@ func (s *YumSource) ListAllFiles() ([]string, *ListEntriesError) {
 		return nil, lerr
 	}
 	for _, pkg := range primary.Packages {
-		allFiles = append(allFiles, pkg.Location.Href)
+		allFiles = append(allFiles, FileSpec{Path: pkg.Location.Href})
 	}
 
 	//parse prestodelta.xml.gz (if present) to find paths of DRPMs
@@ -121,7 +123,7 @@ func (s *YumSource) ListAllFiles() ([]string, *ListEntriesError) {
 			return nil, lerr
 		}
 		for _, pkg := range prestodelta.Packages {
-			allFiles = append(allFiles, pkg.Delta.Href)
+			allFiles = append(allFiles, FileSpec{Path: pkg.Delta.Href})
 		}
 	}
 
