@@ -1,4 +1,4 @@
-# v2.2 (TBD)
+# v2.2 (2017-12-07)
 
 New features:
 - When syncing a Yum repository, the `jobs[].from.type` may be set to `"yum"` to instruct `swift-http-import` to parse
