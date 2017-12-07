@@ -95,6 +95,8 @@ type URLSource struct {
 	ClientCertificateKeyPath string       `yaml:"key"`
 	ServerCAPath             string       `yaml:"ca"`
 	HTTPClient               *http.Client `yaml:"-"`
+	//NOTE: All attributes that can be deserialized from YAML also need to be in
+	//the YumSource with the same YAML field names.
 }
 
 //Validate implements the Source interface.

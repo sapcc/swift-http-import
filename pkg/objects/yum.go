@@ -32,29 +32,44 @@ import (
 //Validate() and Connect() logic of URLSource, but adds a custom scraping
 //implementation that reads the Yum repository metadata instead of relying on
 //directory listings.
-type YumSource URLSource
+type YumSource struct {
+	//options from config file
+	URLString                string   `yaml:"url"`
+	ClientCertificatePath    string   `yaml:"cert"`
+	ClientCertificateKeyPath string   `yaml:"key"`
+	ServerCAPath             string   `yaml:"ca"`
+	Architectures            []string `yaml:"arch"`
+	//compiled configuration
+	urlSource *URLSource `yaml:"-"`
+}
 
 //Validate implements the Source interface.
 func (s *YumSource) Validate(name string) []error {
-	return (*URLSource)(s).Validate(name)
+	s.urlSource = &URLSource{
+		URLString:                s.URLString,
+		ClientCertificatePath:    s.ClientCertificatePath,
+		ClientCertificateKeyPath: s.ClientCertificateKeyPath,
+		ServerCAPath:             s.ServerCAPath,
+	}
+	return s.urlSource.Validate(name)
 }
 
 //Connect implements the Source interface.
 func (s *YumSource) Connect() error {
-	return (*URLSource)(s).Connect()
+	return s.urlSource.Connect()
 }
 
 //ListEntries implements the Source interface.
 func (s *YumSource) ListEntries(directoryPath string) ([]FileSpec, *ListEntriesError) {
 	return nil, &ListEntriesError{
-		Location: (*URLSource)(s).getURLForPath(directoryPath).String(),
+		Location: s.urlSource.getURLForPath(directoryPath).String(),
 		Message:  "ListEntries is not implemented for YumSource",
 	}
 }
 
 //GetFile implements the Source interface.
 func (s *YumSource) GetFile(directoryPath string, targetState FileState) (body io.ReadCloser, sourceState FileState, err error) {
-	return (*URLSource)(s).GetFile(directoryPath, targetState)
+	return s.urlSource.GetFile(directoryPath, targetState)
 }
 
 //ListAllFiles implements the Source interface.
@@ -94,7 +109,8 @@ func (s *YumSource) ListAllFiles() ([]FileSpec, *ListEntriesError) {
 	}
 	var primary struct {
 		Packages []struct {
-			Location struct {
+			Architecture string `xml:"arch"`
+			Location     struct {
 				Href string `xml:"href,attr"`
 			} `xml:"location"`
 		} `xml:"package"`
@@ -104,7 +120,9 @@ func (s *YumSource) ListAllFiles() ([]FileSpec, *ListEntriesError) {
 		return nil, lerr
 	}
 	for _, pkg := range primary.Packages {
-		allFiles = append(allFiles, pkg.Location.Href)
+		if s.handlesArchitecture(pkg.Architecture) {
+			allFiles = append(allFiles, pkg.Location.Href)
+		}
 	}
 
 	//parse prestodelta.xml.gz (if present) to find paths of DRPMs
@@ -151,6 +169,19 @@ func (s *YumSource) ListAllFiles() ([]FileSpec, *ListEntriesError) {
 }
 
 //Helper function for YumSource.ListAllFiles().
+func (s *YumSource) handlesArchitecture(arch string) bool {
+	if len(s.Architectures) == 0 || arch == "" {
+		return true
+	}
+	for _, val := range s.Architectures {
+		if val == arch {
+			return true
+		}
+	}
+	return false
+}
+
+//Helper function for YumSource.ListAllFiles().
 func (s *YumSource) downloadAndParseXML(path string, data interface{}, cache map[string]FileSpec) (uri string, e *ListEntriesError) {
 	buf, uri, lerr := s.getFileContents(path, cache)
 	if lerr != nil {
@@ -184,15 +215,14 @@ func (s *YumSource) downloadAndParseXML(path string, data interface{}, cache map
 
 //Helper function for YumSource.ListAllFiles().
 func (s *YumSource) getFileContents(path string, cache map[string]FileSpec) (contents []byte, uri string, e *ListEntriesError) {
-	u := (*URLSource)(s)
-	uri = u.getURLForPath(path).String()
+	uri = s.urlSource.getURLForPath(path).String()
 
 	req, err := http.NewRequest("GET", uri, nil)
 	if err != nil {
 		return nil, uri, &ListEntriesError{uri, "GET failed: " + err.Error()}
 	}
 
-	resp, err := u.HTTPClient.Do(req)
+	resp, err := s.urlSource.HTTPClient.Do(req)
 	if err != nil {
 		return nil, uri, &ListEntriesError{uri, "GET failed: " + err.Error()}
 	}

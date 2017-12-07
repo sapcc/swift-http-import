@@ -115,11 +115,16 @@ If `jobs[].from.url` refers to a Yum repository (as used by most RPM-based Linux
 instead of looking at directory listings. *Warning:* With this option set, files below the given URL which are not
 referenced by the Yum repository metadata will **not** be picked up.
 
+If the optional `jobs[].from.arch` field is given, the Yum repository metadata reader will only consider packages for
+these architectures. (Special values include "noarch" for architecture-independent packages and "src" for source
+packages.)
+
 ```yaml
 jobs:
   - from:
       url:  https://dl.fedoraproject.org/pub/epel/7Server/x86_64/
       type: yum
+      arch: [x86_64, noarch]
       # SSL certs are optionally supported here, too
       cert: /path/to/client.pem
       key:  /path/to/client-key.pem
