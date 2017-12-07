@@ -126,7 +126,11 @@ func (s *YumSource) ListAllFiles() ([]FileSpec, *ListEntriesError) {
 	}
 
 	//parse prestodelta.xml.gz (if present) to find paths of DRPMs
+	//(NOTE: this is called "deltainfo.xml.gz" on Suse)
 	href, exists = hrefsByType["prestodelta"]
+	if !exists {
+		href, exists = hrefsByType["deltainfo"]
+	}
 	if exists {
 		var prestodelta struct {
 			Packages []struct {
