@@ -99,6 +99,7 @@ type Connection struct {
 	Domain         string            // User's domain name
 	DomainId       string            // User's domain Id
 	UserName       string            // UserName for api
+	UserId         string            // User Id
 	ApiKey         string            // Key for api access
 	AuthUrl        string            // Auth URL
 	Retries        int               // Retries on error (default is 3)
@@ -191,6 +192,7 @@ func setFromEnv(param interface{}, name string) (err error) {
 // For v3 authentication
 //     OS_AUTH_URL - Auth URL
 //     OS_USERNAME - UserName for api
+//     OS_USER_ID - User Id
 //     OS_PASSWORD - Key for api access
 //     OS_USER_DOMAIN_NAME - User's domain name
 //     OS_USER_DOMAIN_ID - User's domain Id
@@ -223,6 +225,7 @@ func (c *Connection) ApplyEnvironment() (err error) {
 		{&c.Domain, "OS_USER_DOMAIN_NAME"},
 		{&c.DomainId, "OS_USER_DOMAIN_ID"},
 		{&c.UserName, "OS_USERNAME"},
+		{&c.UserId, "OS_USER_ID"},
 		{&c.ApiKey, "OS_PASSWORD"},
 		{&c.AuthUrl, "OS_AUTH_URL"},
 		{&c.Retries, "GOSWIFT_RETRIES"},
@@ -294,6 +297,7 @@ var (
 	TimeoutError        = newError(408, "Timeout when reading or writing data")
 	Forbidden           = newError(403, "Operation forbidden")
 	TooLargeObject      = newError(413, "Too Large Object")
+	RateLimit           = newError(498, "Rate Limit")
 
 	// Mappings for authentication errors
 	authErrorMap = errorMap{
@@ -308,6 +312,7 @@ var (
 		403: Forbidden,
 		404: ContainerNotFound,
 		409: ContainerNotEmpty,
+		498: RateLimit,
 	}
 
 	// Mappings for object errors
@@ -318,6 +323,7 @@ var (
 		404: ObjectNotFound,
 		413: TooLargeObject,
 		422: ObjectCorrupted,
+		498: RateLimit,
 	}
 )
 
@@ -468,6 +474,7 @@ again:
 	}
 	if req != nil {
 		timer := time.NewTimer(c.ConnectTimeout)
+		defer timer.Stop()
 		var resp *http.Response
 		resp, err = c.doTimeoutRequest(timer, req)
 		if err != nil {
@@ -688,6 +695,7 @@ func (c *Connection) Call(targetUrl string, p RequestOpts) (resp *http.Response,
 			URL.RawQuery = p.Parameters.Encode()
 		}
 		timer := time.NewTimer(c.ConnectTimeout)
+		defer timer.Stop()
 		reader := p.Body
 		if reader != nil {
 			reader = newWatchdogReader(reader, c.Timeout, timer)
