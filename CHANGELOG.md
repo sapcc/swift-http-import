@@ -1,3 +1,9 @@
+# v2.2.1 (TBD)
+
+Bugfixes:
+- An issue was fixed where file state was not correctly tracked for large objects, which caused large objects to be
+  mirrored on every run even when the target was already up-to-date.
+
 # v2.2 (2017-12-07)
 
 New features:
