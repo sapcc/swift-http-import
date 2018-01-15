@@ -1,4 +1,4 @@
-# v2.2.1 (TBD)
+# v2.2.1 (2018-01-15)
 
 Bugfixes:
 - An issue was fixed where file state was not correctly tracked for large objects, which caused large objects to be
