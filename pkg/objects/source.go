@@ -30,7 +30,6 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 
@@ -292,20 +291,10 @@ func (u URLSource) ListEntries(directoryPath string) ([]FileSpec, *ListEntriesEr
 //GetFile implements the Source interface.
 func (u URLSource) GetFile(directoryPath string, requestHeaders map[string]string) (io.ReadCloser, FileState, error) {
 	uri := u.getURLForPath(directoryPath).String()
-
-	//prepare request to retrieve from source, taking advantage of Etag and
-	//Last-Modified where possible
-	req, err := http.NewRequest("GET", uri, nil)
-	if err != nil {
-		return nil, FileState{}, fmt.Errorf("skipping %s: GET failed: %s", uri, err.Error())
-	}
-	for key, val := range requestHeaders {
-		req.Header.Set(key, val)
-	}
-	req.Header.Set("User-Agent", "swift-http-import/"+util.Version)
+	requestHeaders["User-Agent"] = "swift-http-import/" + util.Version
 
 	//retrieve file from source
-	response, err := u.HTTPClient.Do(req)
+	response, err := util.EnhancedGet(u.HTTPClient, uri, requestHeaders)
 	if err != nil {
 		return nil, FileState{}, fmt.Errorf("skipping %s: GET failed: %s", uri, err.Error())
 	}
@@ -316,20 +305,10 @@ func (u URLSource) GetFile(directoryPath string, requestHeaders map[string]strin
 		)
 	}
 
-	//read Content-Length header (or report -1, i.e. unknown size, if header missing or corrupted)
-	var sizeBytes int64 = -1
-	if sizeBytesStr := response.Header.Get("Content-Length"); sizeBytesStr != "" {
-		sizeBytes, err = strconv.ParseInt(sizeBytesStr, 10, 64)
-		if err != nil {
-			util.Log(util.LogError, "invalid header \"Content-Length: %s\" in GET %s", sizeBytesStr, uri)
-			sizeBytes = -1
-		}
-	}
-
 	return response.Body, FileState{
 		Etag:         response.Header.Get("Etag"),
 		LastModified: response.Header.Get("Last-Modified"),
-		SizeBytes:    sizeBytes,
+		SizeBytes:    response.ContentLength,
 		ExpiryTime:   nil, //no way to get this information via HTTP only
 		SkipTransfer: response.StatusCode == 304,
 		ContentType:  response.Header.Get("Content-Type"),
