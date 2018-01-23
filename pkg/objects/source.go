@@ -55,8 +55,9 @@ type Source interface {
 	//none for files.
 	ListEntries(directoryPath string) ([]FileSpec, *ListEntriesError)
 	//GetFile retrieves the contents and metadata for the file at the given path
-	//in the source.
-	GetFile(directoryPath string, targetState FileState) (body io.ReadCloser, sourceState FileState, err error)
+	//in the source. The `headers` map contains additional HTTP request headers
+	//that shall be passed to the source in the GET request.
+	GetFile(directoryPath string, headers map[string]string) (body io.ReadCloser, sourceState FileState, err error)
 }
 
 //ListEntriesError is an error that occurs while scraping a directory.
@@ -289,7 +290,7 @@ func (u URLSource) ListEntries(directoryPath string) ([]FileSpec, *ListEntriesEr
 }
 
 //GetFile implements the Source interface.
-func (u URLSource) GetFile(directoryPath string, targetState FileState) (io.ReadCloser, FileState, error) {
+func (u URLSource) GetFile(directoryPath string, requestHeaders map[string]string) (io.ReadCloser, FileState, error) {
 	uri := u.getURLForPath(directoryPath).String()
 
 	//prepare request to retrieve from source, taking advantage of Etag and
@@ -298,11 +299,8 @@ func (u URLSource) GetFile(directoryPath string, targetState FileState) (io.Read
 	if err != nil {
 		return nil, FileState{}, fmt.Errorf("skipping %s: GET failed: %s", uri, err.Error())
 	}
-	if targetState.Etag != "" {
-		req.Header.Set("If-None-Match", targetState.Etag)
-	}
-	if targetState.LastModified != "" {
-		req.Header.Set("If-Modified-Since", targetState.LastModified)
+	for key, val := range requestHeaders {
+		req.Header.Set(key, val)
 	}
 	req.Header.Set("User-Agent", "swift-http-import/"+util.Version)
 
