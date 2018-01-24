@@ -3,6 +3,9 @@
 New features:
 - When `--version` is given, the release version is reported on standard output.
 
+Changes:
+- When making HTTP requests, the correct User-Agent "swift-http-import/x.y.z" is now reported.
+
 # v2.2.1 (2018-01-15)
 
 Bugfixes:

@@ -304,6 +304,7 @@ func (u URLSource) GetFile(directoryPath string, targetState FileState) (io.Read
 	if targetState.LastModified != "" {
 		req.Header.Set("If-Modified-Since", targetState.LastModified)
 	}
+	req.Header.Set("User-Agent", "swift-http-import/"+util.Version)
 
 	//retrieve file from source
 	response, err := u.HTTPClient.Do(req)

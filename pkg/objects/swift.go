@@ -114,6 +114,7 @@ func (s *SwiftLocation) Connect() error {
 			TenantDomain: s.ProjectDomainName,
 			ApiKey:       s.Password,
 			Region:       s.RegionName,
+			UserAgent:    "swift-http-import/" + util.Version,
 		}
 		err := s.Connection.Authenticate()
 		if err != nil {
