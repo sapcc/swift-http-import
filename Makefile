@@ -8,10 +8,8 @@ GO            := GOPATH=$(CURDIR)/.gopath GOBIN=$(CURDIR)/build go
 GO_BUILDFLAGS :=
 GO_LDFLAGS    := -s -w
 
-build/swift-http-import: pkg/util/version.go FORCE
-	$(GO) install $(GO_BUILDFLAGS) -ldflags '$(GO_LDFLAGS)' '$(PKG)'
-pkg/util/version.go: FORCE
-	util/find_version.sh
+build/swift-http-import: FORCE
+	$(GO) install $(GO_BUILDFLAGS) -ldflags '$(GO_LDFLAGS) -X github.com/sapcc/swift-http-import/pkg/util.Version=$(shell util/find_version.sh)' '$(PKG)'
 
 check: all
 	bash tests.sh http

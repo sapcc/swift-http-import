@@ -1,5 +1,4 @@
 # build artifacts
-/pkg/util/version.go
 /build
 /.gopath/pkg/
 /.golangvend-cache/
