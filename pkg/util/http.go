@@ -29,18 +29,18 @@ import (
 )
 
 const (
-	rangeStepBytes     = 50 << 20 //50 MiB
 	maxTotalRetryCount = 10
 	maxRetryCount      = 3
 )
 
 //EnhancedGet is like http.Client.Get(), but recognizes if the HTTP server
 //understands range requests, and downloads the file in segments in that case.
-func EnhancedGet(client *http.Client, uri string, requestHeaders map[string]string) (*http.Response, error) {
+func EnhancedGet(client *http.Client, uri string, requestHeaders map[string]string, segmentBytes uint64) (*http.Response, error) {
 	d := downloader{
 		Client:         client,
 		URI:            uri,
 		RequestHeaders: requestHeaders,
+		SegmentBytes:   int64(segmentBytes),
 		BytesTotal:     -1,
 	}
 
@@ -96,6 +96,7 @@ type downloader struct {
 	Client         *http.Client
 	URI            string
 	RequestHeaders map[string]string
+	SegmentBytes   int64
 	//this object's internal state
 	Etag       string        //we track the source URL's Etag to detect changes mid-transfer
 	BytesRead  int64         //how many bytes have already been read out of this Reader
@@ -132,7 +133,7 @@ func (d *downloader) getNextChunk() (*http.Response, *parsedResponseHeaders, err
 
 	//add Range header
 	start := d.BytesRead
-	end := start + rangeStepBytes
+	end := start + d.SegmentBytes
 	if d.BytesTotal > 0 && end > d.BytesTotal {
 		end = d.BytesTotal
 	}

@@ -95,6 +95,10 @@ type URLSource struct {
 	ClientCertificateKeyPath string       `yaml:"key"`
 	ServerCAPath             string       `yaml:"ca"`
 	HTTPClient               *http.Client `yaml:"-"`
+	//transfer options
+	SegmentingIn *bool  `yaml:"segmenting"`
+	Segmenting   bool   `yaml:"-"`
+	SegmentSize  uint64 `yaml:"segment_bytes"`
 	//NOTE: All attributes that can be deserialized from YAML also need to be in
 	//the YumSource with the same YAML field names.
 }
@@ -133,6 +137,15 @@ func (u *URLSource) Validate(name string) (result []error) {
 		if u.ClientCertificateKeyPath == "" {
 			result = append(result, fmt.Errorf("missing value for %s.key", name))
 		}
+	}
+
+	if u.SegmentingIn == nil {
+		u.Segmenting = true
+	} else {
+		u.Segmenting = *u.SegmentingIn
+	}
+	if u.SegmentSize == 0 {
+		u.SegmentSize = 512 << 20 //default: 512 MiB
 	}
 
 	return
@@ -294,10 +307,26 @@ func (u URLSource) GetFile(directoryPath string, requestHeaders map[string]strin
 	requestHeaders["User-Agent"] = "swift-http-import/" + util.Version
 
 	//retrieve file from source
-	response, err := util.EnhancedGet(u.HTTPClient, uri, requestHeaders)
+	var (
+		response *http.Response
+		err      error
+	)
+	if u.Segmenting {
+		response, err = util.EnhancedGet(u.HTTPClient, uri, requestHeaders, u.SegmentSize)
+	} else {
+		var req *http.Request
+		req, err := http.NewRequest("GET", uri, nil)
+		if err == nil {
+			for key, val := range requestHeaders {
+				req.Header.Set(key, val)
+			}
+			response, err = u.HTTPClient.Do(req)
+		}
+	}
 	if err != nil {
 		return nil, FileState{}, fmt.Errorf("skipping %s: GET failed: %s", uri, err.Error())
 	}
+
 	if response.StatusCode != 200 && response.StatusCode != 304 {
 		return nil, FileState{}, fmt.Errorf(
 			"skipping %s: GET returned unexpected status code: expected 200 or 304, but got %d",
