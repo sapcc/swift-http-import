@@ -1,7 +1,8 @@
 # build artifacts
+/pkg/util/version.go
 /build
-.gopath/pkg/
-.golangvend-cache/
+/.gopath/pkg/
+/.golangvend-cache/
 
 # test artifacts
 tmp.??????

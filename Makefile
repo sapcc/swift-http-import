@@ -8,8 +8,10 @@ GO            := GOPATH=$(CURDIR)/.gopath GOBIN=$(CURDIR)/build go
 GO_BUILDFLAGS :=
 GO_LDFLAGS    := -s -w
 
-build/swift-http-import: FORCE
+build/swift-http-import: pkg/util/version.go FORCE
 	$(GO) install $(GO_BUILDFLAGS) -ldflags '$(GO_LDFLAGS)' '$(PKG)'
+pkg/util/version.go: FORCE
+	util/find_version.sh
 
 check: all
 	bash tests.sh http
@@ -19,8 +21,8 @@ check: all
 install: FORCE all
 	install -D -m 0755 build/swift-http-import "$(DESTDIR)$(PREFIX)/bin/swift-http-import"
 
-vendor:
-	@# vendoring by https://github.com/holocm/golangvend
+vendor: FORCE
+	# vendoring by https://github.com/holocm/golangvend
 	@golangvend
 
 .PHONY: FORCE

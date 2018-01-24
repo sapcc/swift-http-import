@@ -22,7 +22,6 @@ package objects
 import (
 	"fmt"
 	"io/ioutil"
-	"os"
 	"regexp"
 
 	yaml "gopkg.in/yaml.v2"
@@ -40,12 +39,8 @@ type Configuration struct {
 }
 
 //ReadConfiguration reads the configuration file.
-func ReadConfiguration() (*Configuration, []error) {
-	if len(os.Args) != 2 {
-		return nil, []error{fmt.Errorf("usage: %s <config-file>", os.Args[0])}
-	}
-
-	configBytes, err := ioutil.ReadFile(os.Args[1])
+func ReadConfiguration(path string) (*Configuration, []error) {
+	configBytes, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, []error{err}
 	}

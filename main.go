@@ -20,6 +20,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"os/signal"
 	"sync"
@@ -36,8 +37,19 @@ import (
 func main() {
 	startTime := time.Now()
 
+	//read arguments
+	if len(os.Args) != 2 {
+		fmt.Fprintln(os.Stderr, "usage: swift-http-import <config-file>")
+		fmt.Fprintln(os.Stderr, "   or: swift-http-import --version")
+		os.Exit(1)
+	}
+	if os.Args[1] == "--version" {
+		fmt.Println("swift-http-import " + util.Version)
+		os.Exit(0)
+	}
+
 	//read configuration
-	config, errs := objects.ReadConfiguration()
+	config, errs := objects.ReadConfiguration(os.Args[1])
 	if len(errs) > 0 {
 		for _, err := range errs {
 			util.Log(util.LogError, err.Error())

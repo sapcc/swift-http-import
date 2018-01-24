@@ -1,3 +1,8 @@
+# v2.3 (TBD)
+
+New features:
+- When `--version` is given, the release version is reported on standard output.
+
 # v2.2.1 (2018-01-15)
 
 Bugfixes:
