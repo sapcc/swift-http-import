@@ -77,11 +77,16 @@ func EnhancedGet(client *http.Client, uri string, requestHeaders map[string]stri
 		return resp, err
 	}
 
-	//return the original response, but swap out the response body with the
-	//downloader object which will continue loading the rest of the file once the
-	//current response body is exhausted
+	//return the original response, but:
+	//1. hijack the response body so that the next segments will be loaded once
+	//the current response body is exhausted
 	d.Reader = resp.Body
 	resp.Body = &d
+	//2. report the total file size in the response, so that the caller can
+	//decide whether to PUT this directly or as a large object
+	if d.BytesTotal > 0 {
+		resp.ContentLength = d.BytesTotal
+	}
 	return resp, err
 }
 
