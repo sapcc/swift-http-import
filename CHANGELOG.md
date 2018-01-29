@@ -1,4 +1,4 @@
-# v2.3 (TBD)
+# v2.3 (2018-01-29)
 
 New features:
 - When `--version` is given, the release version is reported on standard output.
