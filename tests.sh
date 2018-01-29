@@ -82,7 +82,8 @@ if [ "$1" = swift ]; then
   SOURCE_SPEC="{ container: \"${CONTAINER_PUBLIC}\", object_prefix: \"${DISAMBIGUATOR}\", ${AUTH_PARAMS} }"
 else
   # get public HTTP URL for container
-  SOURCE_SPEC="{ url: \"$(swift stat -v "${CONTAINER_PUBLIC}" | awk '$1=="URL:"{print$2}')/${DISAMBIGUATOR}/\" }"
+  SOURCE_URL="$(swift stat -v "${CONTAINER_PUBLIC}" | awk '$1=="URL:"{print$2}')/${DISAMBIGUATOR}/"
+  SOURCE_SPEC="{ url: \"${SOURCE_URL}\" }"
 fi
 
 ################################################################################
@@ -266,7 +267,7 @@ Hello Another World.
 EOF
 
 ################################################################################
-step 'Test 6: Segmenting of large files'
+step 'Test 6: Segmented upload of large files'
 
 upload_file_from_stdin largefile.txt <<-EOF
   Line number 1
@@ -316,13 +317,13 @@ fi
 ################################################################################
 step 'Test 7: Object expiration'
 
-if [ "$1" = http ]; then
-  echo ">> Test skipped (works only with Swift source)."
-else
-
 upload_file_from_stdin expires.txt -H 'X-Delete-At: 2000000000' <<-EOF
   This will expire soon.
 EOF
+
+if [ "$1" = http ]; then
+  echo ">> Test skipped (works only with Swift source)."
+else
 
 mirror <<-EOF
   swift: { $AUTH_PARAMS }
@@ -346,6 +347,60 @@ if [ "${EXPIRY_TIMESTAMP}" != 2000000042 ]; then
 fi
 
 fi # end of: if [ "$1" = http ]
+
+################################################################################
+step 'Test 8: Chunked download'
+
+# This test specifically checks that segmented upload works correctly when a file is
+# downloaded segmentedly. There was a bug where EnhancedGet() reported the
+# Content-Length of the first segment only (instead of the whole file), causing
+# the segmenting logic to incorrectly determine when to upload as a large object.
+
+if [ "$1" = swift ]; then
+  echo ">> Test skipped (works only with HTTP source)."
+else
+
+mirror <<-EOF
+  swift: { $AUTH_PARAMS }
+  jobs:
+    - from:
+        url: ${SOURCE_URL}
+        segment_bytes: 20 # less than job.segmenting.min_bytes, but also more
+                          # than the smallest files (to exercise all code paths)
+      to: { container: ${CONTAINER_BASE}-test8 }
+      segmenting:
+        container: ${CONTAINER_BASE}-test8-segments
+        min_bytes: 30
+        segment_bytes: 14
+EOF
+# NOTE: A segment size of 14 bytes should put each line of text in its own
+# segment, i.e. 5 segments.
+
+expect test8 <<-EOF
+>> expires.txt
+This will expire soon.
+>> just/another/file.txt
+This is the new file!
+>> just/some/files/1.txt
+Hello World.
+>> just/some/files/2.txt
+Hello Second World.
+>> largefile.txt
+Line number 1
+Line number 2
+Line number 3
+Line number 4
+Line number 5
+EOF
+
+SEGMENT_COUNT="$(swift list ${CONTAINER_BASE}-test8-segments | wc -l)"
+if [ "${SEGMENT_COUNT}" -ne 5 ]; then
+  echo -e "\e[1;31m>>\e[0;31m Expected SLO to have 5 segments, but got ${SEGMENT_COUNT} instead:\e[0m"
+  dump test8-segments
+  exit 1
+fi
+
+fi # end of: if [ "$1" = swift ]
 
 ################################################################################
 # cleanup before exiting

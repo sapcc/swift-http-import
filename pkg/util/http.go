@@ -79,9 +79,11 @@ func EnhancedGet(client *http.Client, uri string, requestHeaders map[string]stri
 
 	//return the original response, but:
 	//1. hijack the response body so that the next segments will be loaded once
-	//the current response body is exhausted
+	//the current response body is exhausted (the `struct downloader` is wrapped
+	//into a util.FullReader because ncw/swift seems to get confused when Read()
+	//does not fill the provided buffer completely)
 	d.Reader = resp.Body
-	resp.Body = &d
+	resp.Body = &FullReader{&d}
 	//2. report the total file size in the response, so that the caller can
 	//decide whether to PUT this directly or as a large object
 	if d.BytesTotal > 0 {
@@ -226,6 +228,7 @@ func (d *downloader) Read(buf []byte) (int, error) {
 	case io.EOF:
 		//current response body is EOF -> close it
 		err = d.Reader.Close()
+		d.Reader = nil
 		if err != nil {
 			return bytesRead, err
 		}
