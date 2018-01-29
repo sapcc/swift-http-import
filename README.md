@@ -15,7 +15,7 @@
 
 This tool imports files from an HTTP server into a Swift container. Given an input URL, it recurses through the directory
 listings on that URL, and mirrors all files that it finds into Swift. It will take advantage of `Last-Modified` and
-`Etag` response headers to avoid repeated downloads of the same content, so best performance is ensured the HTTP server
+`Etag` response headers to avoid repeated downloads of the same content, so best performance is ensured if the HTTP server
 handles `If-Modified-Since` and `If-None-Match` request headers correctly.
 
 ## Do NOT use if...
@@ -267,7 +267,7 @@ Segmenting behaves like the standard `swift` CLI client with the `--use-slo` opt
 
 Swift allows for files to be set to
 [expire at a user-configured time](https://docs.openstack.org/swift/latest/overview_expiring_objects.html), at which
-point they will be deleted automatically. When transfering files from a Swift source, `swift-http-import` will copy any
+point they will be deleted automatically. When transferring files from a Swift source, `swift-http-import` will copy any
 expiration dates to the target, unless the `jobs[].expiration.enabled` configuration option is set to `false`.
 
 ```yaml
@@ -339,10 +339,10 @@ The following metric are sent:
 
 | Kind    | Name                         | Description
 | ------- | ---------------------------- | --------------------------------------------
-| Gauge   | `last_run.success`           | `1` if no error occured, otherwise 0
-| Gauge   | `last_run.success_timestamp` | UNIX timestamp of last succesful run
+| Gauge   | `last_run.success`           | `1` if no error occurred, otherwise 0
+| Gauge   | `last_run.success_timestamp` | UNIX timestamp of last successful run
 | Gauge   | `last_run.duration_seconds`  | Runtime in seconds
 | Gauge   | `last_run.dirs_scanned`      | Number of directories scanned
 | Gauge   | `last_run.files_found`       | Number of files found
-| Gauge   | `last_run.files_transfered`  | Number of files actually transfered
+| Gauge   | `last_run.files_transfered`  | Number of files actually transferred
 | Gauge   | `last_run.files_failed`      | Number of files failed (download or upload)
