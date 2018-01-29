@@ -2,6 +2,11 @@
 
 New features:
 - When `--version` is given, the release version is reported on standard output.
+- When `jobs[].from` refers to a URL source, and the server for that URL supports HTTP Range Requests, files are now
+  downloaded in segments of 500 MiB to avoid overly long connections. Furthermore, if a segmented download fails,
+  swift-http-import is now able to restart the download without having to download the entire file again. Segmented
+  downloading can be disabled and the segment size can be changed in the new `jobs[].from.segmenting` configuration
+  section.
 
 Changes:
 - When making HTTP requests, the correct User-Agent "swift-http-import/x.y.z" is now reported.

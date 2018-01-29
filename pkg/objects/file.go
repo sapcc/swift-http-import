@@ -110,9 +110,12 @@ func (f File) PerformTransfer() TransferResult {
 
 	//retrieve object from source, taking advantage of Etag and Last-Modified where possible
 	metadata := headers.ObjectMetadata()
-	targetState := FileState{
-		Etag:         metadata["source-etag"],
-		LastModified: metadata["source-last-modified"],
+	requestHeaders := make(map[string]string)
+	if val := metadata["source-etag"]; val != "" {
+		requestHeaders["If-None-Match"] = val
+	}
+	if val := metadata["source-last-modified"]; val != "" {
+		requestHeaders["If-Modified-Since"] = val
 	}
 
 	var (
@@ -120,10 +123,10 @@ func (f File) PerformTransfer() TransferResult {
 		sourceState FileState
 	)
 	if f.Spec.Contents == nil {
-		body, sourceState, err = f.Job.Source.GetFile(f.Spec.Path, targetState)
+		body, sourceState, err = f.Job.Source.GetFile(f.Spec.Path, requestHeaders)
 	} else {
 		util.Log(util.LogDebug, "using cached contents for %s", f.Spec.Path)
-		body, sourceState, err = f.Spec.toTransferFormat(targetState)
+		body, sourceState, err = f.Spec.toTransferFormat(requestHeaders)
 	}
 	if err != nil {
 		util.Log(util.LogError, err.Error())
@@ -170,7 +173,12 @@ func (f File) PerformTransfer() TransferResult {
 	return TransferFailed
 }
 
-func (s FileSpec) toTransferFormat(targetState FileState) (io.ReadCloser, FileState, error) {
+func (s FileSpec) toTransferFormat(requestHeaders map[string]string) (io.ReadCloser, FileState, error) {
+	targetState := FileState{
+		Etag:         requestHeaders["If-None-Match"],
+		LastModified: requestHeaders["If-Modified-Since"],
+	}
+
 	sourceState := FileState{
 		Etag:         s.Headers.Get("Etag"),
 		LastModified: s.Headers.Get("Last-Modified"),

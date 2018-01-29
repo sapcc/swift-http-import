@@ -185,18 +185,12 @@ func (s *SwiftLocation) ListEntries(path string) ([]FileSpec, *ListEntriesError)
 }
 
 //GetFile implements the Source interface.
-func (s *SwiftLocation) GetFile(path string, targetState FileState) (io.ReadCloser, FileState, error) {
+func (s *SwiftLocation) GetFile(path string, requestHeaders map[string]string) (io.ReadCloser, FileState, error) {
 	objectPath := filepath.Join(s.ObjectNamePrefix, path)
 
-	reqHeaders := make(swift.Headers)
-	if targetState.Etag != "" {
-		reqHeaders["If-None-Match"] = targetState.Etag
-	}
-	if targetState.LastModified != "" {
-		reqHeaders["If-Modified-Since"] = targetState.LastModified
-	}
-
-	body, respHeaders, err := s.Connection.ObjectOpen(s.ContainerName, objectPath, false, reqHeaders)
+	body, respHeaders, err := s.Connection.ObjectOpen(
+		s.ContainerName, objectPath, false, swift.Headers(requestHeaders),
+	)
 
 	switch err {
 	case nil:

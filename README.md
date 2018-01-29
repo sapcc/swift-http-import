@@ -6,7 +6,8 @@
 * [Usage](#usage)
   * [Source specification](#source-specification)
   * [File selection](#file-selection)
-  * [Transfer behavior: Segmenting](#transfer-behavior-segmenting)
+  * [Transfer behavior: Segmenting on the source side](#transfer-behavior-segmenting-on-the-source-side)
+  * [Transfer behavior: Segmenting on the target side](#transfer-behavior-segmenting-on-the-target-side)
   * [Transfer behavior: Expiring objects](#transfer-behavior-expiring-objects)
   * [Performance](#performance)
 * [Log output](#log-output)
@@ -205,7 +206,39 @@ jobs:
     immutable: '.*\.deb$'
 ```
 
-### Transfer behavior: Segmenting
+### Transfer behavior: Segmenting on the source side
+
+By default, `swift-http-import` will download source files in segments of at most 500 MiB, using [HTTP range
+requests](https://tools.ietf.org/html/rfc7233). Range requests are supported by most HTTP servers that serve static
+files, and servers without support will fallback to regular HTTP and send the whole file at once. **Note that** range
+requests are currently not supported for Swift sources that require authentication.
+
+In the unlikely event that range requests confuse the HTTP server at the source side, they can be disabled by setting
+`jobs[].from.segmenting` to `false`:
+
+```yaml
+jobs:
+  - from:
+      url: http://de.archive.ubuntu.com/ubuntu/
+      segmenting: false
+    to:
+      container: mirror
+      object_prefix: ubuntu-repos
+```
+
+The default segment size of 500 MiB can be changed by setting `jobs[].from.segment_bytes` like so:
+
+```yaml
+jobs:
+  - from:
+      url: http://de.archive.ubuntu.com/ubuntu/
+      segment_bytes: 1073741824 # 1 GiB
+    to:
+      container: mirror
+      object_prefix: ubuntu-repos
+```
+
+### Transfer behavior: Segmenting on the target side
 
 Swift rejects objects beyond a certain size (usually 5 GiB). To import larger files,
 [segmenting](https://docs.openstack.org/swift/latest/overview_large_objects.html) must be used. The configuration

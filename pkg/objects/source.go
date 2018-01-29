@@ -30,7 +30,6 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 
@@ -55,8 +54,9 @@ type Source interface {
 	//none for files.
 	ListEntries(directoryPath string) ([]FileSpec, *ListEntriesError)
 	//GetFile retrieves the contents and metadata for the file at the given path
-	//in the source.
-	GetFile(directoryPath string, targetState FileState) (body io.ReadCloser, sourceState FileState, err error)
+	//in the source. The `headers` map contains additional HTTP request headers
+	//that shall be passed to the source in the GET request.
+	GetFile(directoryPath string, headers map[string]string) (body io.ReadCloser, sourceState FileState, err error)
 }
 
 //ListEntriesError is an error that occurs while scraping a directory.
@@ -95,6 +95,10 @@ type URLSource struct {
 	ClientCertificateKeyPath string       `yaml:"key"`
 	ServerCAPath             string       `yaml:"ca"`
 	HTTPClient               *http.Client `yaml:"-"`
+	//transfer options
+	SegmentingIn *bool  `yaml:"segmenting"`
+	Segmenting   bool   `yaml:"-"`
+	SegmentSize  uint64 `yaml:"segment_bytes"`
 	//NOTE: All attributes that can be deserialized from YAML also need to be in
 	//the YumSource with the same YAML field names.
 }
@@ -133,6 +137,15 @@ func (u *URLSource) Validate(name string) (result []error) {
 		if u.ClientCertificateKeyPath == "" {
 			result = append(result, fmt.Errorf("missing value for %s.key", name))
 		}
+	}
+
+	if u.SegmentingIn == nil {
+		u.Segmenting = true
+	} else {
+		u.Segmenting = *u.SegmentingIn
+	}
+	if u.SegmentSize == 0 {
+		u.SegmentSize = 512 << 20 //default: 512 MiB
 	}
 
 	return
@@ -289,28 +302,31 @@ func (u URLSource) ListEntries(directoryPath string) ([]FileSpec, *ListEntriesEr
 }
 
 //GetFile implements the Source interface.
-func (u URLSource) GetFile(directoryPath string, targetState FileState) (io.ReadCloser, FileState, error) {
+func (u URLSource) GetFile(directoryPath string, requestHeaders map[string]string) (io.ReadCloser, FileState, error) {
 	uri := u.getURLForPath(directoryPath).String()
-
-	//prepare request to retrieve from source, taking advantage of Etag and
-	//Last-Modified where possible
-	req, err := http.NewRequest("GET", uri, nil)
-	if err != nil {
-		return nil, FileState{}, fmt.Errorf("skipping %s: GET failed: %s", uri, err.Error())
-	}
-	if targetState.Etag != "" {
-		req.Header.Set("If-None-Match", targetState.Etag)
-	}
-	if targetState.LastModified != "" {
-		req.Header.Set("If-Modified-Since", targetState.LastModified)
-	}
-	req.Header.Set("User-Agent", "swift-http-import/"+util.Version)
+	requestHeaders["User-Agent"] = "swift-http-import/" + util.Version
 
 	//retrieve file from source
-	response, err := u.HTTPClient.Do(req)
+	var (
+		response *http.Response
+		err      error
+	)
+	if u.Segmenting {
+		response, err = util.EnhancedGet(u.HTTPClient, uri, requestHeaders, u.SegmentSize)
+	} else {
+		var req *http.Request
+		req, err := http.NewRequest("GET", uri, nil)
+		if err == nil {
+			for key, val := range requestHeaders {
+				req.Header.Set(key, val)
+			}
+			response, err = u.HTTPClient.Do(req)
+		}
+	}
 	if err != nil {
 		return nil, FileState{}, fmt.Errorf("skipping %s: GET failed: %s", uri, err.Error())
 	}
+
 	if response.StatusCode != 200 && response.StatusCode != 304 {
 		return nil, FileState{}, fmt.Errorf(
 			"skipping %s: GET returned unexpected status code: expected 200 or 304, but got %d",
@@ -318,20 +334,10 @@ func (u URLSource) GetFile(directoryPath string, targetState FileState) (io.Read
 		)
 	}
 
-	//read Content-Length header (or report -1, i.e. unknown size, if header missing or corrupted)
-	var sizeBytes int64 = -1
-	if sizeBytesStr := response.Header.Get("Content-Length"); sizeBytesStr != "" {
-		sizeBytes, err = strconv.ParseInt(sizeBytesStr, 10, 64)
-		if err != nil {
-			util.Log(util.LogError, "invalid header \"Content-Length: %s\" in GET %s", sizeBytesStr, uri)
-			sizeBytes = -1
-		}
-	}
-
 	return response.Body, FileState{
 		Etag:         response.Header.Get("Etag"),
 		LastModified: response.Header.Get("Last-Modified"),
-		SizeBytes:    sizeBytes,
+		SizeBytes:    response.ContentLength,
 		ExpiryTime:   nil, //no way to get this information via HTTP only
 		SkipTransfer: response.StatusCode == 304,
 		ContentType:  response.Header.Get("Content-Type"),
