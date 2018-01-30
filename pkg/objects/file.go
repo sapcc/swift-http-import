@@ -208,7 +208,23 @@ func (s FileSpec) toTransferFormat(requestHeaders map[string]string) (io.ReadClo
 func (f File) uploadNormalObject(body io.Reader, sourceState FileState, hdr swift.Headers) (ok bool) {
 	containerName := f.Job.Target.ContainerName
 	objectName := f.TargetObjectName()
-	_, err := f.Job.Target.Connection.ObjectPut(
+
+	//delete previous file at this location (this is implied by PUT for regular
+	//objects, but we do it explicitly to cleanup segments for large objects)
+	err := f.Job.Target.Connection.LargeObjectDelete(containerName, objectName)
+	switch err {
+	case nil, swift.ObjectNotFound:
+		//not an error
+	case swift.RateLimit:
+		//slow down
+		time.Sleep(2 * time.Second)
+		return f.uploadNormalObject(body, sourceState, hdr)
+	default:
+		util.Log(util.LogError, "PUT %s/%s failed: DELETE before upload returned: %s", containerName, objectName, err.Error())
+		return false
+	}
+
+	_, err = f.Job.Target.Connection.ObjectPut(
 		containerName, objectName,
 		body,
 		false, "",
