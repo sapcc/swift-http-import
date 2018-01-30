@@ -89,10 +89,9 @@ func (f File) PerformTransfer() TransferResult {
 	util.Log(util.LogDebug, "transferring to %s/%s", f.Job.Target.ContainerName, f.TargetObjectName())
 
 	//query the file metadata at the target
-	_, headers, err := f.Job.Target.Connection.Object(
-		f.Job.Target.ContainerName,
-		f.TargetObjectName(),
-	)
+	containerName := f.Job.Target.ContainerName
+	objectName := f.TargetObjectName()
+	_, headers, err := f.Job.Target.Connection.Object(containerName, objectName)
 	if err != nil {
 		if err == swift.ObjectNotFound {
 			headers = swift.Headers{}
@@ -101,8 +100,7 @@ func (f File) PerformTransfer() TransferResult {
 			//bandwidth downloading stuff if there is reasonable doubt that we will
 			//not be able to upload it to Swift)
 			util.Log(util.LogError, "skipping target %s/%s: HEAD failed: %s",
-				f.Job.Target.ContainerName, f.TargetObjectName(),
-				err.Error(),
+				containerName, objectName, err.Error(),
 			)
 			return TransferFailed
 		}
@@ -140,7 +138,7 @@ func (f File) PerformTransfer() TransferResult {
 	}
 
 	if util.LogIndividualTransfers {
-		util.Log(util.LogInfo, "transferring to %s/%s", f.Job.Target.ContainerName, f.TargetObjectName())
+		util.Log(util.LogInfo, "transferring to %s/%s", containerName, objectName)
 	}
 
 	//store some headers from the source to later identify whether this
@@ -152,19 +150,31 @@ func (f File) PerformTransfer() TransferResult {
 	if sourceState.LastModified != "" {
 		metadata["source-last-modified"] = sourceState.LastModified
 	}
-	headers = metadata.ObjectHeaders()
+	newHeaders := metadata.ObjectHeaders()
 	if f.Job.Expiration.Enabled && sourceState.ExpiryTime != nil {
 		delay := int64(f.Job.Expiration.DelaySeconds)
-		headers["X-Delete-At"] = strconv.FormatInt(sourceState.ExpiryTime.Unix()+delay, 10)
+		newHeaders["X-Delete-At"] = strconv.FormatInt(sourceState.ExpiryTime.Unix()+delay, 10)
+	}
+
+	//if we are about to overwrite a large object, clean up its segments first
+	if headers.IsLargeObject() {
+		err := f.Job.Target.Connection.LargeObjectDelete(containerName, objectName)
+		if err != nil {
+			util.Log(util.LogError,
+				"PUT %s/%s failed: DELETE before upload returned: %s",
+				containerName, objectName, err.Error(),
+			)
+			return TransferFailed
+		}
 	}
 
 	//upload file to target
 	var ok bool
 	size := sourceState.SizeBytes
 	if f.Job.Segmenting != nil && size > 0 && uint64(size) >= f.Job.Segmenting.MinObjectSize {
-		ok = f.uploadLargeObject(body, sourceState, headers)
+		ok = f.uploadLargeObject(body, sourceState, newHeaders)
 	} else {
-		ok = f.uploadNormalObject(body, sourceState, headers)
+		ok = f.uploadNormalObject(body, sourceState, newHeaders)
 	}
 
 	if ok {
@@ -208,23 +218,7 @@ func (s FileSpec) toTransferFormat(requestHeaders map[string]string) (io.ReadClo
 func (f File) uploadNormalObject(body io.Reader, sourceState FileState, hdr swift.Headers) (ok bool) {
 	containerName := f.Job.Target.ContainerName
 	objectName := f.TargetObjectName()
-
-	//delete previous file at this location (this is implied by PUT for regular
-	//objects, but we do it explicitly to cleanup segments for large objects)
-	err := f.Job.Target.Connection.LargeObjectDelete(containerName, objectName)
-	switch err {
-	case nil, swift.ObjectNotFound:
-		//not an error
-	case swift.RateLimit:
-		//slow down
-		time.Sleep(2 * time.Second)
-		return f.uploadNormalObject(body, sourceState, hdr)
-	default:
-		util.Log(util.LogError, "PUT %s/%s failed: DELETE before upload returned: %s", containerName, objectName, err.Error())
-		return false
-	}
-
-	_, err = f.Job.Target.Connection.ObjectPut(
+	_, err := f.Job.Target.Connection.ObjectPut(
 		containerName, objectName,
 		body,
 		false, "",
