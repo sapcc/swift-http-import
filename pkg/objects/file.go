@@ -229,7 +229,7 @@ func (f File) uploadNormalObject(body io.Reader, sourceState FileState, hdr swif
 
 	//delete potentially incomplete upload
 	err = f.Job.Target.Connection.ObjectDelete(containerName, objectName)
-	if err != nil {
+	if err != nil && err != swift.ObjectNotFound {
 		util.Log(util.LogError, "DELETE %s/%s failed: %s", containerName, objectName, err.Error())
 	}
 

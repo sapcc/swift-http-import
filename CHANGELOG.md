@@ -1,5 +1,9 @@
 # v2.3.1 (TBD)
 
+Changes:
+- When deleting a file on the target side (usually after an upload error), do not log an error if the DELETE request
+  returns 404 (Not Found).
+
 # v2.3 (2018-01-29)
 
 New features:
