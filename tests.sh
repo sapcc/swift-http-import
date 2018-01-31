@@ -315,6 +315,43 @@ fi
 # because then the segment count would be much more than 5.
 
 ################################################################################
+step 'Test 6 (cont.): Overwrite SLO on target with non-segmented object'
+
+upload_file_from_stdin largefile.txt <<-EOF
+  Line number 1
+  Line number 2
+  Line number 3
+  Line number 4
+  CHANGED
+EOF
+
+mirror <<-EOF
+  swift: { $AUTH_PARAMS }
+  jobs:
+    - from: ${SOURCE_SPEC}
+      to: { container: ${CONTAINER_BASE}-test6 }
+      only: largefile.txt
+EOF
+
+expect test6 <<-EOF
+>> just/another/file.txt
+This is the new file!
+>> just/some/files/1.txt
+Hello World.
+>> just/some/files/2.txt
+Hello Second World.
+>> largefile.txt
+Line number 1
+Line number 2
+Line number 3
+Line number 4
+CHANGED
+EOF
+
+# check that segments have been cleaned up, i.e. segment container should be empty
+expect test6-segments </dev/null
+
+################################################################################
 step 'Test 7: Object expiration'
 
 upload_file_from_stdin expires.txt -H 'X-Delete-At: 2000000000' <<-EOF
@@ -390,7 +427,7 @@ Line number 1
 Line number 2
 Line number 3
 Line number 4
-Line number 5
+CHANGED
 EOF
 
 SEGMENT_COUNT="$(swift list ${CONTAINER_BASE}-test8-segments | wc -l)"

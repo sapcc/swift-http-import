@@ -4,6 +4,10 @@ Changes:
 - When deleting a file on the target side (usually after an upload error), do not log an error if the DELETE request
   returns 404 (Not Found).
 
+Bugfixes:
+- When an SLO on the target side is being overwritten with a regular non-segmented object, swift-http-import now
+  correctly deletes the SLO's segments.
+
 # v2.3 (2018-01-29)
 
 New features:
