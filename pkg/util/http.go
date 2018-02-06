@@ -51,7 +51,7 @@ func EnhancedGet(client *http.Client, uri string, requestHeaders map[string]stri
 	//is that the object is 0 bytes long, so even byte index 0 is already over
 	//EOF -> fall back to a plain HTTP request in this case
 	if resp != nil && resp.StatusCode == http.StatusRequestedRangeNotSatisfiable {
-		Log(LogInfo, "received status code 416 -> falling back to plain GET for %s")
+		Log(LogInfo, "received status code 416 -> falling back to plain GET for %s", uri)
 		resp.Body.Close()
 		req, err := d.buildRequest()
 		if err != nil {
