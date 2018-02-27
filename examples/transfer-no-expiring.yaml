@@ -1,0 +1,21 @@
+swift:
+  auth_url: https://my.keystone.local:5000/v3
+  user_name: uploader
+  user_domain_name: Default
+  project_name: datastore
+  project_domain_name: Default
+  password: 20g82rzg235oughq
+
+jobs:
+  - from:
+      auth_url:            https://my.other.keystone.local:5000/v3
+      user_name:           uploader
+      user_domain_name:    Default
+      project_name:        datastore
+      project_domain_name: Default
+      password:            20g82rzg235oughq
+      container:           on-site-backup
+    to:
+      container: off-site-backup
+    expiration:
+      enabled: false

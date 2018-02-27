@@ -1,0 +1,18 @@
+swift:
+  auth_url: https://my.keystone.local:5000/v3
+  user_name: uploader
+  user_domain_name: Default
+  project_name: datastore
+  project_domain_name: Default
+  password: 20g82rzg235oughq
+
+jobs:
+  - from:
+      url: http://de.archive.ubuntu.com/ubuntu/
+    to:
+      container: mirror
+      object_prefix: ubuntu-repos
+    segmenting:
+      min_bytes:     2147483648      # import files larger than 2 GiB...
+      segment_bytes: 1073741824      # ...as segments of 1 GiB each...
+      container:     mirror_segments # ...which are stored in this container (optional, see below)

@@ -57,7 +57,8 @@ docker build .
 
 ## Usage
 
-Call with the path to a configuration file, that should look like this:
+Call with the path to a configuration file. The file should look like this:
+[(Link to full example config file)](./examples/basic.yaml)
 
 ```yaml
 swift:
@@ -98,6 +99,7 @@ The order of jobs is significant: Source trees will be scraped in the order indi
 
 In `jobs[].from`, you can pin the server's CA certificate, and specify a TLS client certificate (including private key)
 that will be used by the HTTP client.
+[(Link to full example config file)](./examples/source-clientcert.yaml)
 
 ```yaml
 jobs:
@@ -117,8 +119,9 @@ instead of looking at directory listings. *Warning:* With this option set, files
 referenced by the Yum repository metadata will **not** be picked up.
 
 If the optional `jobs[].from.arch` field is given, the Yum repository metadata reader will only consider packages for
-these architectures. (Special values include "noarch" for architecture-independent packages and "src" for source
-packages.)
+these architectures. Special values include "noarch" for architecture-independent packages and "src" for source
+packages.
+[(Link to full example config file)](./examples/source-yum.yaml)
 
 ```yaml
 jobs:
@@ -137,6 +140,7 @@ jobs:
 
 Alternatively, the source in `jobs[].from` can also be a private Swift container if Swift credentials are specified
 instead of a source URL.
+[(Link to full example config file)](./examples/source-swift.yaml)
 
 ```yaml
 jobs:
@@ -170,6 +174,7 @@ whereas file paths don't.
 
 For example, with the configuration below, directories called `sub_dir` and files with a `.gz` extension are excluded on
 every level in the source tree:
+[(Link to full example config file)](./examples/filter-except.yaml)
 
 ```yaml
 jobs:
@@ -183,6 +188,7 @@ jobs:
 
 When using `only` to select files, you will usually want to include an alternative `/$` in the regex to match all
 directories. Otherwise all directories will be excluded and you will only include files in the toplevel directory.
+[(Link to full example config file)](./examples/filter-only.yaml)
 
 ```yaml
 jobs:
@@ -195,6 +201,7 @@ jobs:
 ```
 
 The `immutable` regex is especially useful for package repositories because package files, once uploaded, will never change:
+[(Link to full example config file)](./examples/filter-immutable.yaml)
 
 ```yaml
 jobs:
@@ -215,6 +222,7 @@ requests are currently not supported for Swift sources that require authenticati
 
 In the unlikely event that range requests confuse the HTTP server at the source side, they can be disabled by setting
 `jobs[].from.segmenting` to `false`:
+[(Link to full example config file)](./examples/transfer-no-source-segmenting.yaml)
 
 ```yaml
 jobs:
@@ -227,6 +235,7 @@ jobs:
 ```
 
 The default segment size of 500 MiB can be changed by setting `jobs[].from.segment_bytes` like so:
+[(Link to full example config file)](./examples/transfer-source-segmenting.yaml)
 
 ```yaml
 jobs:
@@ -243,6 +252,7 @@ jobs:
 Swift rejects objects beyond a certain size (usually 5 GiB). To import larger files,
 [segmenting](https://docs.openstack.org/swift/latest/overview_large_objects.html) must be used. The configuration
 section `jobs[].segmenting` enables segmenting for the given job:
+[(Link to full example config file)](./examples/transfer-target-segmenting.yaml)
 
 ```yaml
 jobs:
@@ -269,6 +279,7 @@ Swift allows for files to be set to
 [expire at a user-configured time](https://docs.openstack.org/swift/latest/overview_expiring_objects.html), at which
 point they will be deleted automatically. When transferring files from a Swift source, `swift-http-import` will copy any
 expiration dates to the target, unless the `jobs[].expiration.enabled` configuration option is set to `false`.
+[(Link to full example config file)](./examples/transfer-no-expiring.yaml)
 
 ```yaml
 jobs:
@@ -285,6 +296,7 @@ In some cases, it may be desirable for target objects to live longer than source
 an on-site backup to an off-site backup, it may be useful to retain the off-site backup for a longer period of time than
 the on-site backup. Use the `jobs[].expiration.delay_seconds` configuration option to shift all expiration dates on the
 target side by a fixed amount of time compared to the source side.
+[(Link to full example config file)](./examples/transfer-expiring.yaml)
 
 ```yaml
 jobs:
@@ -300,6 +312,7 @@ jobs:
 ### Performance
 
 By default, only a single worker thread will be transferring files. You can scale this up by including a `workers` section at the top level like so:
+[(Link to full example config file)](./examples/basic-multiple-workers.yaml)
 
 ```yaml
 workers:

@@ -1,0 +1,17 @@
+swift:
+  auth_url: https://my.keystone.local:5000/v3
+  user_name: uploader
+  user_domain_name: Default
+  project_name: datastore
+  project_domain_name: Default
+  password: 20g82rzg235oughq
+
+jobs:
+  - from:
+      url:  http://de.archive.ubuntu.com/ubuntu/
+      cert: /path/to/client.pem
+      key:  /path/to/client-key.pem
+      ca:   /path/to/server-ca.pem
+    to:
+      container: mirror
+      object_prefix: ubuntu-repos
