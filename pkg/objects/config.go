@@ -24,6 +24,7 @@ import (
 	"io/ioutil"
 	"regexp"
 
+	"github.com/majewsky/schwift"
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -102,6 +103,8 @@ type SegmentingConfiguration struct {
 	MinObjectSize uint64 `yaml:"min_bytes"`
 	SegmentSize   uint64 `yaml:"segment_bytes"`
 	ContainerName string `yaml:"container"`
+	//Container is initialized by JobConfiguration.Compile().
+	Container *schwift.Container `yaml:"-"`
 }
 
 //ExpirationConfiguration contains the "expiration" section of a JobConfiguration.
@@ -229,7 +232,7 @@ func (cfg JobConfiguration) Compile(name string, swift SwiftLocation) (job *Job,
 		errors = append(errors, err)
 	}
 	if job.Segmenting != nil {
-		err = job.Target.EnsureContainerExists(job.Segmenting.ContainerName)
+		job.Segmenting.Container, err = job.Target.Account.Container(job.Segmenting.ContainerName).EnsureExists()
 		if err != nil {
 			errors = append(errors, err)
 		}

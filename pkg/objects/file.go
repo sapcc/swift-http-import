@@ -21,16 +21,14 @@ package objects
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 
-	"github.com/ncw/swift"
+	"github.com/majewsky/schwift"
 	"github.com/sapcc/swift-http-import/pkg/util"
 )
 
@@ -52,13 +50,13 @@ type FileSpec struct {
 	Headers  http.Header
 }
 
-//TargetObjectName returns the object name of this file in the target container.
-func (f File) TargetObjectName() string {
+//TargetObject returns the object corresponding to this file in the target container.
+func (f File) TargetObject() *schwift.Object {
 	objectName := strings.TrimPrefix(f.Spec.Path, "/")
-	if f.Job.Target.ObjectNamePrefix == "" {
-		return objectName
+	if f.Job.Target.ObjectNamePrefix != "" {
+		objectName = filepath.Join(f.Job.Target.ObjectNamePrefix, objectName)
 	}
-	return filepath.Join(f.Job.Target.ObjectNamePrefix, objectName)
+	return f.Job.Target.Container.Object(objectName)
 }
 
 //TransferResult is the return type for PerformTransfer().
@@ -78,42 +76,42 @@ const (
 //PerformTransfer transfers this file from the source to the target.
 //The return value indicates if the transfer finished successfully.
 func (f File) PerformTransfer() TransferResult {
+	object := f.TargetObject()
+
 	//check if this file needs transfer
 	if f.Job.Matcher.ImmutableFileRx != nil && f.Job.Matcher.ImmutableFileRx.MatchString(f.Spec.Path) {
-		if f.Job.Target.FileExists[f.TargetObjectName()] {
-			util.Log(util.LogDebug, "skipping %s/%s: already transferred", f.Job.Target.ContainerName, f.TargetObjectName())
+		if f.Job.Target.FileExists[object.Name()] {
+			util.Log(util.LogDebug, "skipping %s: already transferred", object.FullName())
 			return TransferSkipped
 		}
 	}
 
-	util.Log(util.LogDebug, "transferring to %s/%s", f.Job.Target.ContainerName, f.TargetObjectName())
+	util.Log(util.LogDebug, "transferring to %s", object.FullName())
 
 	//query the file metadata at the target
-	containerName := f.Job.Target.ContainerName
-	objectName := f.TargetObjectName()
-	_, headers, err := f.Job.Target.Connection.Object(containerName, objectName)
+	hdr, err := object.Headers()
 	if err != nil {
-		if err == swift.ObjectNotFound {
-			headers = swift.Headers{}
+		if schwift.Is(err, http.StatusNotFound) {
+			hdr = schwift.NewObjectHeaders()
 		} else {
 			//log all other errors and skip the file (we don't want to waste
 			//bandwidth downloading stuff if there is reasonable doubt that we will
 			//not be able to upload it to Swift)
-			util.Log(util.LogError, "skipping target %s/%s: HEAD failed: %s",
-				containerName, objectName, err.Error(),
+			util.Log(util.LogError, "skipping target %s: HEAD failed: %s",
+				object.FullName(), err.Error(),
 			)
 			return TransferFailed
 		}
 	}
 
 	//retrieve object from source, taking advantage of Etag and Last-Modified where possible
-	metadata := headers.ObjectMetadata()
-	requestHeaders := make(map[string]string)
-	if val := metadata["source-etag"]; val != "" {
-		requestHeaders["If-None-Match"] = val
+	metadata := hdr.Metadata()
+	requestHeaders := schwift.NewObjectHeaders()
+	if val := metadata.Get("Source-Etag"); val != "" {
+		requestHeaders.Set("If-None-Match", val)
 	}
-	if val := metadata["source-last-modified"]; val != "" {
-		requestHeaders["If-Modified-Since"] = val
+	if val := metadata.Get("Source-Last-Modified"); val != "" {
+		requestHeaders.Set("If-Modified-Since", val)
 	}
 
 	var (
@@ -138,43 +136,31 @@ func (f File) PerformTransfer() TransferResult {
 	}
 
 	if util.LogIndividualTransfers {
-		util.Log(util.LogInfo, "transferring to %s/%s", containerName, objectName)
+		util.Log(util.LogInfo, "transferring to %s", object.FullName())
 	}
 
 	//store some headers from the source to later identify whether this
 	//resource has changed
-	metadata = make(swift.Metadata)
+	uploadHeaders := schwift.NewObjectHeaders()
+	uploadHeaders.ContentType().Set(sourceState.ContentType)
 	if sourceState.Etag != "" {
-		metadata["source-etag"] = sourceState.Etag
+		uploadHeaders.Metadata().Set("Source-Etag", sourceState.Etag)
 	}
 	if sourceState.LastModified != "" {
-		metadata["source-last-modified"] = sourceState.LastModified
+		uploadHeaders.Metadata().Set("Source-Last-Modified", sourceState.LastModified)
 	}
-	newHeaders := metadata.ObjectHeaders()
 	if f.Job.Expiration.Enabled && sourceState.ExpiryTime != nil {
-		delay := int64(f.Job.Expiration.DelaySeconds)
-		newHeaders["X-Delete-At"] = strconv.FormatInt(sourceState.ExpiryTime.Unix()+delay, 10)
-	}
-
-	//if we are about to overwrite a large object, clean up its segments first
-	if headers.IsLargeObject() {
-		err := f.Job.Target.Connection.LargeObjectDelete(containerName, objectName)
-		if err != nil {
-			util.Log(util.LogError,
-				"PUT %s/%s failed: DELETE before upload returned: %s",
-				containerName, objectName, err.Error(),
-			)
-			return TransferFailed
-		}
+		delay := time.Duration(f.Job.Expiration.DelaySeconds) * time.Second
+		uploadHeaders.ExpiresAt().Set(sourceState.ExpiryTime.Add(delay))
 	}
 
 	//upload file to target
 	var ok bool
 	size := sourceState.SizeBytes
 	if f.Job.Segmenting != nil && size > 0 && uint64(size) >= f.Job.Segmenting.MinObjectSize {
-		ok = f.uploadLargeObject(body, sourceState, newHeaders)
+		ok = f.uploadLargeObject(body, uploadHeaders, hdr.IsLargeObject())
 	} else {
-		ok = f.uploadNormalObject(body, sourceState, newHeaders)
+		ok = f.uploadNormalObject(body, uploadHeaders, hdr.IsLargeObject())
 	}
 
 	if ok {
@@ -183,10 +169,10 @@ func (f File) PerformTransfer() TransferResult {
 	return TransferFailed
 }
 
-func (s FileSpec) toTransferFormat(requestHeaders map[string]string) (io.ReadCloser, FileState, error) {
+func (s FileSpec) toTransferFormat(requestHeaders schwift.ObjectHeaders) (io.ReadCloser, FileState, error) {
 	targetState := FileState{
-		Etag:         requestHeaders["If-None-Match"],
-		LastModified: requestHeaders["If-Modified-Since"],
+		Etag:         requestHeaders.Get("If-None-Match"),
+		LastModified: requestHeaders.Get("If-Modified-Since"),
 	}
 
 	sourceState := FileState{
@@ -215,96 +201,66 @@ func (s FileSpec) toTransferFormat(requestHeaders map[string]string) (io.ReadClo
 	return ioutil.NopCloser(bytes.NewReader(s.Contents)), sourceState, nil
 }
 
-func (f File) uploadNormalObject(body io.Reader, sourceState FileState, hdr swift.Headers) (ok bool) {
-	containerName := f.Job.Target.ContainerName
-	objectName := f.TargetObjectName()
-	_, err := f.Job.Target.Connection.ObjectPut(
-		containerName, objectName,
-		body,
-		false, "",
-		sourceState.ContentType,
-		hdr,
-	)
+//StatusSwiftRateLimit is the non-standard HTTP status code used by Swift to
+//indicate Too Many Requests.
+const StatusSwiftRateLimit = 498
+
+func (f File) uploadNormalObject(body io.Reader, hdr schwift.ObjectHeaders, cleanupOldSegments bool) (ok bool) {
+	object := f.TargetObject()
+	err := object.Upload(body, &schwift.UploadOptions{
+		DeleteSegments: cleanupOldSegments,
+	}, hdr.ToOpts())
 	if err == nil {
 		return true
 	}
 
-	util.Log(util.LogError, "PUT %s/%s failed: %s", containerName, objectName, err.Error())
+	util.Log(util.LogError, "PUT %s failed: %s", object.FullName(), err.Error())
 
-	if err == swift.RateLimit {
+	if schwift.Is(err, StatusSwiftRateLimit) {
 		//upload failed due to rate limit, object is definitely not uploaded
 		//prevent additional rate limit caused by an unnecessary delete request
 		return false
 	}
 
 	//delete potentially incomplete upload
-	err = f.Job.Target.Connection.ObjectDelete(containerName, objectName)
-	if err != nil && err != swift.ObjectNotFound {
-		util.Log(util.LogError, "DELETE %s/%s failed: %s", containerName, objectName, err.Error())
+	err = object.Delete(nil, nil)
+	if err != nil && !schwift.Is(err, http.StatusNotFound) {
+		util.Log(util.LogError, "DELETE %s failed: %s", object.FullName(), err.Error())
 	}
 
 	return false
 }
 
-func (f File) uploadLargeObject(body io.Reader, sourceState FileState, hdr swift.Headers) (ok bool) {
-	containerName := f.Job.Target.ContainerName
-	objectName := f.TargetObjectName()
-	segmentContainerName := f.Job.Segmenting.ContainerName
+func (f File) uploadLargeObject(body io.Reader, hdr schwift.ObjectHeaders, cleanupOldSegments bool) (ok bool) {
+	object := f.TargetObject()
 
-	now := time.Now()
-	segmentPrefix := fmt.Sprintf("%s/slo/%d.%09d/%d/%d",
-		objectName, now.Unix(), now.Nanosecond(), sourceState.SizeBytes, f.Job.Segmenting.SegmentSize,
-	)
-
-	largeObj, err := f.Job.Target.Connection.StaticLargeObjectCreate(&swift.LargeObjectOpts{
-		Container:        containerName,
-		ObjectName:       objectName,
-		ContentType:      sourceState.ContentType,
-		Headers:          hdr,
-		ChunkSize:        int64(f.Job.Segmenting.SegmentSize),
-		SegmentContainer: segmentContainerName,
-		SegmentPrefix:    segmentPrefix,
+	lo, err := object.AsNewLargeObject(schwift.SegmentingOptions{
+		SegmentContainer: f.Job.Segmenting.Container,
+		Strategy:         schwift.StaticLargeObject,
+	}, &schwift.TruncateOptions{
+		DeleteSegments: cleanupOldSegments,
 	})
 	if err == nil {
-		_, err = io.CopyBuffer(largeObj, body, make([]byte, 1<<20))
+		err = lo.Append(body, int64(f.Job.Segmenting.SegmentSize))
 	}
 	if err == nil {
-		err = largeObj.Close()
+		err = lo.WriteManifest(hdr.ToOpts())
 	}
 	if err == nil {
-		util.Log(util.LogInfo, "PUT %s/%s has created a Static Large Object with segments in %s/%s/",
-			containerName, objectName, segmentContainerName, segmentPrefix,
+		util.Log(util.LogInfo, "PUT %s has created a Static Large Object with segments in %s/%s/",
+			object.FullName(), lo.SegmentContainer().Name(), lo.SegmentPrefix(),
 		)
 		return true
 	}
 
-	util.Log(util.LogError, "PUT %s/%s as Static Large Object failed: %s", containerName, objectName, err.Error())
+	util.Log(util.LogError, "PUT %s as Static Large Object failed: %s", object.FullName(), err.Error())
 
-	//file was not transferred correctly - cleanup manifest...
-	err = f.Job.Target.Connection.ObjectDelete(containerName, objectName)
-	if err != nil && err != swift.ObjectNotFound {
-		util.Log(util.LogError, "DELETE %s/%s failed: %s", containerName, objectName, err.Error())
+	//file was not transferred correctly - cleanup manifest and segments
+	err = object.Delete(&schwift.DeleteOptions{
+		DeleteSegments: true,
+	}, nil)
+	if err != nil && !schwift.Is(err, http.StatusNotFound) {
+		util.Log(util.LogError, "DELETE %s failed: %s", object.FullName(), err.Error())
 	}
-	//...and segments
-	segmentNames, err := f.Job.Target.Connection.ObjectNamesAll(segmentContainerName,
-		&swift.ObjectsOpts{Prefix: segmentPrefix + "/"},
-	)
-	if err != nil {
-		util.Log(util.LogError, "cannot enumerate SLO segments in %s/%s/ for cleanup: %s",
-			segmentContainerName, segmentPrefix, err.Error(),
-		)
-		segmentNames = nil
-	}
-	if len(segmentNames) > 0 {
-		result, err := f.Job.Target.Connection.BulkDelete(segmentContainerName, segmentNames)
-		if err != nil {
-			util.Log(util.LogError, "DELETE %s/%s/* failed: %s", segmentContainerName, segmentPrefix, err.Error())
-		} else {
-			for segmentName, err := range result.Errors {
-				util.Log(util.LogError, "DELETE %s/%s failed: %s", segmentContainerName, segmentName, err.Error())
-			}
-		}
-	}
-
 	return false
 }

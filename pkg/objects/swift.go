@@ -1,6 +1,6 @@
 /*******************************************************************************
 *
-* Copyright 2016-2017 SAP SE
+* Copyright 2016-2018 SAP SE
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -22,12 +22,15 @@ package objects
 import (
 	"fmt"
 	"io"
+	"net/http"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 
-	"github.com/ncw/swift"
+	"github.com/gophercloud/gophercloud"
+	"github.com/gophercloud/gophercloud/openstack"
+	"github.com/majewsky/schwift"
+	"github.com/majewsky/schwift/gopherschwift"
 	"github.com/sapcc/swift-http-import/pkg/util"
 )
 
@@ -45,8 +48,9 @@ type SwiftLocation struct {
 	ObjectNamePrefix  string `yaml:"object_prefix"`
 	//configuration for Validate()
 	ValidateIgnoreEmptyContainer bool `yaml:"-"`
-	//Connection is filled by Connect().
-	Connection *swift.Connection `yaml:"-"`
+	//Account and Container is filled by Connect(). Container will be nil if ContainerName is empty.
+	Account   *schwift.Account   `yaml:"-"`
+	Container *schwift.Container `yaml:"-"`
 	//FileExists is filled by DiscoverExistingFiles(). The keys are object names
 	//including the ObjectNamePrefix, if any.
 	FileExists map[string]bool `yaml:"-"`
@@ -93,30 +97,41 @@ func (s SwiftLocation) Validate(name string) []error {
 	return result
 }
 
-var swiftConnectionCache = map[string]*swift.Connection{}
+var accountCache = map[string]*schwift.Account{}
 
 //Connect implements the Source interface. It establishes the connection to Swift.
 func (s *SwiftLocation) Connect() error {
-	if s.Connection != nil {
+	if s.Account != nil {
 		return nil
 	}
 
-	//create swift.Connection (but re-use if cached)
+	//connect to Swift account (but re-use connection if cached)
 	key := s.cacheKey()
-	s.Connection = swiftConnectionCache[key]
-	if s.Connection == nil {
-		s.Connection = &swift.Connection{
-			AuthVersion:  3,
-			AuthUrl:      s.AuthURL,
-			UserName:     s.UserName,
-			Domain:       s.UserDomainName,
-			Tenant:       s.ProjectName,
-			TenantDomain: s.ProjectDomainName,
-			ApiKey:       s.Password,
-			Region:       s.RegionName,
-			UserAgent:    "swift-http-import/" + util.Version,
+	s.Account = accountCache[key]
+	if s.Account == nil {
+		authOptions := gophercloud.AuthOptions{
+			IdentityEndpoint: s.AuthURL,
+			Username:         s.UserName,
+			DomainName:       s.UserDomainName,
+			Password:         s.Password,
+			Scope: &gophercloud.AuthScope{
+				ProjectName: s.ProjectName,
+				DomainName:  s.ProjectDomainName,
+			},
+			AllowReauth: true,
 		}
-		err := s.Connection.Authenticate()
+		provider, err := openstack.AuthenticatedClient(authOptions)
+		if err == nil {
+			var client *gophercloud.ServiceClient
+			client, err = openstack.NewObjectStorageV1(provider, gophercloud.EndpointOpts{
+				Region: s.RegionName,
+			})
+			if err == nil {
+				s.Account, err = gopherschwift.Wrap(client, &gopherschwift.Options{
+					UserAgent: "swift-http-import/" + util.Version,
+				})
+			}
+		}
 		if err != nil {
 			return fmt.Errorf("cannot authenticate to %s in %s@%s as %s@%s: %s",
 				s.AuthURL,
@@ -127,28 +142,17 @@ func (s *SwiftLocation) Connect() error {
 				err.Error(),
 			)
 		}
-		swiftConnectionCache[key] = s.Connection
+		accountCache[key] = s.Account
 	}
 
 	//create target container if missing
-	return s.EnsureContainerExists(s.ContainerName)
-}
-
-//EnsureContainerExists creates the given container in this Swift account, if
-//it does not exist yet.
-func (s *SwiftLocation) EnsureContainerExists(containerName string) error {
-	err := s.Connection.ContainerCreate(containerName, nil)
-	if err != nil {
-		return fmt.Errorf("cannot create container %s in %s@%s as %s@%s: %s",
-			containerName,
-			s.ProjectName,
-			s.ProjectDomainName,
-			s.UserName,
-			s.UserDomainName,
-			err.Error(),
-		)
+	if s.ContainerName == "" {
+		s.Container = nil
+		return nil
 	}
-	return nil
+	var err error
+	s.Container, err = s.Account.Container(s.ContainerName).EnsureExists()
+	return err
 }
 
 //ListAllFiles implements the Source interface.
@@ -164,64 +168,59 @@ func (s *SwiftLocation) ListEntries(path string) ([]FileSpec, *ListEntriesError)
 	}
 	util.Log(util.LogDebug, "listing objects at %s/%s", s.ContainerName, objectPath)
 
-	names, err := s.Connection.ObjectNamesAll(s.ContainerName, &swift.ObjectsOpts{
-		Prefix:    objectPath,
-		Delimiter: '/',
-	})
+	iter := s.Container.Objects()
+	iter.Prefix = objectPath
+	iter.Delimiter = "/"
+	objects, err := iter.Collect()
 	if err != nil {
 		return nil, &ListEntriesError{
-			Location: s.ContainerName + "/" + "objectPath",
+			Location: s.ContainerName + "/" + objectPath,
 			Message:  "GET failed: " + err.Error(),
 		}
 	}
 
 	//ObjectNamesAll returns full names, but we need to strip the objectPrefix
-	result := make([]FileSpec, len(names))
-	for idx, name := range names {
-		result[idx].Path = filepath.Join(path, filepath.Base(name))
-		result[idx].IsDirectory = strings.HasSuffix(name, "/")
+	result := make([]FileSpec, len(objects))
+	for idx, object := range objects {
+		result[idx].Path = filepath.Join(path, filepath.Base(object.Name()))
+		result[idx].IsDirectory = strings.HasSuffix(object.Name(), "/")
 	}
 	return result, nil
 }
 
 //GetFile implements the Source interface.
-func (s *SwiftLocation) GetFile(path string, requestHeaders map[string]string) (io.ReadCloser, FileState, error) {
+func (s *SwiftLocation) GetFile(path string, requestHeaders schwift.ObjectHeaders) (io.ReadCloser, FileState, error) {
 	objectPath := filepath.Join(s.ObjectNamePrefix, path)
+	object := s.Container.Object(objectPath)
 
-	body, respHeaders, err := s.Connection.ObjectOpen(
-		s.ContainerName, objectPath, false, swift.Headers(requestHeaders),
-	)
-
-	switch err {
-	case nil:
-		sizeBytes, err := body.Length() //this just reads Content-Length despite not looking like it
-		if err != nil {
-			util.Log(util.LogError, "invalid Content-Length header for object %s/%s", s.ContainerName, objectPath)
-			sizeBytes = -1
-		}
-		var expiryTime *time.Time
-		if expiryStr := respHeaders["X-Delete-At"]; expiryStr != "" {
-			expiryUnix, err := strconv.ParseInt(expiryStr, 10, 64)
-			if err == nil {
-				t := time.Unix(expiryUnix, 0)
-				expiryTime = &t
-			} else {
-				util.Log(util.LogError, "invalid X-Delete-At header for object %s/%s", s.ContainerName, objectPath)
-			}
-		}
-
-		return body, FileState{
-			Etag:         respHeaders["Etag"],
-			LastModified: respHeaders["Last-Modified"],
-			SizeBytes:    sizeBytes,
-			ExpiryTime:   expiryTime,
-			ContentType:  respHeaders["Content-Type"],
-		}, nil
-	case swift.NotModified:
+	body, err := object.Download(requestHeaders.ToOpts()).AsReadCloser()
+	if schwift.Is(err, http.StatusNotModified) {
 		return nil, FileState{SkipTransfer: true}, nil
-	default:
+	}
+	if err != nil {
 		return nil, FileState{}, err
 	}
+	//NOTE: Download() uses a GET request, so object metadata has already been
+	//received and cached, so Headers() is cheap now and will never fail.
+	hdr, err := object.Headers()
+	if err != nil {
+		body.Close()
+		return nil, FileState{}, err
+	}
+
+	var expiryTime *time.Time
+	if hdr.ExpiresAt().Exists() {
+		t := hdr.ExpiresAt().Get()
+		expiryTime = &t
+	}
+
+	return body, FileState{
+		Etag:         hdr.Etag().Get(),
+		LastModified: hdr.Get("Last-Modified"),
+		SizeBytes:    int64(hdr.SizeBytes().Get()),
+		ExpiryTime:   expiryTime,
+		ContentType:  hdr.ContentType().Get(),
+	}, nil
 }
 
 //DiscoverExistingFiles finds all objects that currently exist in this location
@@ -231,28 +230,27 @@ func (s *SwiftLocation) GetFile(path string, requestHeaders map[string]string) (
 //The given Matcher is used to find out which files are to be considered as
 //belonging to the transfer job in question.
 func (s *SwiftLocation) DiscoverExistingFiles(matcher Matcher) error {
-
 	prefix := s.ObjectNamePrefix
 	if prefix != "" && !strings.HasSuffix(prefix, "/") {
 		prefix += "/"
 	}
 
-	paths, err := s.Connection.ObjectNamesAll(s.ContainerName, &swift.ObjectsOpts{
-		Prefix: prefix,
+	iter := s.Container.Objects()
+	iter.Prefix = prefix
+	s.FileExists = make(map[string]bool)
+	err := iter.Foreach(func(object *schwift.Object) error {
+		path := object.Name()
+		pathForMatching := strings.TrimPrefix(path, prefix)
+		if matcher.CheckRecursive(pathForMatching) == "" {
+			s.FileExists[path] = true
+		}
+		return nil
 	})
 	if err != nil {
 		return fmt.Errorf(
 			"could not list objects in Swift at %s/%s: %s",
 			s.ContainerName, prefix, err.Error(),
 		)
-	}
-
-	s.FileExists = make(map[string]bool, len(paths))
-	for _, path := range paths {
-		pathForMatching := strings.TrimPrefix(path, prefix)
-		if matcher.CheckRecursive(pathForMatching) == "" {
-			s.FileExists[path] = true
-		}
 	}
 
 	return nil

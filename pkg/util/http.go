@@ -35,7 +35,7 @@ const (
 
 //EnhancedGet is like http.Client.Get(), but recognizes if the HTTP server
 //understands range requests, and downloads the file in segments in that case.
-func EnhancedGet(client *http.Client, uri string, requestHeaders map[string]string, segmentBytes uint64) (*http.Response, error) {
+func EnhancedGet(client *http.Client, uri string, requestHeaders http.Header, segmentBytes uint64) (*http.Response, error) {
 	d := downloader{
 		Client:         client,
 		URI:            uri,
@@ -102,7 +102,7 @@ type downloader struct {
 	//the original arguments to EnhancedGet()
 	Client         *http.Client
 	URI            string
-	RequestHeaders map[string]string
+	RequestHeaders http.Header
 	SegmentBytes   int64
 	//this object's internal state
 	Etag       string        //we track the source URL's Etag to detect changes mid-transfer
@@ -127,7 +127,7 @@ func (d *downloader) buildRequest() (*http.Request, error) {
 		return nil, err
 	}
 	for key, val := range d.RequestHeaders {
-		req.Header.Set(key, val)
+		req.Header[key] = val
 	}
 	return req, nil
 }
