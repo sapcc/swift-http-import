@@ -20,7 +20,7 @@ DISAMBIGUATOR="$(date +%s)"
 CONTAINER_PUBLIC="swift-http-import-source"
 CONTAINER_BASE="swift-http-import-${DISAMBIGUATOR}"
 # a temporary file that is used for various purposes
-TEST_FILENAME="$(basename "$(mktemp -p ${TMPDIR:-/tmp} tmp.XXXXXX)")"
+TEST_FILENAME="$(mktemp -p ${TMPDIR:-/tmp} tmp.XXXXXX)"
 # YAML object (except for {}) with the auth parameters from the environment
 AUTH_PARAMS="
   auth_url:            \"${OS_AUTH_URL}\",

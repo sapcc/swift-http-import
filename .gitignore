@@ -3,8 +3,5 @@
 /.gopath/pkg/
 /.golangvend-cache/
 
-# test artifacts
-tmp.??????
-
 # for my own testing
 test.yaml
