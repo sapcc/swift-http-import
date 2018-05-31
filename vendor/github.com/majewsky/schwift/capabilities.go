@@ -67,6 +67,9 @@ type Capabilities struct {
 		MaximumUploadPartNumber   uint   `json:"max_upload_part_num"`
 		Version                   string `json:"version"`
 	} `json:"swift3"`
+	Symlink *struct {
+		MaximumLoopCount uint `json:"symloop_max"`
+	} `json:"symlink"`
 	TempAuth *struct {
 		AccountACLs bool `json:"account_acls"`
 	} `json:"tempauth"`

@@ -435,7 +435,7 @@ func (o *Object) AsNewLargeObject(sopts SegmentingOptions, topts *TruncateOption
 	if sopts.SegmentContainer == nil {
 		panic("missing value for sopts.SegmentingContainer")
 	}
-	if !sopts.SegmentContainer.a.isEqualTo(o.c.a) {
+	if !sopts.SegmentContainer.a.IsEqualTo(o.c.a) {
 		return nil, ErrAccountMismatch
 	}
 
@@ -520,7 +520,7 @@ func (lo *LargeObject) NextSegmentObject() *Object {
 		if o == nil { //can happen for data segments
 			continue
 		}
-		if lo.segmentContainer.isEqualTo(o.c) && strings.HasPrefix(o.Name(), lo.segmentPrefix) {
+		if lo.segmentContainer.IsEqualTo(o.c) && strings.HasPrefix(o.Name(), lo.segmentPrefix) {
 			prevSegmentName = s.Object.Name()
 			//keep going, we want to find the last such segment
 		}
@@ -596,7 +596,7 @@ func (lo *LargeObject) AddSegment(segment SegmentInfo) error {
 			//required attributes
 			return ErrSegmentInvalid
 		}
-		if !o.c.a.isEqualTo(lo.segmentContainer.a) {
+		if !o.c.a.IsEqualTo(lo.segmentContainer.a) {
 			return ErrAccountMismatch
 		}
 
@@ -607,7 +607,7 @@ func (lo *LargeObject) AddSegment(segment SegmentInfo) error {
 				return ErrSegmentInvalid
 			}
 
-			if !o.c.isEqualTo(lo.segmentContainer) {
+			if !o.c.IsEqualTo(lo.segmentContainer) {
 				return ErrContainerMismatch
 			}
 			if !strings.HasPrefix(o.name, lo.segmentPrefix) {

@@ -37,6 +37,3 @@ container](https://github.com/bouncestorage/docker-swift).
 2. Run the tests with `./testing/with-saio.sh go test`. The script will find how to access the Swift API inside the
    container, and configure the auth environment variables accordingly. You can use this with any command that requires
    Swift credentials, e.g. `./testing/with-saio.sh swift stat`.
-
-**WARNING:** At the time of this writing, https://github.com/bouncestorage/docker-swift/pull/30 has not been merged, so
-you need to patch the proxy-server.conf manually to get the symlink-related tests to pass.

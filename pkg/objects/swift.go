@@ -155,6 +155,16 @@ func (s *SwiftLocation) Connect() error {
 	return err
 }
 
+//ObjectAtPath returns an Object instance for the object at the given path
+//(below the ObjectNamePrefix, if any) in this container.
+func (s *SwiftLocation) ObjectAtPath(path string) *schwift.Object {
+	objectName := strings.TrimPrefix(path, "/")
+	if s.ObjectNamePrefix != "" {
+		objectName = filepath.Join(s.ObjectNamePrefix, objectName)
+	}
+	return s.Container.Object(objectName)
+}
+
 //ListAllFiles implements the Source interface.
 func (s *SwiftLocation) ListAllFiles() ([]FileSpec, *ListEntriesError) {
 	return nil, ErrListAllFilesNotSupported
@@ -171,7 +181,7 @@ func (s *SwiftLocation) ListEntries(path string) ([]FileSpec, *ListEntriesError)
 	iter := s.Container.Objects()
 	iter.Prefix = objectPath
 	iter.Delimiter = "/"
-	objects, err := iter.Collect()
+	objectInfos, err := iter.CollectDetailed()
 	if err != nil {
 		return nil, &ListEntriesError{
 			Location: s.ContainerName + "/" + objectPath,
@@ -180,18 +190,27 @@ func (s *SwiftLocation) ListEntries(path string) ([]FileSpec, *ListEntriesError)
 	}
 
 	//ObjectNamesAll returns full names, but we need to strip the objectPrefix
-	result := make([]FileSpec, len(objects))
-	for idx, object := range objects {
-		result[idx].Path = filepath.Join(path, filepath.Base(object.Name()))
-		result[idx].IsDirectory = strings.HasSuffix(object.Name(), "/")
+	result := make([]FileSpec, len(objectInfos))
+	for idx, info := range objectInfos {
+		if info.SubDirectory != "" {
+			result[idx].Path = filepath.Join(path, filepath.Base(info.SubDirectory))
+			result[idx].IsDirectory = true
+		} else {
+			result[idx].Path = filepath.Join(path, filepath.Base(info.Object.Name()))
+			if info.SymlinkTarget != nil && info.SymlinkTarget.Container().IsEqualTo(s.Container) {
+				targetPath := info.SymlinkTarget.Name()
+				if strings.HasPrefix(targetPath, s.ObjectNamePrefix) {
+					result[idx].SymlinkTargetPath = strings.TrimPrefix(targetPath, s.ObjectNamePrefix)
+				}
+			}
+		}
 	}
 	return result, nil
 }
 
 //GetFile implements the Source interface.
 func (s *SwiftLocation) GetFile(path string, requestHeaders schwift.ObjectHeaders) (io.ReadCloser, FileState, error) {
-	objectPath := filepath.Join(s.ObjectNamePrefix, path)
-	object := s.Container.Object(objectPath)
+	object := s.ObjectAtPath(path)
 
 	body, err := object.Download(requestHeaders.ToOpts()).AsReadCloser()
 	if schwift.Is(err, http.StatusNotModified) {

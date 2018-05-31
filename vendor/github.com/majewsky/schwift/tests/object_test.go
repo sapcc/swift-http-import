@@ -277,21 +277,21 @@ func expectObjectContent(t *testing.T, obj *schwift.Object, expected []byte) {
 
 func expectObjectSymlink(t *testing.T, source, expectedTarget *schwift.Object) {
 	t.Helper()
-	target, _, err := source.InspectSymlink()
+	_, target, err := source.SymlinkHeaders()
 	if expectedTarget == nil {
 		switch err {
-		case schwift.ErrNotASymlink:
-			return //success
 		case nil:
-			t.Errorf("expected %s to not be a symlink, but found symlink to %s\n",
-				source.FullName(), target.FullName())
+			if target != nil {
+				t.Errorf("expected %s to not be a symlink, but found symlink to %s\n",
+					source.FullName(), target.FullName())
+			}
 		default:
-			t.Errorf("got unexpected error from Object.SymlinkTarget() for %s: %s\n",
+			t.Errorf("got unexpected error from Object.SymlinkHeaders() for %s: %s\n",
 				source.FullName(), err.Error())
 		}
 	} else {
 		if err != nil {
-			t.Errorf("expected %s to be a symlink to %s, but Object.SymlinkTarget() returned error: %s\n",
+			t.Errorf("expected %s to be a symlink to %s, but Object.SymlinkHeaders() returned error: %s\n",
 				source.FullName(), expectedTarget.FullName(), err.Error())
 		} else if target.FullName() != expectedTarget.FullName() {
 			t.Errorf("expected %s to be a symlink to %s, but got target %s\n",

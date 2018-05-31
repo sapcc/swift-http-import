@@ -54,9 +54,6 @@ var (
 	//provided is malformed or uses features not supported by the LargeObject's
 	//strategy. See documentation for LargeObject.AddSegment() for details.
 	ErrSegmentInvalid = errors.New("segment invalid or incompatible with large object strategy")
-	//ErrNotASymlink is returned by Object.SymlinkTarget() if the object in
-	//question exists, but is not a symlink.
-	ErrNotASymlink = errors.New("not a symlink")
 )
 
 //UnexpectedStatusCodeError is generated when a request to Swift does not yield

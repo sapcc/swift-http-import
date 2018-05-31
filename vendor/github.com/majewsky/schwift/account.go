@@ -38,7 +38,8 @@ type Account struct {
 	caps    *Capabilities
 }
 
-func (a *Account) isEqualTo(other *Account) bool {
+//IsEqualTo returns true if both Account instances refer to the same account.
+func (a *Account) IsEqualTo(other *Account) bool {
 	return other.baseURL == a.baseURL && other.name == a.name
 }
 

@@ -32,8 +32,9 @@ type Container struct {
 	headers *ContainerHeaders
 }
 
-func (c *Container) isEqualTo(other *Container) bool {
-	return other.name == c.name && other.a.isEqualTo(c.a)
+//IsEqualTo returns true if both Container instances refer to the same container.
+func (c *Container) IsEqualTo(other *Container) bool {
+	return other.name == c.name && other.a.IsEqualTo(c.a)
 }
 
 //Container returns a handle to the container with the given name within this
