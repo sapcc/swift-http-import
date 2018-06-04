@@ -231,7 +231,7 @@ func (cfg JobConfiguration) Compile(name string, swift SwiftLocation) (job *Job,
 	if err != nil {
 		errors = append(errors, err)
 	}
-	if job.Segmenting != nil {
+	if job.Target.Account != nil && job.Segmenting != nil {
 		job.Segmenting.Container, err = job.Target.Account.Container(job.Segmenting.ContainerName).EnsureExists()
 		if err != nil {
 			errors = append(errors, err)
