@@ -83,7 +83,7 @@ SOURCE_URL="$(swift stat -v "${CONTAINER_PUBLIC}" | awk '$1=="URL:"{print$2}')/$
 if [ "$1" = swift ]; then
   SOURCE_SPEC="{ container: \"${CONTAINER_PUBLIC}\", object_prefix: \"${DISAMBIGUATOR}\", ${AUTH_PARAMS} }"
 else
-  SOURCE_SPEC="{ url: \"${SOURCE_URL}\" }"
+  SOURCE_SPEC="{ url: \"${SOURCE_URL}/\" }"
 fi
 
 ################################################################################
