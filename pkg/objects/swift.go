@@ -254,6 +254,13 @@ func (s *SwiftLocation) DiscoverExistingFiles(matcher Matcher) error {
 		prefix += "/"
 	}
 
+	if s.Container == nil {
+		return fmt.Errorf(
+			"could not list objects in Swift at %s/%s: not connected to Swift",
+			s.ContainerName, prefix,
+		)
+	}
+
 	iter := s.Container.Objects()
 	iter.Prefix = prefix
 	s.FileExists = make(map[string]bool)
