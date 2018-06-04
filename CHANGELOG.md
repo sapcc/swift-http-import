@@ -1,6 +1,14 @@
-# v2.3.1 (TBD)
+# v2.4.0 (TBD)
+
+New features:
+- Initial support for Swift symlinks has been added. When a Swift source contains a object that is a symlink to another
+  object, the object is also uploaded as a symlink on the target side, thus avoiding duplicate transfers of identical
+  files. In this version, only those symlinks are considered that point to objects which are transferred in the same
+  job. A future version may improve this to allow symlinks to also point to objects transferred in a different job.
 
 Changes:
+- Switch the Swift backend from [ncw/swift](https://github.com/ncw/swift) to
+  [Schwift](https://github.com/majewsky/schwift). This is important to facilitate some of the new features above.
 - When deleting a file on the target side (usually after an upload error), do not log an error if the DELETE request
   returns 404 (Not Found).
 

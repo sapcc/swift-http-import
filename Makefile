@@ -14,7 +14,7 @@ build/swift-http-import: FORCE
 check: all
 	bash tests.sh http
 	bash tests.sh swift
-	echo -e '\e[1;32mSuccess!\e[0m'
+	@printf '\e[1;32mSuccess!\e[0m\n'
 
 install: FORCE all
 	install -D -m 0755 build/swift-http-import "$(DESTDIR)$(PREFIX)/bin/swift-http-import"

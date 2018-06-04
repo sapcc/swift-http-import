@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"regexp"
+	"strings"
 )
 
 //Matcher determines if files shall be included or excluded in a transfer.
@@ -59,10 +60,13 @@ func (m Matcher) CheckFile(spec FileSpec) string {
 
 //CheckRecursive is like Check(), but also checks each directory along the way
 //as well.
+//
+//For example, CheckRecursive("a/b/c") calls Check("a/"), "Check("a/b/") and
+//Check("a/b/c").
 func (m Matcher) CheckRecursive(path string) string {
-	steps := filepath.Clean(path)
+	steps := strings.Split(filepath.Clean(path), "/")
 	for i := 1; i < len(steps); i++ {
-		result := m.Check(filepath.Join(steps[0:i], "/") + "/")
+		result := m.Check(filepath.Join(steps[0:i]...) + "/")
 		if result != "" {
 			return result
 		}

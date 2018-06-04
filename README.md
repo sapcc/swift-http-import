@@ -9,6 +9,7 @@
   * [Transfer behavior: Segmenting on the source side](#transfer-behavior-segmenting-on-the-source-side)
   * [Transfer behavior: Segmenting on the target side](#transfer-behavior-segmenting-on-the-target-side)
   * [Transfer behavior: Expiring objects](#transfer-behavior-expiring-objects)
+  * [Transfer behavior: Symlinks](#transfer-behavior-symlinks)
   * [Performance](#performance)
 * [Log output](#log-output)
 * [StatsD metrics](#statsd-metrics)
@@ -308,6 +309,20 @@ jobs:
     expiration:
       delay_seconds: 1209600 # retain off-site backups for 14 days longer than on-site backup
 ```
+
+### Transfer behavior: Symlinks
+
+Starting with the Queens release, Swift optionally supports symlinks. A symlink is a light-weight reference to some
+other object (possibly in a different container and/or account). When a HEAD or GET request is sent to retrieve the
+symlink's metadata or content, the linked object's metadata or content is returned instead.
+
+When swift-http-import transfers from a Swift source (i.e., Swift credentials are given in `jobs[].from`), and when the
+target side supports symlinks, symlinks in the source side will be copied as symlinks. No extra configuration is
+necessary for this behavior.
+
+However, the link target must be transferred **in the same job**. (This restriction may be lifted in a later version.)
+Otherwise, the symlink will be transferred as a regular object, possibly resulting in duplication of file contents on
+the target side.
 
 ### Performance
 

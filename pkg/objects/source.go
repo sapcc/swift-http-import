@@ -36,6 +36,7 @@ import (
 	"golang.org/x/net/html"
 	"golang.org/x/net/html/atom"
 
+	"github.com/majewsky/schwift"
 	"github.com/sapcc/swift-http-import/pkg/util"
 )
 
@@ -56,7 +57,7 @@ type Source interface {
 	//GetFile retrieves the contents and metadata for the file at the given path
 	//in the source. The `headers` map contains additional HTTP request headers
 	//that shall be passed to the source in the GET request.
-	GetFile(directoryPath string, headers map[string]string) (body io.ReadCloser, sourceState FileState, err error)
+	GetFile(directoryPath string, headers schwift.ObjectHeaders) (body io.ReadCloser, sourceState FileState, err error)
 }
 
 //ListEntriesError is an error that occurs while scraping a directory.
@@ -302,9 +303,9 @@ func (u URLSource) ListEntries(directoryPath string) ([]FileSpec, *ListEntriesEr
 }
 
 //GetFile implements the Source interface.
-func (u URLSource) GetFile(directoryPath string, requestHeaders map[string]string) (io.ReadCloser, FileState, error) {
+func (u URLSource) GetFile(directoryPath string, requestHeaders schwift.ObjectHeaders) (io.ReadCloser, FileState, error) {
 	uri := u.getURLForPath(directoryPath).String()
-	requestHeaders["User-Agent"] = "swift-http-import/" + util.Version
+	requestHeaders.Set("User-Agent", "swift-http-import/"+util.Version)
 
 	//retrieve file from source
 	var (
@@ -312,12 +313,12 @@ func (u URLSource) GetFile(directoryPath string, requestHeaders map[string]strin
 		err      error
 	)
 	if u.Segmenting {
-		response, err = util.EnhancedGet(u.HTTPClient, uri, requestHeaders, u.SegmentSize)
+		response, err = util.EnhancedGet(u.HTTPClient, uri, requestHeaders.ToHTTP(), u.SegmentSize)
 	} else {
 		var req *http.Request
 		req, err := http.NewRequest("GET", uri, nil)
 		if err == nil {
-			for key, val := range requestHeaders {
+			for key, val := range requestHeaders.Headers {
 				req.Header.Set(key, val)
 			}
 			response, err = u.HTTPClient.Do(req)

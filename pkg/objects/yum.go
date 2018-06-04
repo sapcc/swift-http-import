@@ -26,6 +26,8 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+
+	"github.com/majewsky/schwift"
 )
 
 //YumSource is a URLSource containing a Yum repository. This type reuses the
@@ -68,7 +70,7 @@ func (s *YumSource) ListEntries(directoryPath string) ([]FileSpec, *ListEntriesE
 }
 
 //GetFile implements the Source interface.
-func (s *YumSource) GetFile(directoryPath string, requestHeaders map[string]string) (body io.ReadCloser, sourceState FileState, err error) {
+func (s *YumSource) GetFile(directoryPath string, requestHeaders schwift.ObjectHeaders) (body io.ReadCloser, sourceState FileState, err error) {
 	return s.urlSource.GetFile(directoryPath, requestHeaders)
 }
 
