@@ -91,11 +91,12 @@ type JobConfiguration struct {
 	Source SourceUnmarshaler `yaml:"from"`
 	Target *SwiftLocation    `yaml:"to"`
 	//behavior options
-	ExcludePattern       string                   `yaml:"except"`
-	IncludePattern       string                   `yaml:"only"`
-	ImmutableFilePattern string                   `yaml:"immutable"`
-	Segmenting           *SegmentingConfiguration `yaml:"segmenting"`
-	Expiration           ExpirationConfiguration  `yaml:"expiration"`
+	ExcludePattern       string                    `yaml:"except"`
+	IncludePattern       string                    `yaml:"only"`
+	ImmutableFilePattern string                    `yaml:"immutable"`
+	Segmenting           *SegmentingConfiguration  `yaml:"segmenting"`
+	Expiration           ExpirationConfiguration   `yaml:"expiration"`
+	UnknownFiles         UnknownFilesConfiguration `yaml:"unknown_files"`
 }
 
 //SegmentingConfiguration contains the "segmenting" section of a JobConfiguration.
@@ -112,6 +113,23 @@ type ExpirationConfiguration struct {
 	EnabledIn    *bool  `yaml:"enabled"`
 	Enabled      bool   `yaml:"-"`
 	DelaySeconds uint32 `yaml:"delay_seconds"`
+}
+
+//UnknownFilesStrategy is an enum of legal values for the jobs[].unknown_files.strategy configuration option.
+type UnknownFilesStrategy string
+
+const (
+	//KeepUnknownFiles is the default strategy.
+	KeepUnknownFiles UnknownFilesStrategy = ""
+	//DeleteUnknownFiles is another strategy.
+	DeleteUnknownFiles UnknownFilesStrategy = "delete"
+	//ReportUnknownFiles is another strategy.
+	ReportUnknownFiles UnknownFilesStrategy = "report"
+)
+
+//UnknownFilesConfiguration contains the "unknown_files" section of a JobConfiguration.
+type UnknownFilesConfiguration struct {
+	Strategy UnknownFilesStrategy `yaml:"strategy"`
 }
 
 //SourceUnmarshaler provides a yaml.Unmarshaler implementation for the Source interface.
@@ -149,11 +167,12 @@ func (u *SourceUnmarshaler) UnmarshalYAML(unmarshal func(interface{}) error) err
 
 //Job describes a transfer job at runtime.
 type Job struct {
-	Source     Source
-	Target     *SwiftLocation
-	Matcher    Matcher
-	Segmenting *SegmentingConfiguration
-	Expiration ExpirationConfiguration
+	Source       Source
+	Target       *SwiftLocation
+	Matcher      Matcher
+	Segmenting   *SegmentingConfiguration
+	Expiration   ExpirationConfiguration
+	UnknownFiles UnknownFilesConfiguration
 }
 
 //Compile validates the given JobConfiguration, then creates and prepares a Job from it.
@@ -195,11 +214,17 @@ func (cfg JobConfiguration) Compile(name string, swift SwiftLocation) (job *Job,
 		cfg.Expiration.Enabled = *cfg.Expiration.EnabledIn
 	}
 
+	ufs := cfg.UnknownFiles.Strategy
+	if ufs != KeepUnknownFiles && ufs != DeleteUnknownFiles && ufs != ReportUnknownFiles {
+		errors = append(errors, fmt.Errorf("invalid value for %s.unknown_files_strategy: %q", name, ufs))
+	}
+
 	job = &Job{
-		Source:     cfg.Source.src,
-		Target:     cfg.Target,
-		Segmenting: cfg.Segmenting,
-		Expiration: cfg.Expiration,
+		Source:       cfg.Source.src,
+		Target:       cfg.Target,
+		Segmenting:   cfg.Segmenting,
+		Expiration:   cfg.Expiration,
+		UnknownFiles: cfg.UnknownFiles,
 	}
 
 	//compile patterns into regexes
