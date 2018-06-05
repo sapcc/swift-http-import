@@ -36,6 +36,9 @@ type ReportEvent struct {
 
 	IsFile             bool
 	FileTransferResult objects.TransferResult
+
+	IsCleanup            bool
+	CleanedUpObjectCount int64
 }
 
 //Report is an actor that counts scraped directories and transferred files.
@@ -63,6 +66,7 @@ func (r *Report) Run() {
 		filesFound         int64
 		filesFailed        int64
 		filesTransferred   int64
+		filesCleanedUp     int64
 		statter            statsd.Statter
 	)
 
@@ -95,6 +99,8 @@ func (r *Report) Run() {
 			case objects.TransferFailed:
 				filesFailed++
 			}
+		case mark.IsCleanup:
+			filesCleanedUp += mark.CleanedUpObjectCount
 		}
 	}
 
@@ -109,6 +115,7 @@ func (r *Report) Run() {
 	gauge("last_run.files_found", filesFound, 1.0)
 	gauge("last_run.files_transfered", filesTransferred, 1.0)
 	gauge("last_run.files_failed", filesFailed, 1.0)
+	gauge("last_run.files_cleaned_up", filesCleanedUp, 1.0)
 	if filesFailed > 0 || directoriesFailed > 0 {
 		gauge("last_run.success", 0, 1.0)
 		r.ExitCode = 1
@@ -125,6 +132,9 @@ func (r *Report) Run() {
 	util.Log(util.LogInfo, "%d files found, %d transferred, %d failed",
 		filesFound, filesTransferred, filesFailed,
 	)
+	if filesCleanedUp > 0 {
+		util.Log(util.LogInfo, "%d old files cleaned up", filesCleanedUp)
+	}
 
 	duration := time.Since(r.StartTime)
 	gauge("last_run.duration_seconds", int64(duration.Seconds()), 1.0)

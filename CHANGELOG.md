@@ -1,6 +1,9 @@
-# v2.4.0 (TBD)
+# v2.4 (TBD)
 
 New features:
+- swift-http-import can now clean up objects on the target side that have been deleted on the source side. To enable
+  this behavior, set the new `jobs[].unknown_files.strategy` configuration option to `delete`. Or set it to `report` to
+  report such objects without deleting them.
 - Initial support for Swift symlinks has been added. When a Swift source contains a object that is a symlink to another
   object, the object is also uploaded as a symlink on the target side, thus avoiding duplicate transfers of identical
   files. In this version, only those symlinks are considered that point to objects which are transferred in the same
@@ -9,7 +12,7 @@ New features:
 Changes:
 - Switch the Swift backend from [ncw/swift](https://github.com/ncw/swift) to
   [Schwift](https://github.com/majewsky/schwift). This is important to facilitate some of the new features above.
-- When deleting a file on the target side (usually after an upload error), do not log an error if the DELETE request
+- When deleting a file on the target side (after an upload error), do not log an error if the DELETE request
   returns 404 (Not Found).
 
 Bugfixes:

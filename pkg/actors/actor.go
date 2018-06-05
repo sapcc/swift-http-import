@@ -29,10 +29,16 @@ type Actor interface {
 }
 
 //Start runs the given Actor in its own goroutine.
-func Start(a Actor, wg *sync.WaitGroup) {
-	wg.Add(1)
+func Start(a Actor, wgs ...*sync.WaitGroup) {
+	for _, wg := range wgs {
+		wg.Add(1)
+	}
 	go func() {
-		defer wg.Done()
+		defer func() {
+			for _, wg := range wgs {
+				wg.Done()
+			}
+		}()
 		a.Run()
 	}()
 }
