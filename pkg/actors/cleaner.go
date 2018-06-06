@@ -80,10 +80,13 @@ func (c *Cleaner) Run() {
 
 	//perform cleanup if it is safe to do so
 	for job, transferred := range isFileTransferred {
-		if isJobFailed[job] || c.Context.Err() == nil {
-			continue
+		if c.Context.Err() != nil {
+			//interrupt received
+			return
 		}
-		c.performCleanup(job, transferred)
+		if !isJobFailed[job] {
+			c.performCleanup(job, transferred)
+		}
 	}
 }
 
