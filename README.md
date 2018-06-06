@@ -10,6 +10,7 @@
   * [Transfer behavior: Segmenting on the target side](#transfer-behavior-segmenting-on-the-target-side)
   * [Transfer behavior: Expiring objects](#transfer-behavior-expiring-objects)
   * [Transfer behavior: Symlinks](#transfer-behavior-symlinks)
+  * [Transfer behavior: Delete objects on the target side](#transfer-behavior-delete-objects-on-the-target-side)
   * [Performance](#performance)
 * [Log output](#log-output)
 * [StatsD metrics](#statsd-metrics)
@@ -323,6 +324,30 @@ necessary for this behavior.
 However, the link target must be transferred **in the same job**. (This restriction may be lifted in a later version.)
 Otherwise, the symlink will be transferred as a regular object, possibly resulting in duplication of file contents on
 the target side.
+
+### Transfer behavior: Delete objects on the target side
+
+By default, swift-http-import will only copy files from the source side to the target side. To enable the deletion of
+objects that exist on the target side, but not on the source side, set the `jobs[].cleanup.strategy` configuration
+option to `delete`.
+[(Link to full example config file)](./examples/transfer-delete-on-target.yaml)
+
+```yaml
+jobs:
+  - from:
+      url: http://de.archive.ubuntu.com/ubuntu/
+    to:
+      container: mirror
+      object_prefix: ubuntu-repos
+    cleanup:
+      strategy: delete
+```
+
+Another possible value for `jobs[].cleanup.strategy` is `report`, which will log objects that `delete` would clean
+up without actually touching them.
+
+When combined with `jobs[].only` and/or `jobs[].expect`, cleanup will delete all files excluded by those filters, even
+if the same file exists on the source side. This is the same behavior as if `--delete-excluded` is given to rsync.
 
 ### Performance
 

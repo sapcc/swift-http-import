@@ -96,6 +96,7 @@ type JobConfiguration struct {
 	ImmutableFilePattern string                   `yaml:"immutable"`
 	Segmenting           *SegmentingConfiguration `yaml:"segmenting"`
 	Expiration           ExpirationConfiguration  `yaml:"expiration"`
+	Cleanup              CleanupConfiguration     `yaml:"cleanup"`
 }
 
 //SegmentingConfiguration contains the "segmenting" section of a JobConfiguration.
@@ -112,6 +113,23 @@ type ExpirationConfiguration struct {
 	EnabledIn    *bool  `yaml:"enabled"`
 	Enabled      bool   `yaml:"-"`
 	DelaySeconds uint32 `yaml:"delay_seconds"`
+}
+
+//CleanupStrategy is an enum of legal values for the jobs[].cleanup.strategy configuration option.
+type CleanupStrategy string
+
+const (
+	//KeepUnknownFiles is the default cleanup strategy.
+	KeepUnknownFiles CleanupStrategy = ""
+	//DeleteUnknownFiles is another strategy.
+	DeleteUnknownFiles CleanupStrategy = "delete"
+	//ReportUnknownFiles is another strategy.
+	ReportUnknownFiles CleanupStrategy = "report"
+)
+
+//CleanupConfiguration contains the "cleanup" section of a JobConfiguration.
+type CleanupConfiguration struct {
+	Strategy CleanupStrategy `yaml:"strategy"`
 }
 
 //SourceUnmarshaler provides a yaml.Unmarshaler implementation for the Source interface.
@@ -154,6 +172,7 @@ type Job struct {
 	Matcher    Matcher
 	Segmenting *SegmentingConfiguration
 	Expiration ExpirationConfiguration
+	Cleanup    CleanupConfiguration
 }
 
 //Compile validates the given JobConfiguration, then creates and prepares a Job from it.
@@ -195,11 +214,17 @@ func (cfg JobConfiguration) Compile(name string, swift SwiftLocation) (job *Job,
 		cfg.Expiration.Enabled = *cfg.Expiration.EnabledIn
 	}
 
+	ufs := cfg.Cleanup.Strategy
+	if ufs != KeepUnknownFiles && ufs != DeleteUnknownFiles && ufs != ReportUnknownFiles {
+		errors = append(errors, fmt.Errorf("invalid value for %s.cleanup.strategy: %q", name, ufs))
+	}
+
 	job = &Job{
 		Source:     cfg.Source.src,
 		Target:     cfg.Target,
 		Segmenting: cfg.Segmenting,
 		Expiration: cfg.Expiration,
+		Cleanup:    cfg.Cleanup,
 	}
 
 	//compile patterns into regexes

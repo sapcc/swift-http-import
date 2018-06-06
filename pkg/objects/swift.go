@@ -265,11 +265,7 @@ func (s *SwiftLocation) DiscoverExistingFiles(matcher Matcher) error {
 	iter.Prefix = prefix
 	s.FileExists = make(map[string]bool)
 	err := iter.Foreach(func(object *schwift.Object) error {
-		path := object.Name()
-		pathForMatching := strings.TrimPrefix(path, prefix)
-		if matcher.CheckRecursive(pathForMatching) == "" {
-			s.FileExists[path] = true
-		}
+		s.FileExists[object.Name()] = true
 		return nil
 	})
 	if err != nil {

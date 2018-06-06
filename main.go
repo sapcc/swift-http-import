@@ -92,24 +92,38 @@ func runPipeline(config *objects.Configuration, report chan<- actors.ReportEvent
 
 	//start the pipeline actors
 	var wg sync.WaitGroup
-	queue := make(chan objects.File, 10)
+	var wgTransfer sync.WaitGroup
+	queue1 := make(chan objects.File, 10)              //will be closed by scraper when it's done
+	queue2 := make(chan actors.FileInfoForCleaner, 10) //will be closed by us when all transferors are done
 
 	actors.Start(&actors.Scraper{
 		Context: ctx,
 		Jobs:    config.Jobs,
-		Output:  queue,
+		Output:  queue1,
 		Report:  report,
 	}, &wg)
 
 	for i := uint(0); i < config.WorkerCounts.Transfer; i++ {
 		actors.Start(&actors.Transferor{
 			Context: ctx,
-			Input:   queue,
+			Input:   queue1,
+			Output:  queue2,
 			Report:  report,
-		}, &wg)
+		}, &wg, &wgTransfer)
 	}
 
-	//wait for pipeline actors to finish
+	actors.Start(&actors.Cleaner{
+		Context: ctx,
+		Input:   queue2,
+		Report:  report,
+	}, &wg)
+
+	//wait for transfer phase to finish
+	wgTransfer.Wait()
+	//signal to cleaner to start its work
+	close(queue2)
+	//wait for remaining workers to finish
 	wg.Wait()
+
 	// signal.Reset(os.Interrupt, syscall.SIGTERM)
 }

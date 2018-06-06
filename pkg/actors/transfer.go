@@ -32,6 +32,7 @@ import (
 type Transferor struct {
 	Context context.Context
 	Input   <-chan objects.File
+	Output  chan<- FileInfoForCleaner
 	Report  chan<- ReportEvent
 }
 
@@ -57,6 +58,7 @@ LOOP:
 			if result == objects.TransferFailed {
 				filesToRetry = append(filesToRetry, file)
 			} else {
+				t.Output <- FileInfoForCleaner{File: file, Failed: false}
 				t.Report <- ReportEvent{IsFile: true, FileTransferResult: result}
 			}
 		}
@@ -74,6 +76,7 @@ LOOP:
 		if !aborted && t.Context.Err() == nil {
 			result = file.PerformTransfer()
 		}
+		t.Output <- FileInfoForCleaner{File: file, Failed: result == objects.TransferFailed}
 		t.Report <- ReportEvent{IsFile: true, FileTransferResult: result}
 	}
 
