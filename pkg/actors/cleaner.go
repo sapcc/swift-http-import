@@ -53,7 +53,7 @@ func (c *Cleaner) Run() {
 	for info := range c.Input {
 		//ignore all files in jobs where no cleanup is configured
 		job := info.File.Job
-		if job.UnknownFiles.Strategy == objects.KeepUnknownFiles {
+		if job.Cleanup.Strategy == objects.KeepUnknownFiles {
 			continue
 		}
 
@@ -101,7 +101,7 @@ func (c *Cleaner) performCleanup(job *objects.Job, isFileTransferred map[string]
 	})
 
 	//perform cleanup according to selected strategy
-	switch job.UnknownFiles.Strategy {
+	switch job.Cleanup.Strategy {
 	case objects.ReportUnknownFiles:
 		for _, obj := range objs {
 			util.Log(util.LogInfo, "found unknown object on target side: %s", obj.FullName())

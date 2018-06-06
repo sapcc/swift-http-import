@@ -12,5 +12,5 @@ jobs:
     to:
       container: mirror
       object_prefix: ubuntu-repos
-    unknown_files:
+    cleanup:
       strategy: delete

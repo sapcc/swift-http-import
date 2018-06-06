@@ -91,12 +91,12 @@ type JobConfiguration struct {
 	Source SourceUnmarshaler `yaml:"from"`
 	Target *SwiftLocation    `yaml:"to"`
 	//behavior options
-	ExcludePattern       string                    `yaml:"except"`
-	IncludePattern       string                    `yaml:"only"`
-	ImmutableFilePattern string                    `yaml:"immutable"`
-	Segmenting           *SegmentingConfiguration  `yaml:"segmenting"`
-	Expiration           ExpirationConfiguration   `yaml:"expiration"`
-	UnknownFiles         UnknownFilesConfiguration `yaml:"unknown_files"`
+	ExcludePattern       string                   `yaml:"except"`
+	IncludePattern       string                   `yaml:"only"`
+	ImmutableFilePattern string                   `yaml:"immutable"`
+	Segmenting           *SegmentingConfiguration `yaml:"segmenting"`
+	Expiration           ExpirationConfiguration  `yaml:"expiration"`
+	Cleanup              CleanupConfiguration     `yaml:"cleanup"`
 }
 
 //SegmentingConfiguration contains the "segmenting" section of a JobConfiguration.
@@ -115,21 +115,21 @@ type ExpirationConfiguration struct {
 	DelaySeconds uint32 `yaml:"delay_seconds"`
 }
 
-//UnknownFilesStrategy is an enum of legal values for the jobs[].unknown_files.strategy configuration option.
-type UnknownFilesStrategy string
+//CleanupStrategy is an enum of legal values for the jobs[].cleanup.strategy configuration option.
+type CleanupStrategy string
 
 const (
-	//KeepUnknownFiles is the default strategy.
-	KeepUnknownFiles UnknownFilesStrategy = ""
+	//KeepUnknownFiles is the default cleanup strategy.
+	KeepUnknownFiles CleanupStrategy = ""
 	//DeleteUnknownFiles is another strategy.
-	DeleteUnknownFiles UnknownFilesStrategy = "delete"
+	DeleteUnknownFiles CleanupStrategy = "delete"
 	//ReportUnknownFiles is another strategy.
-	ReportUnknownFiles UnknownFilesStrategy = "report"
+	ReportUnknownFiles CleanupStrategy = "report"
 )
 
-//UnknownFilesConfiguration contains the "unknown_files" section of a JobConfiguration.
-type UnknownFilesConfiguration struct {
-	Strategy UnknownFilesStrategy `yaml:"strategy"`
+//CleanupConfiguration contains the "cleanup" section of a JobConfiguration.
+type CleanupConfiguration struct {
+	Strategy CleanupStrategy `yaml:"strategy"`
 }
 
 //SourceUnmarshaler provides a yaml.Unmarshaler implementation for the Source interface.
@@ -167,12 +167,12 @@ func (u *SourceUnmarshaler) UnmarshalYAML(unmarshal func(interface{}) error) err
 
 //Job describes a transfer job at runtime.
 type Job struct {
-	Source       Source
-	Target       *SwiftLocation
-	Matcher      Matcher
-	Segmenting   *SegmentingConfiguration
-	Expiration   ExpirationConfiguration
-	UnknownFiles UnknownFilesConfiguration
+	Source     Source
+	Target     *SwiftLocation
+	Matcher    Matcher
+	Segmenting *SegmentingConfiguration
+	Expiration ExpirationConfiguration
+	Cleanup    CleanupConfiguration
 }
 
 //Compile validates the given JobConfiguration, then creates and prepares a Job from it.
@@ -214,17 +214,17 @@ func (cfg JobConfiguration) Compile(name string, swift SwiftLocation) (job *Job,
 		cfg.Expiration.Enabled = *cfg.Expiration.EnabledIn
 	}
 
-	ufs := cfg.UnknownFiles.Strategy
+	ufs := cfg.Cleanup.Strategy
 	if ufs != KeepUnknownFiles && ufs != DeleteUnknownFiles && ufs != ReportUnknownFiles {
-		errors = append(errors, fmt.Errorf("invalid value for %s.unknown_files_strategy: %q", name, ufs))
+		errors = append(errors, fmt.Errorf("invalid value for %s.cleanup.strategy: %q", name, ufs))
 	}
 
 	job = &Job{
-		Source:       cfg.Source.src,
-		Target:       cfg.Target,
-		Segmenting:   cfg.Segmenting,
-		Expiration:   cfg.Expiration,
-		UnknownFiles: cfg.UnknownFiles,
+		Source:     cfg.Source.src,
+		Target:     cfg.Target,
+		Segmenting: cfg.Segmenting,
+		Expiration: cfg.Expiration,
+		Cleanup:    cfg.Cleanup,
 	}
 
 	//compile patterns into regexes

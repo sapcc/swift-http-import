@@ -2,8 +2,8 @@
 
 New features:
 - swift-http-import can now clean up objects on the target side that have been deleted on the source side. To enable
-  this behavior, set the new `jobs[].unknown_files.strategy` configuration option to `delete`. Or set it to `report` to
-  report such objects without deleting them.
+  this behavior, set the new `jobs[].cleanup.strategy` configuration option to `delete`. Or set it to `report` to report
+  such objects without deleting them.
 - Initial support for Swift symlinks has been added. When a Swift source contains a object that is a symlink to another
   object, the object is also uploaded as a symlink on the target side, thus avoiding duplicate transfers of identical
   files. In this version, only those symlinks are considered that point to objects which are transferred in the same

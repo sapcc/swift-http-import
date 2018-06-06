@@ -327,8 +327,8 @@ the target side.
 
 ### Transfer behavior: Delete objects on the target side
 
-By default, swift-http-import will only create or overwrite objects on the target side. To enable the deletion of
-objects that exist on the source side, but not on the target side, set the `jobs[].unknown_files.strategy` configuration
+By default, swift-http-import will only copy files from the source side to the target side. To enable the deletion of
+objects that exist on the target side, but not on the source side, set the `jobs[].cleanup.strategy` configuration
 option to `delete`.
 [(Link to full example config file)](./examples/transfer-delete-on-target.yaml)
 
@@ -339,12 +339,15 @@ jobs:
     to:
       container: mirror
       object_prefix: ubuntu-repos
-    unknown_files:
+    cleanup:
       strategy: delete
 ```
 
-Another possible value for `jobs[].unknown_files.strategy` is `report`, which will log objects that `delete` would clean
+Another possible value for `jobs[].cleanup.strategy` is `report`, which will log objects that `delete` would clean
 up without actually touching them.
+
+When combined with `jobs[].only` and/or `jobs[].expect`, cleanup will delete all files excluded by those filters, even
+if the same file exists on the source side. This is the same behavior as if `--delete-excluded` is given to rsync.
 
 ### Performance
 
