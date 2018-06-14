@@ -1,4 +1,4 @@
-# v2.4 (TBD)
+# v2.4 (2018-06-14)
 
 New features:
 - swift-http-import can now clean up objects on the target side that have been deleted on the source side. To enable
