@@ -1,4 +1,10 @@
-# v2.4 (2018-06-14)
+# v2.4.1 (TBD)
+
+Changes:
+- Retroactively change version numbers `vX.Y` to `vX.Y.0` to achieve full compliance with the
+  [SemVer 2.0.0 spec](https://semver.org/spec/v2.0.0.html).
+
+# v2.4.0 (2018-06-14)
 
 New features:
 - swift-http-import can now clean up objects on the target side that have been deleted on the source side. To enable
@@ -19,7 +25,7 @@ Bugfixes:
 - When an SLO on the target side is being overwritten with a regular non-segmented object, swift-http-import now
   correctly deletes the SLO's segments.
 
-# v2.3 (2018-01-29)
+# v2.3.0 (2018-01-29)
 
 New features:
 - When `--version` is given, the release version is reported on standard output.
@@ -38,7 +44,7 @@ Bugfixes:
 - An issue was fixed where file state was not correctly tracked for large objects, which caused large objects to be
   mirrored on every run even when the target was already up-to-date.
 
-# v2.2 (2017-12-07)
+# v2.2.0 (2017-12-07)
 
 New features:
 - When syncing a Yum repository, the `jobs[].from.type` may be set to `"yum"` to instruct `swift-http-import` to parse
@@ -48,7 +54,7 @@ New features:
   last. This ensures that (barring unexpected transfer errors) clients using the target repository will never observe it
   in an inconsistent state, i.e., metadata will only start referencing packages once they have been transferred.
 
-# v2.1 (2017-11-16)
+# v2.1.0 (2017-11-16)
 
 New features:
 - If the environment variable `LOG_TRANSFERS=true` is given, transferred files will now be logged as they are being transferred.
@@ -65,7 +71,7 @@ Bugfixes:
 - Percent-encoded URLs in directory listings are now decoded correctly.
 - An issue was fixed where the immutability regex was not always respected for large containers.
 
-# v2.0 (2017-10-16)
+# v2.0.0 (2017-10-16)
 
 **Backwards-incompatible changes:**
 - The configuration format has changed slightly to be more consistent with itself.
@@ -88,7 +94,7 @@ Changes:
 Bugfixes:
 - Interrupts (SIGTERM and SIGINT) are now ignored less often.
 
-# v1.1 (2017-08-21)
+# v1.1.0 (2017-08-21)
 
 New features:
 - Add a simple retry logic:
@@ -102,6 +108,6 @@ Changes:
 Bugfixes:
 - Report failure when a source file cannot be retrieved (instead of uploading the error message to the target).
 
-# v1.0 (2017-08-18)
+# v1.0.0 (2017-08-18)
 
 Initial release.
