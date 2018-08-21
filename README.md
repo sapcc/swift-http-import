@@ -346,7 +346,7 @@ jobs:
 Another possible value for `jobs[].cleanup.strategy` is `report`, which will log objects that `delete` would clean
 up without actually touching them.
 
-When combined with `jobs[].only` and/or `jobs[].expect`, cleanup will delete all files excluded by those filters, even
+When combined with `jobs[].only` and/or `jobs[].except`, cleanup will delete all files excluded by those filters, even
 if the same file exists on the source side. This is the same behavior as if `--delete-excluded` is given to rsync.
 
 ### Performance
