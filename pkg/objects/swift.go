@@ -94,6 +94,10 @@ func (s SwiftLocation) Validate(name string) []error {
 		result = append(result, fmt.Errorf("missing value for %s.container", name))
 	}
 
+	if s.ObjectNamePrefix != "" && !strings.HasPrefix(s.ObjectNamePrefix, "/") {
+		s.ObjectNamePrefix += "/"
+	}
+
 	return result
 }
 
@@ -167,20 +171,31 @@ func (s *SwiftLocation) ObjectAtPath(path string) *schwift.Object {
 
 //ListAllFiles implements the Source interface.
 func (s *SwiftLocation) ListAllFiles() ([]FileSpec, *ListEntriesError) {
-	return nil, ErrListAllFilesNotSupported
+	return s.listFiles("", true)
 }
 
 //ListEntries implements the Source interface.
 func (s *SwiftLocation) ListEntries(path string) ([]FileSpec, *ListEntriesError) {
+	return s.listFiles(path, false)
+}
+
+func (s *SwiftLocation) listFiles(path string, recursively bool) ([]FileSpec, *ListEntriesError) {
 	objectPath := filepath.Join(s.ObjectNamePrefix, strings.TrimPrefix(path, "/"))
 	if objectPath != "" && !strings.HasSuffix(objectPath, "/") {
 		objectPath += "/"
 	}
-	util.Log(util.LogDebug, "listing objects at %s/%s", s.ContainerName, objectPath)
+
+	if recursively {
+		util.Log(util.LogDebug, "listing objects at %s/%s recursively", s.ContainerName, objectPath)
+	} else {
+		util.Log(util.LogDebug, "listing objects at %s/%s", s.ContainerName, objectPath)
+	}
 
 	iter := s.Container.Objects()
 	iter.Prefix = objectPath
-	iter.Delimiter = "/"
+	if !recursively {
+		iter.Delimiter = "/"
+	}
 	objectInfos, err := iter.CollectDetailed()
 	if err != nil {
 		return nil, &ListEntriesError{
@@ -189,14 +204,14 @@ func (s *SwiftLocation) ListEntries(path string) ([]FileSpec, *ListEntriesError)
 		}
 	}
 
-	//ObjectNamesAll returns full names, but we need to strip the objectPrefix
+	//strip ObjectNamePrefix from the resulting objects
 	result := make([]FileSpec, len(objectInfos))
 	for idx, info := range objectInfos {
 		if info.SubDirectory != "" {
-			result[idx].Path = filepath.Join(path, filepath.Base(info.SubDirectory))
+			result[idx].Path = strings.TrimPrefix(info.SubDirectory, s.ObjectNamePrefix)
 			result[idx].IsDirectory = true
 		} else {
-			result[idx].Path = filepath.Join(path, filepath.Base(info.Object.Name()))
+			result[idx].Path = strings.TrimPrefix(info.Object.Name(), s.ObjectNamePrefix)
 			if info.SymlinkTarget != nil && info.SymlinkTarget.Container().IsEqualTo(s.Container) {
 				targetPath := info.SymlinkTarget.Name()
 				if strings.HasPrefix(targetPath, s.ObjectNamePrefix) {
