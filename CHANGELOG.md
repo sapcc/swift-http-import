@@ -1,6 +1,8 @@
-# v2.4.1 (TBD)
+# v2.5.0 (TBD)
 
 Changes:
+- Improve performance with Swift sources by listing all source objects in one sweep. Previously, the same strategy as
+  for HTTP sources was employed, where each directory is listed separately.
 - Retroactively change version numbers `vX.Y` to `vX.Y.0` to achieve full compliance with the
   [SemVer 2.0.0 spec](https://semver.org/spec/v2.0.0.html).
 
