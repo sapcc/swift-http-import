@@ -96,7 +96,7 @@ func (f File) PerformTransfer() TransferResult {
 	//e.g. by adding a new actor between scraper and transferor that has access
 	//to the full list of jobs)
 	if f.Spec.SymlinkTargetPath != "" {
-		if f.Job.Matcher.CheckRecursive(f.Spec.SymlinkTargetPath) != "" {
+		if f.Job.Matcher.CheckRecursive(f.Spec.SymlinkTargetPath) != nil {
 			f.Spec.SymlinkTargetPath = ""
 		}
 	}

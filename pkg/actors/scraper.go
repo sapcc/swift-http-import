@@ -90,8 +90,8 @@ func (s *Scraper) Run() {
 		//handle each file/subdirectory that was found
 		for _, entry := range entries {
 			excludeReason := job.Matcher.CheckFile(entry)
-			if excludeReason != "" {
-				util.Log(util.LogDebug, "skipping %s: %s", entry.Path, excludeReason)
+			if excludeReason != nil {
+				util.Log(util.LogDebug, "skipping %s: %s", entry.Path, excludeReason.Error())
 				continue
 			}
 

@@ -5,6 +5,11 @@ Changes:
   for HTTP sources was employed, where each directory is listed separately.
 - Retroactively change version numbers `vX.Y` to `vX.Y.0` to achieve full compliance with the
   [SemVer 2.0.0 spec](https://semver.org/spec/v2.0.0.html).
+- Improve log format for skipping decisions to always show which path was rejected by the inclusion/exclusion regexes.
+  For example:
+
+    Old:     DEBUG: skipping /files/1.txt: is not included by `[0-9].txt`
+    New:     DEBUG: skipping /files/1.txt: /files/ is not included by `[0-9].txt`
 
 # v2.4.0 (2018-06-14)
 

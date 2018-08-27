@@ -33,6 +33,17 @@ type Matcher struct {
 	ImmutableFileRx *regexp.Regexp
 }
 
+//MatchError is returned by the functions on type Matcher.
+type MatchError struct {
+	Path   string
+	Reason string
+}
+
+//Error implements the builtin/error interface.
+func (e MatchError) Error() string {
+	return e.Path + " " + e.Reason
+}
+
 //Check checks whether the directory at `path` should be scraped, or
 //whether the file at `path` should be transferred. If so, an empty string is
 //returned. If not, a non-empty string is returned that contains a
@@ -40,22 +51,28 @@ type Matcher struct {
 //
 //If `path` is a directory, `path` must have a trailing slash.
 //If `path` is a file, `path` must not have a trailing slash.
-func (m Matcher) Check(path string) string {
+func (m Matcher) Check(path string) error {
+	//The path "/" may be produced by the loop in CheckRecursive(), but it is
+	//always considered included.
+	if filepath.Clean(path) == "/" {
+		return nil
+	}
 	if m.ExcludeRx != nil && m.ExcludeRx.MatchString(path) {
-		return fmt.Sprintf("is excluded by `%s`", m.ExcludeRx.String())
+		return MatchError{Path: path, Reason: fmt.Sprintf("is excluded by `%s`", m.ExcludeRx.String())}
 	}
 	if m.IncludeRx != nil && !m.IncludeRx.MatchString(path) {
-		return fmt.Sprintf("is not included by `%s`", m.IncludeRx.String())
+		return MatchError{Path: path, Reason: fmt.Sprintf("is not included by `%s`", m.IncludeRx.String())}
 	}
-	return ""
+	return nil
 }
 
-//CheckFile is like Check, but uses `spec.Path` and appends a slash if `spec.IsDirectory`.
-func (m Matcher) CheckFile(spec FileSpec) string {
+//CheckFile is like CheckRecursive, but uses `spec.Path` and appends a slash if
+//`spec.IsDirectory`.
+func (m Matcher) CheckFile(spec FileSpec) error {
 	if spec.IsDirectory {
-		return m.Check(spec.Path + "/")
+		return m.CheckRecursive(spec.Path + "/")
 	}
-	return m.Check(spec.Path)
+	return m.CheckRecursive(spec.Path)
 }
 
 //CheckRecursive is like Check(), but also checks each directory along the way
@@ -63,11 +80,11 @@ func (m Matcher) CheckFile(spec FileSpec) string {
 //
 //For example, CheckRecursive("a/b/c") calls Check("a/"), "Check("a/b/") and
 //Check("a/b/c").
-func (m Matcher) CheckRecursive(path string) string {
+func (m Matcher) CheckRecursive(path string) error {
 	steps := strings.Split(filepath.Clean(path), "/")
 	for i := 1; i < len(steps); i++ {
 		result := m.Check(filepath.Join(steps[0:i]...) + "/")
-		if result != "" {
+		if result != nil {
 			return result
 		}
 	}
