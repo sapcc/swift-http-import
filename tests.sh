@@ -411,7 +411,7 @@ mirror <<-EOF
   swift: { $AUTH_PARAMS }
   jobs:
     - from:
-        url: ${SOURCE_URL}
+        url: ${SOURCE_URL}/
         segment_bytes: 20 # less than job.segmenting.min_bytes, but also more
                           # than the smallest files (to exercise all code paths)
       to: { container: ${CONTAINER_BASE}-test8 }
