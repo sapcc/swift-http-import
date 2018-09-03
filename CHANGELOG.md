@@ -11,6 +11,9 @@ Changes:
     Old:     DEBUG: skipping /files/1.txt: is not included by `[0-9].txt`
     New:     DEBUG: skipping /files/1.txt: /files/ is not included by `[0-9].txt`
 
+Bugfixes:
+- When using a Swift source, pseudo-directories are now recognized and transferred correctly.
+
 # v2.4.0 (2018-06-14)
 
 New features:

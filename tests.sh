@@ -563,6 +563,35 @@ Hello World.
 EOF
 
 ################################################################################
+step 'Test 11: Swift sources with pseudo-directories'
+
+if [ "$1" = http ]; then
+  echo ">> Test skipped (works only with Swift source)."
+else
+
+upload_file_from_stdin pseudo/directory/ < /dev/null
+upload_file_from_stdin pseudo/regularfile.txt <<-EOF
+  Hello File.
+EOF
+
+mirror <<-EOF
+  swift: { $AUTH_PARAMS }
+  jobs:
+    - from: ${SOURCE_SPEC}
+      to:
+        container: ${CONTAINER_BASE}-test11
+      only: pseudo/
+EOF
+
+expect test11 <<-EOF
+>> pseudo/directory/
+>> pseudo/regularfile.txt
+Hello File.
+EOF
+
+fi # end of: if [ "$1" = http ]
+
+################################################################################
 # cleanup before exiting
 
 # do not make an error during cleanup_containers fail the test

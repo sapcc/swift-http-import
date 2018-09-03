@@ -164,7 +164,11 @@ func (s *SwiftLocation) Connect() error {
 func (s *SwiftLocation) ObjectAtPath(path string) *schwift.Object {
 	objectName := strings.TrimPrefix(path, "/")
 	if s.ObjectNamePrefix != "" {
+		isPseudoDir := strings.HasSuffix(objectName, "/")
 		objectName = filepath.Join(s.ObjectNamePrefix, objectName)
+		if isPseudoDir {
+			objectName += "/"
+		}
 	}
 	return s.Container.Object(objectName)
 }
