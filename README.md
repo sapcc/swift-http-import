@@ -1,6 +1,7 @@
 # swift-http-import
 
 * [Do NOT use if...](#do-not-use-if)
+* [Why this instead of rclone?](#why-this-instead-of-rclone)
 * [Implicit assumptions](#implicit-assumptions)
 * [Installation](#installation)
 * [Usage](#usage)
@@ -19,6 +20,23 @@ This tool imports files from an HTTP server into a Swift container. Given an inp
 listings on that URL, and mirrors all files that it finds into Swift. It will take advantage of `Last-Modified` and
 `Etag` response headers to avoid repeated downloads of the same content, so best performance is ensured if the HTTP server
 handles `If-Modified-Since` and `If-None-Match` request headers correctly.
+
+## Why this instead of rclone?
+
+[rclone](https://github.com/ncw/rclone/) is a similar tool that supports a much wider range of sources, and supports
+targets other than Swift. Users who need to sync from or to different clouds might therefore prefer rclone. If your only
+target is Swift, swift-http-import is better than rclone because it is built by people who operate Swift clusters for a
+living and know all the intricacies of the system, and how to optimize Swift clients for maximum performance and
+stability:
+
+* rclone does not support Swift symlinks. Symlinks will be copied as regular files, thereby potentially wasting space on
+  the target storage. swift-http-import recognizes symlinks and copies them as a symlink.
+* rclone transfers large objects using the Dynamic Large Object strategy. DLO suffers from severe eventual-consistency
+  problems when the Swift cluster is under high load. swift-http-import uses the much more resilient Static Large Object
+  strategy instead.
+* rclone does not propagate expiration dates when transferring between Swift containers. swift-http-import does.
+* swift-http-import uses customized transfer strategies to ensure a stable transfer over narrow or flaky network
+  connections.
 
 ## Do NOT use if...
 
