@@ -278,7 +278,7 @@ func (f File) uploadLargeObject(body io.Reader, hdr schwift.ObjectHeaders, clean
 		DeleteSegments: cleanupOldSegments,
 	})
 	if err == nil {
-		err = lo.Append(body, int64(f.Job.Segmenting.SegmentSize))
+		err = lo.Append(body, int64(f.Job.Segmenting.SegmentSize), hdr.ToOpts())
 	}
 	if err == nil {
 		err = lo.WriteManifest(hdr.ToOpts())
