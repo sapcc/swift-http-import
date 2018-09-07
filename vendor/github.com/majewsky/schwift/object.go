@@ -20,7 +20,9 @@ package schwift
 
 import (
 	"bytes"
+	"crypto/hmac"
 	"crypto/md5"
+	"crypto/sha1"
 	"encoding/hex"
 	"fmt"
 	"hash"
@@ -28,6 +30,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 )
 
 //Object represents a Swift object. Instances are usually obtained by
@@ -295,13 +298,6 @@ func tryComputeContentLength(content io.Reader) *uint64 {
 	return nil
 }
 
-//This covers both bytes.Reader and strings.Reader in a way that is compatible
-//with earlier versions of Go that don't have strings.Reader yet.
-type likeBytesReader interface {
-	io.WriterTo
-	io.Seeker
-}
-
 func tryComputeEtag(content io.Reader, headers ObjectHeaders) {
 	h := headers.Etag()
 	if h.Exists() {
@@ -316,11 +312,11 @@ func tryComputeEtag(content io.Reader, headers ObjectHeaders) {
 		//so this one is easy
 		sum := md5.Sum(r.Bytes())
 		h.Set(hex.EncodeToString(sum[:]))
-	case likeBytesReader:
+	case io.ReadSeeker:
 		//bytes.Reader does not have such a method, but it is an io.Seeker, so we
 		//can read the entire thing and then seek back to where we started
 		hash := md5.New()
-		n, _ := r.WriteTo(hash)
+		n, _ := io.Copy(hash, r)
 		r.Seek(-n, io.SeekCurrent)
 		h.Set(hex.EncodeToString(hash.Sum(nil)))
 	}
@@ -579,4 +575,61 @@ func (o *Object) SymlinkHeaders() (headers ObjectHeaders, target *Object, err er
 	}
 	target = targetAccount.Container(fields[0]).Object(fields[1])
 	return *o.symlinkHeaders, target, nil
+}
+
+//URL returns the canonical URL for the object on the server. This is
+//particularly useful when the ReadACL on the account or container is set to
+//allow anonymous read access.
+func (o *Object) URL() (string, error) {
+	return Request{
+		ContainerName: o.c.name,
+		ObjectName:    o.name,
+	}.URL(o.c.a.backend, nil)
+}
+
+//TempURL is like Object.URL, but includes a token with a limited lifetime (as
+//specified by the `expires` argument) that permits anonymous access to this
+//object using the given HTTP method. This works only when the tempurl
+//middleware is set up on the server, and if the given `key` matches one of the
+//tempurl keys for this object's container or account.
+//
+//For example, if the ReadACL both on the account and container do not permit
+//anonymous read access (which is the default behavior):
+//
+//	var o *schwift.Object
+//	...
+//	resp, err := http.Get(o.URL())
+//	//After this, resp.StatusCode == 401 (Unauthorized)
+//	//because anonymous access is forbidden.
+//
+//	//But if the container or account has a tempurl key...
+//	key := "supersecretkey"
+//	hdr := NewContainerHeaders()
+//	hdr.TempURLKey().Set(key)
+//	c := o.Container()
+//	err := c.Update(hdr, nil)
+//
+//	//...we can use it to generate temporary URLs.
+//	url := o.TempURL(key, "GET", time.Now().Add(10 * time.Minute))
+//	resp, err := http.Get(url)
+//	//This time, resp.StatusCode == 200 because the URL includes a token.
+//
+func (o *Object) TempURL(key, method string, expires time.Time) (string, error) {
+	urlStr, err := o.URL()
+	if err != nil {
+		return "", err
+	}
+	u, err := url.Parse(urlStr)
+	if err != nil {
+		return "", err
+	}
+
+	payload := fmt.Sprintf("%s\n%d\n%s", method, expires.Unix(), u.Path)
+	mac := hmac.New(sha1.New, []byte(key))
+	mac.Write([]byte(payload))
+	signature := hex.EncodeToString(mac.Sum(nil))
+
+	u.RawQuery = fmt.Sprintf("temp_url_sig=%s&temp_url_expires=%d",
+		signature, expires.Unix())
+	return u.String(), nil
 }

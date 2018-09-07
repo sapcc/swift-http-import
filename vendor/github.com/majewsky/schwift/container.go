@@ -201,3 +201,12 @@ func (c *Container) EnsureExists() (*Container, error) {
 func (c *Container) Objects() *ObjectIterator {
 	return &ObjectIterator{Container: c}
 }
+
+//URL returns the canonical URL for this container on the server. This is
+//particularly useful when the ReadACL on the account or container is set to
+//allow anonymous read access.
+func (c *Container) URL() (string, error) {
+	return Request{
+		ContainerName: c.name,
+	}.URL(c.a.backend, nil)
+}
