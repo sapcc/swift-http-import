@@ -13,6 +13,9 @@ Changes:
 
 Bugfixes:
 - When using a Swift source, pseudo-directories are now recognized and transferred correctly.
+- When uploading a segmented object to the target, expiration dates are now also applied to the segments.
+  If you used an older version of swift-http-import to transfer files with expiration dates using segmented uploading,
+  you will have to clean up those segments manually once the objects themselves have expired.
 
 # v2.4.0 (2018-06-14)
 
