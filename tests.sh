@@ -367,6 +367,10 @@ step 'Test 7: Object expiration'
 upload_file_from_stdin expires.txt -H 'X-Delete-At: 2000000000' <<-EOF
   This will expire soon.
 EOF
+upload_file_from_stdin expires-with-segments.txt -H 'X-Delete-At: 2000000000' <<-EOF
+  This will expire soon.
+  This will expire soon.
+EOF
 
 if [ "$1" = http ]; then
   echo ">> Test skipped (works only with Swift source)."
@@ -377,21 +381,42 @@ mirror <<-EOF
   jobs:
     - from: ${SOURCE_SPEC}
       to: { container: ${CONTAINER_BASE}-test7 }
-      only: 'expires.txt'
+      only: 'expires.*txt'
       expiration:
         delay_seconds: 42
+      segmenting:
+        container: ${CONTAINER_BASE}-test7-segments
+        min_bytes: 30
+        segment_bytes: 30
 EOF
 
 expect test7 <<-EOF
+>> expires-with-segments.txt
+This will expire soon.
+This will expire soon.
 >> expires.txt
 This will expire soon.
 EOF
 
-EXPIRY_TIMESTAMP="$(swift stat ${CONTAINER_BASE}-test7 expires.txt | awk '/X-Delete-At:/ { print $2 }')"
-if [ "${EXPIRY_TIMESTAMP}" != 2000000042 ]; then
-  echo -e "\e[1;31m>>\e[0;31m Expected file to expire at timestamp 2000000042, but expires at timestamp '${EXPIRY_TIMESTAMP}' instead.\e[0m"
+for OBJECT_NAME in expires.txt expires-with-segments.txt; do
+  EXPIRY_TIMESTAMP="$(swift stat ${CONTAINER_BASE}-test7 ${OBJECT_NAME} | awk '/X-Delete-At:/ { print $2 }')"
+  if [ "${EXPIRY_TIMESTAMP}" != 2000000042 ]; then
+    echo -e "\e[1;31m>>\e[0;31m Expected file \"${OBJECT_NAME}\" to expire at timestamp 2000000042, but expires at timestamp '${EXPIRY_TIMESTAMP}' instead.\e[0m"
+    exit 1
+  fi
+done
+
+# also check that expiration dates are applied to the segments as well
+swift list ${CONTAINER_BASE}-test7-segments | while read OBJECT_NAME; do
+  EXPIRY_TIMESTAMP="$(swift stat ${CONTAINER_BASE}-test7-segments ${OBJECT_NAME} | awk '/X-Delete-At:/ { print $2 }')"
+  if [ "${EXPIRY_TIMESTAMP}" != 2000000042 ]; then
+    echo -e "\e[1;31m>>\e[0;31m Expected segment '${OBJECT_NAME}' to expire at timestamp 2000000042, but expires at timestamp '${EXPIRY_TIMESTAMP}' instead.\e[0m"
+    exit 1
+  fi
+done || (
+  echo -e "\e[1;31m>>\e[0;31m Expected object 'expires-with-segments.txt' to be an SLO, but it's not segmented.\e[0m"
   exit 1
-fi
+)
 
 fi # end of: if [ "$1" = http ]
 
@@ -415,6 +440,7 @@ mirror <<-EOF
         segment_bytes: 20 # less than job.segmenting.min_bytes, but also more
                           # than the smallest files (to exercise all code paths)
       to: { container: ${CONTAINER_BASE}-test8 }
+      except: 'expires-with-segments.txt'
       segmenting:
         container: ${CONTAINER_BASE}-test8-segments
         min_bytes: 30
