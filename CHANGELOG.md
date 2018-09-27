@@ -1,4 +1,4 @@
-# v2.5.0 (TBD)
+# v2.5.0 (2018-09-27)
 
 Changes:
 - Improve performance with Swift sources by listing all source objects in one sweep. Previously, the same strategy as
