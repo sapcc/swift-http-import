@@ -516,7 +516,7 @@ EOF
 # transfer as a symlink because the link target is missing on the target side)
 if curl -si -H "X-Auth-Token: ${OS_AUTH_TOKEN}" "${OS_STORAGE_URL}/${CONTAINER_BASE}-test9/only-symlink/just/a/symlink.txt?symlink=get" | grep -q '^X-Symlink-Target'; then
   echo -e "\e[1;31m>>\e[0;31m Expected only-symlink/just/a/symlink.txt not to be a symlink, but it is one:\e[0m"
-  curl -si -H "X-Auth-Token: ${OS_AUTH_TOKEN}" "${OS_STORAGE_URL}/swift-http-import-1527765317-test9/only-symlink/just/a/symlink.txt?symlink=get"
+  curl -si -H "X-Auth-Token: ${OS_AUTH_TOKEN}" "${OS_STORAGE_URL}/${CONTAINER_BASE}-test9/only-symlink/just/a/symlink.txt?symlink=get"
   exit 1
 fi
 
@@ -524,7 +524,7 @@ fi
 # (since its link target is also included in the job)
 if ! curl -si -H "X-Auth-Token: ${OS_AUTH_TOKEN}" "${OS_STORAGE_URL}/${CONTAINER_BASE}-test9/symlink-and-target/just/a/symlink.txt?symlink=get" | grep -q '^X-Symlink-Target'; then
   echo -e "\e[1;31m>>\e[0;31m Expected symlink-and-target/just/a/symlink.txt to be a symlink, but it is not:\e[0m"
-  curl -si -H "X-Auth-Token: ${OS_AUTH_TOKEN}" "${OS_STORAGE_URL}/swift-http-import-1527765317-test9/symlink-and-target/just/a/symlink.txt?symlink=get"
+  curl -si -H "X-Auth-Token: ${OS_AUTH_TOKEN}" "${OS_STORAGE_URL}/${CONTAINER_BASE}-test9/symlink-and-target/just/a/symlink.txt?symlink=get"
   exit 1
 fi
 
@@ -613,6 +613,36 @@ expect test11 <<-EOF
 >> pseudo/directory/
 >> pseudo/regularfile.txt
 Hello File.
+EOF
+
+fi # end of: if [ "$1" = http ]
+
+################################################################################
+step 'Test 12: "Not older than" exclusion rule'
+
+if [ "$1" = http ]; then
+  echo ">> Test skipped (works only with Swift source)."
+else
+
+# reset Last-Modified timestamp on this one file
+upload_file_from_stdin just/some/files/2.txt <<-EOF
+  Hello Second World.
+EOF
+
+mirror <<-EOF
+  swift: { $AUTH_PARAMS }
+  jobs:
+    - from: ${SOURCE_SPEC}
+      to:
+        container: ${CONTAINER_BASE}-test12
+      only: '^just/$|some/'
+      match:
+        not_older_than: 30 seconds
+EOF
+
+expect test12 <<-EOF
+>> just/some/files/2.txt
+Hello Second World.
 EOF
 
 fi # end of: if [ "$1" = http ]

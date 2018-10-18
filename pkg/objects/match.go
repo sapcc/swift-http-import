@@ -24,6 +24,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 )
 
 //Matcher determines if files shall be included or excluded in a transfer.
@@ -31,6 +32,7 @@ type Matcher struct {
 	ExcludeRx       *regexp.Regexp //pointers because nil signifies absence
 	IncludeRx       *regexp.Regexp
 	ImmutableFileRx *regexp.Regexp
+	NotOlderThan    *time.Time
 }
 
 //MatchError is returned by the functions on type Matcher.
@@ -51,12 +53,22 @@ func (e MatchError) Error() string {
 //
 //If `path` is a directory, `path` must have a trailing slash.
 //If `path` is a file, `path` must not have a trailing slash.
-func (m Matcher) Check(path string) error {
+//
+//For directories, `lastModified` must be nil. For files, `lastModified` may be
+//non-nil and will then be checked against `m.NotOlderThan`.
+func (m Matcher) Check(path string, lastModified *time.Time) error {
 	//The path "/" may be produced by the loop in CheckRecursive(), but it is
 	//always considered included.
 	if filepath.Clean(path) == "/" {
 		return nil
 	}
+
+	if lastModified != nil && m.NotOlderThan != nil {
+		if m.NotOlderThan.After(*lastModified) {
+			return MatchError{Path: path, Reason: "is excluded because of age"}
+		}
+	}
+
 	if m.ExcludeRx != nil && m.ExcludeRx.MatchString(path) {
 		return MatchError{Path: path, Reason: fmt.Sprintf("is excluded by `%s`", m.ExcludeRx.String())}
 	}
@@ -70,9 +82,9 @@ func (m Matcher) Check(path string) error {
 //`spec.IsDirectory`.
 func (m Matcher) CheckFile(spec FileSpec) error {
 	if spec.IsDirectory {
-		return m.CheckRecursive(spec.Path + "/")
+		return m.CheckRecursive(spec.Path+"/", nil)
 	}
-	return m.CheckRecursive(spec.Path)
+	return m.CheckRecursive(spec.Path, spec.LastModified)
 }
 
 //CheckRecursive is like Check(), but also checks each directory along the way
@@ -80,13 +92,13 @@ func (m Matcher) CheckFile(spec FileSpec) error {
 //
 //For example, CheckRecursive("a/b/c") calls Check("a/"), "Check("a/b/") and
 //Check("a/b/c").
-func (m Matcher) CheckRecursive(path string) error {
+func (m Matcher) CheckRecursive(path string, lastModified *time.Time) error {
 	steps := strings.Split(filepath.Clean(path), "/")
 	for i := 1; i < len(steps); i++ {
-		result := m.Check(filepath.Join(steps[0:i]...) + "/")
+		result := m.Check(filepath.Join(steps[0:i]...)+"/", nil)
 		if result != nil {
 			return result
 		}
 	}
-	return m.Check(path)
+	return m.Check(path, lastModified)
 }

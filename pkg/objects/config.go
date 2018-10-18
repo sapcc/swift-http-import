@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"regexp"
+	"time"
 
 	"github.com/majewsky/schwift"
 	yaml "gopkg.in/yaml.v2"
@@ -94,9 +95,15 @@ type JobConfiguration struct {
 	ExcludePattern       string                   `yaml:"except"`
 	IncludePattern       string                   `yaml:"only"`
 	ImmutableFilePattern string                   `yaml:"immutable"`
+	Match                MatchConfiguration       `yaml:"match"`
 	Segmenting           *SegmentingConfiguration `yaml:"segmenting"`
 	Expiration           ExpirationConfiguration  `yaml:"expiration"`
 	Cleanup              CleanupConfiguration     `yaml:"cleanup"`
+}
+
+//MatchConfiguration contains the "match" section of a JobConfiguration.
+type MatchConfiguration struct {
+	NotOlderThan *AgeSpec `yaml:"not_older_than"`
 }
 
 //SegmentingConfiguration contains the "segmenting" section of a JobConfiguration.
@@ -196,6 +203,13 @@ func (cfg JobConfiguration) Compile(name string, swift SwiftLocation) (job *Job,
 		errors = append(errors, cfg.Target.Validate(name+".to")...)
 	}
 
+	if cfg.Match.NotOlderThan != nil {
+		_, isSwiftSource := cfg.Source.src.(*SwiftLocation)
+		if !isSwiftSource {
+			errors = append(errors, fmt.Errorf("invalid value for %s.match.not_older_than: this option is only supported for source type %t", name, cfg.Source.src))
+		}
+	}
+
 	if cfg.Segmenting != nil {
 		if cfg.Segmenting.MinObjectSize == 0 {
 			errors = append(errors, fmt.Errorf("missing value for %s.segmenting.min_bytes", name))
@@ -241,6 +255,11 @@ func (cfg JobConfiguration) Compile(name string, swift SwiftLocation) (job *Job,
 	job.Matcher.ExcludeRx = compileOptionalRegex("except", cfg.ExcludePattern)
 	job.Matcher.IncludeRx = compileOptionalRegex("only", cfg.IncludePattern)
 	job.Matcher.ImmutableFileRx = compileOptionalRegex("immutable", cfg.ImmutableFilePattern)
+	if cfg.Match.NotOlderThan != nil {
+		age := time.Duration(*cfg.Match.NotOlderThan)
+		cutoff := time.Now().Add(-age)
+		job.Matcher.NotOlderThan = &cutoff
+	}
 
 	//do not try connecting to Swift if credentials are invalid etc.
 	if len(errors) > 0 {

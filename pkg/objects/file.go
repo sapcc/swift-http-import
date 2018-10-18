@@ -43,6 +43,8 @@ type File struct {
 type FileSpec struct {
 	Path        string
 	IsDirectory bool
+	//only set for files in Swift sources (otherwise nil)
+	LastModified *time.Time
 	//only set for symlinks (refers to a path below the ObjectPrefix in the same container)
 	SymlinkTargetPath string
 	//results of GET on this file
@@ -95,8 +97,11 @@ func (f File) PerformTransfer() TransferResult {
 	//(TODO extend validation to allow for target to be transferred by any job,
 	//e.g. by adding a new actor between scraper and transferor that has access
 	//to the full list of jobs)
+	//(FIXME we should give something non-nil for the second argument of
+	//CheckRecursive(), otherwise symlinks might interact with the not_older_than
+	//filter in surprising ways)
 	if f.Spec.SymlinkTargetPath != "" {
-		if f.Job.Matcher.CheckRecursive(f.Spec.SymlinkTargetPath) != nil {
+		if f.Job.Matcher.CheckRecursive(f.Spec.SymlinkTargetPath, nil) != nil {
 			f.Spec.SymlinkTargetPath = ""
 		}
 	}

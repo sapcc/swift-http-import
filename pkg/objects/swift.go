@@ -216,6 +216,9 @@ func (s *SwiftLocation) listFiles(path string, recursively bool) ([]FileSpec, *L
 			result[idx].IsDirectory = true
 		} else {
 			result[idx].Path = strings.TrimPrefix(info.Object.Name(), s.ObjectNamePrefix)
+			lm := info.LastModified
+			result[idx].LastModified = &lm
+
 			if info.SymlinkTarget != nil && info.SymlinkTarget.Container().IsEqualTo(s.Container) {
 				targetPath := info.SymlinkTarget.Name()
 				if strings.HasPrefix(targetPath, s.ObjectNamePrefix) {

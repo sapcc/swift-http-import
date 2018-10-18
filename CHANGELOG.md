@@ -1,3 +1,9 @@
+# v2.6.0 (TBD)
+
+New features:
+- The new `jobs[].match.not_older_than` configuration option can be used to exclude old objects from transfer. As of
+  now, it can only be used with Swift sources, not with HTTP sources.
+
 # v2.5.0 (2018-09-27)
 
 Changes:

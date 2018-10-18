@@ -178,7 +178,7 @@ jobs:
       object_prefix: ubuntu-repos
 ```
 
-### File selection
+### File selection: By name
 
 For each job, you may supply three [regular expressions](https://golang.org/pkg/regexp/syntax/) to influence which files
 are transferred:
@@ -232,6 +232,33 @@ jobs:
       object_prefix: ubuntu-repos
     immutable: '.*\.deb$'
 ```
+
+### File selection: By age
+
+The `jobs[].match.not_older_than` configuration option can be used to exclude objects that are older than some
+threshold, as indicated by the `Last-Modified` header of the source object.
+[(Link to full example config file)](./examples/filter-not-older-than.yaml)
+
+```yaml
+jobs:
+  - from:
+      ... # not shown: credentials for Swift source
+      container: on-site-backup
+    to:
+      container: off-site-backup
+    match:
+      not_older_than: 3 days # ignore old backups, focus on the recent ones
+```
+
+The value of `jobs[].match.not_older_than` is a value with one of the following units:
+
+- `seconds` (`s`)
+- `minutes` (`m`)
+- `hours` (`h`)
+- `days` (`d`)
+- `weeks` (`w`)
+
+*Warning:* As of this version, this configuration option only works with Swift sources.
 
 ### Transfer behavior: Segmenting on the source side
 
