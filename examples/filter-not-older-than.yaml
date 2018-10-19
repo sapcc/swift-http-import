@@ -17,5 +17,5 @@ jobs:
       container:           on-site-backup
     to:
       container: off-site-backup
-    expiration:
+    match:
       not_older_than: 3 days # ignore old backups, focus on the recent ones
