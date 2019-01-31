@@ -1,0 +1,272 @@
+/*******************************************************************************
+*
+* Copyright 2016-2017 SAP SE
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You should have received a copy of the License along with this
+* program. If not, you may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*
+*******************************************************************************/
+
+package objects
+
+import (
+	"fmt"
+	"io/ioutil"
+	"regexp"
+
+	"github.com/majewsky/schwift"
+	yaml "gopkg.in/yaml.v2"
+)
+
+//Configuration contains the contents of the configuration file.
+type Configuration struct {
+	Swift        SwiftLocation `yaml:"swift"`
+	WorkerCounts struct {
+		Transfer uint
+	} `yaml:"workers"`
+	Statsd     StatsdConfiguration `yaml:"statsd"`
+	JobConfigs []JobConfiguration  `yaml:"jobs"`
+	Jobs       []*Job              `yaml:"-"`
+}
+
+//ReadConfiguration reads the configuration file.
+func ReadConfiguration(path string) (*Configuration, []error) {
+	configBytes, err := ioutil.ReadFile(path)
+	if err != nil {
+		return nil, []error{err}
+	}
+
+	var cfg Configuration
+	err = yaml.Unmarshal(configBytes, &cfg)
+	if err != nil {
+		return nil, []error{err}
+	}
+
+	//set default values
+	if cfg.WorkerCounts.Transfer == 0 {
+		cfg.WorkerCounts.Transfer = 1
+	}
+	if cfg.Statsd.HostName != "" && cfg.Statsd.Port == 0 {
+		cfg.Statsd.Port = 8125
+	}
+	if cfg.Statsd.Prefix == "" {
+		cfg.Statsd.Prefix = "swift_http_import"
+	}
+
+	cfg.Swift.ValidateIgnoreEmptyContainer = true
+	errors := cfg.Swift.Validate("swift")
+	for idx, jobConfig := range cfg.JobConfigs {
+		job, jobErrors := jobConfig.Compile(
+			fmt.Sprintf("swift.jobs[%d]", idx),
+			cfg.Swift,
+		)
+		cfg.Jobs = append(cfg.Jobs, job)
+		errors = append(errors, jobErrors...)
+	}
+
+	return &cfg, errors
+}
+
+//StatsdConfiguration contains the configuration options relating to StatsD
+//metric emission.
+type StatsdConfiguration struct {
+	HostName string `yaml:"hostname"`
+	Port     int    `yaml:"port"`
+	Prefix   string `yaml:"prefix"`
+}
+
+//JobConfiguration describes a transfer job in the configuration file.
+type JobConfiguration struct {
+	//basic options
+	Source SourceUnmarshaler `yaml:"from"`
+	Target *SwiftLocation    `yaml:"to"`
+	//behavior options
+	ExcludePattern       string                   `yaml:"except"`
+	IncludePattern       string                   `yaml:"only"`
+	ImmutableFilePattern string                   `yaml:"immutable"`
+	Segmenting           *SegmentingConfiguration `yaml:"segmenting"`
+	Expiration           ExpirationConfiguration  `yaml:"expiration"`
+	Cleanup              CleanupConfiguration     `yaml:"cleanup"`
+}
+
+//SegmentingConfiguration contains the "segmenting" section of a JobConfiguration.
+type SegmentingConfiguration struct {
+	MinObjectSize uint64 `yaml:"min_bytes"`
+	SegmentSize   uint64 `yaml:"segment_bytes"`
+	ContainerName string `yaml:"container"`
+	//Container is initialized by JobConfiguration.Compile().
+	Container *schwift.Container `yaml:"-"`
+}
+
+//ExpirationConfiguration contains the "expiration" section of a JobConfiguration.
+type ExpirationConfiguration struct {
+	EnabledIn    *bool  `yaml:"enabled"`
+	Enabled      bool   `yaml:"-"`
+	DelaySeconds uint32 `yaml:"delay_seconds"`
+}
+
+//CleanupStrategy is an enum of legal values for the jobs[].cleanup.strategy configuration option.
+type CleanupStrategy string
+
+const (
+	//KeepUnknownFiles is the default cleanup strategy.
+	KeepUnknownFiles CleanupStrategy = ""
+	//DeleteUnknownFiles is another strategy.
+	DeleteUnknownFiles CleanupStrategy = "delete"
+	//ReportUnknownFiles is another strategy.
+	ReportUnknownFiles CleanupStrategy = "report"
+)
+
+//CleanupConfiguration contains the "cleanup" section of a JobConfiguration.
+type CleanupConfiguration struct {
+	Strategy CleanupStrategy `yaml:"strategy"`
+}
+
+//SourceUnmarshaler provides a yaml.Unmarshaler implementation for the Source interface.
+type SourceUnmarshaler struct {
+	src Source
+}
+
+//UnmarshalYAML implements the yaml.Unmarshaler interface.
+func (u *SourceUnmarshaler) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	//unmarshal a few indicative fields
+	var probe struct {
+		URL  string `yaml:"url"`
+		Type string `yaml:"type"`
+	}
+	err := unmarshal(&probe)
+	if err != nil {
+		return err
+	}
+
+	//look at keys to determine whether this is a URLSource or a SwiftSource
+	if probe.URL == "" {
+		u.src = &SwiftLocation{}
+	} else {
+		switch probe.Type {
+		case "":
+			u.src = &URLSource{}
+		case "yum":
+			u.src = &YumSource{}
+		default:
+			return fmt.Errorf("unexpected value: type = %q", probe.Type)
+		}
+	}
+	return unmarshal(u.src)
+}
+
+//Job describes a transfer job at runtime.
+type Job struct {
+	Source     Source
+	Target     *SwiftLocation
+	Matcher    Matcher
+	Segmenting *SegmentingConfiguration
+	Expiration ExpirationConfiguration
+	Cleanup    CleanupConfiguration
+}
+
+//Compile validates the given JobConfiguration, then creates and prepares a Job from it.
+func (cfg JobConfiguration) Compile(name string, swift SwiftLocation) (job *Job, errors []error) {
+	if cfg.Source.src == nil {
+		errors = append(errors, fmt.Errorf("missing value for %s.from", name))
+	} else {
+		errors = append(errors, cfg.Source.src.Validate(name+".from")...)
+	}
+	if cfg.Target == nil {
+		errors = append(errors, fmt.Errorf("missing value for %s.to", name))
+	} else {
+		//target inherits connection parameters from global Swift credentials
+		cfg.Target.AuthURL = swift.AuthURL
+		cfg.Target.UserName = swift.UserName
+		cfg.Target.UserDomainName = swift.UserDomainName
+		cfg.Target.ProjectName = swift.ProjectName
+		cfg.Target.ProjectDomainName = swift.ProjectDomainName
+		cfg.Target.Password = swift.Password
+		cfg.Target.RegionName = swift.RegionName
+		errors = append(errors, cfg.Target.Validate(name+".to")...)
+	}
+
+	if cfg.Segmenting != nil {
+		if cfg.Segmenting.MinObjectSize == 0 {
+			errors = append(errors, fmt.Errorf("missing value for %s.segmenting.min_bytes", name))
+		}
+		if cfg.Segmenting.SegmentSize == 0 {
+			errors = append(errors, fmt.Errorf("missing value for %s.segmenting.segment_bytes", name))
+		}
+		if cfg.Segmenting.ContainerName == "" {
+			cfg.Segmenting.ContainerName = cfg.Target.ContainerName + "_segments"
+		}
+	}
+
+	if cfg.Expiration.EnabledIn == nil {
+		cfg.Expiration.Enabled = true
+	} else {
+		cfg.Expiration.Enabled = *cfg.Expiration.EnabledIn
+	}
+
+	ufs := cfg.Cleanup.Strategy
+	if ufs != KeepUnknownFiles && ufs != DeleteUnknownFiles && ufs != ReportUnknownFiles {
+		errors = append(errors, fmt.Errorf("invalid value for %s.cleanup.strategy: %q", name, ufs))
+	}
+
+	job = &Job{
+		Source:     cfg.Source.src,
+		Target:     cfg.Target,
+		Segmenting: cfg.Segmenting,
+		Expiration: cfg.Expiration,
+		Cleanup:    cfg.Cleanup,
+	}
+
+	//compile patterns into regexes
+	compileOptionalRegex := func(key, pattern string) *regexp.Regexp {
+		if pattern == "" {
+			return nil
+		}
+		rx, err := regexp.Compile(pattern)
+		if err != nil {
+			errors = append(errors, fmt.Errorf("malformed regex in %s.%s: %s", name, key, err.Error()))
+		}
+		return rx
+	}
+	job.Matcher.ExcludeRx = compileOptionalRegex("except", cfg.ExcludePattern)
+	job.Matcher.IncludeRx = compileOptionalRegex("only", cfg.IncludePattern)
+	job.Matcher.ImmutableFileRx = compileOptionalRegex("immutable", cfg.ImmutableFilePattern)
+
+	//do not try connecting to Swift if credentials are invalid etc.
+	if len(errors) > 0 {
+		return
+	}
+
+	//ensure that connection to Swift exists and that target container(s) is/are available
+	err := job.Source.Connect()
+	if err != nil {
+		errors = append(errors, err)
+	}
+	err = job.Target.Connect()
+	if err != nil {
+		errors = append(errors, err)
+	}
+	if job.Target.Account != nil && job.Segmenting != nil {
+		job.Segmenting.Container, err = job.Target.Account.Container(job.Segmenting.ContainerName).EnsureExists()
+		if err != nil {
+			errors = append(errors, err)
+		}
+	}
+
+	err = job.Target.DiscoverExistingFiles(job.Matcher)
+	if err != nil {
+		errors = append(errors, err)
+	}
+
+	return
+}

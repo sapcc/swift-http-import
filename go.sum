@@ -1,0 +1,14 @@
+github.com/cactus/go-statsd-client/statsd v0.0.0-20190125104250-82b7a1700102 h1:kM3Co+3YoeL7Tuwq7nXfMDWAC8wD79kfY5eRdyOdnsc=
+github.com/cactus/go-statsd-client/statsd v0.0.0-20190125104250-82b7a1700102/go.mod h1:3/sdo8I67TaOslRGJ6FqQC/ynu+wg7H6IE4WYtr51hk=
+github.com/gophercloud/gophercloud v0.0.0-20190130105114-cc9c99918988 h1:fajr0WpQtCjYtwtH5zivs/sXvMcPcT/ebx+HdyD11NA=
+github.com/gophercloud/gophercloud v0.0.0-20190130105114-cc9c99918988/go.mod h1:3WdhXV3rUYy9p6AUW8d94kr+HS62Y4VL9mBnFxsD8q4=
+github.com/jpillora/longestcommon v0.0.0-20161227235612-adb9d91ee629 h1:1dSBUfGlorLAua2CRx0zFN7kQsTpE2DQSmr7rrTNgY8=
+github.com/jpillora/longestcommon v0.0.0-20161227235612-adb9d91ee629/go.mod h1:mb5nS4uRANwOJSZj8rlCWAfAcGi72GGMIXx+xGOjA7M=
+github.com/majewsky/schwift v0.0.0-20180906125654-e1b3d5e2efc9 h1:gEZ+rVeQ1lzzFvykFE2F6BjKD1aCMxW0Uq1GeNs4DeQ=
+github.com/majewsky/schwift v0.0.0-20180906125654-e1b3d5e2efc9/go.mod h1:jSufaUESZRjOnLL32oE+4MjOvHnTQfuKuGsqda6oV1I=
+golang.org/x/net v0.0.0-20190125091013-d26f9f9a57f3 h1:ulvT7fqt0yHWzpJwI57MezWnYDVpCAYBVuYst/L+fAY=
+golang.org/x/net v0.0.0-20190125091013-d26f9f9a57f3/go.mod h1:mL1N/T3taQHkDXs73rZJwtUhF3w3ftmwwsq0BUmARs4=
+gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405 h1:yhCVgyC4o1eVCa2tZl7eS0r+SDo693bJlVdllGtEeKM=
+gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
+gopkg.in/yaml.v2 v2.2.2 h1:ZCJp+EgiOT7lHqUV2J862kp8Qj64Jo6az82+3Td9dZw=
+gopkg.in/yaml.v2 v2.2.2/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=
