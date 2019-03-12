@@ -1,4 +1,4 @@
-FROM golang:1.10-alpine as builder
+FROM golang:1.12-alpine as builder
 WORKDIR /x/src/github.com/sapcc/swift-http-import/
 RUN apk add --no-cache curl make openssl bash && \
     mkdir -p /pkg/bin/ && \
