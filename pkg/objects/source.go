@@ -101,7 +101,7 @@ type URLSource struct {
 	Segmenting   bool   `yaml:"-"`
 	SegmentSize  uint64 `yaml:"segment_bytes"`
 	//NOTE: All attributes that can be deserialized from YAML also need to be in
-	//the YumSource with the same YAML field names.
+	//the custom source types (e.g. YumSource) with the same YAML field names.
 }
 
 //Validate implements the Source interface.
@@ -348,4 +348,33 @@ func (u URLSource) GetFile(directoryPath string, requestHeaders schwift.ObjectHe
 //Return the URL for the given directoryPath below this URLSource.
 func (u URLSource) getURLForPath(directoryPath string) *url.URL {
 	return u.URL.ResolveReference(&url.URL{Path: strings.TrimPrefix(directoryPath, "/")})
+}
+
+//Helper function for custom source types.
+func (u URLSource) getFileContents(path string, cache map[string]FileSpec) (contents []byte, uri string, e *ListEntriesError) {
+	uri = u.getURLForPath(path).String()
+
+	req, err := http.NewRequest("GET", uri, nil)
+	if err != nil {
+		return nil, uri, &ListEntriesError{uri, "GET failed: " + err.Error()}
+	}
+
+	resp, err := u.HTTPClient.Do(req)
+	if err != nil {
+		return nil, uri, &ListEntriesError{uri, "GET failed: " + err.Error()}
+	}
+	defer resp.Body.Close()
+
+	result, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, uri, &ListEntriesError{uri, "GET failed: " + err.Error()}
+	}
+
+	cache[path] = FileSpec{
+		Path:     path,
+		Contents: result,
+		Headers:  resp.Header,
+	}
+
+	return result, uri, nil
 }
