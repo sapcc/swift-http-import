@@ -29,6 +29,7 @@ import (
 
 	"golang.org/x/net/context"
 
+	"github.com/sapcc/go-bits/logg"
 	"github.com/sapcc/swift-http-import/pkg/actors"
 	"github.com/sapcc/swift-http-import/pkg/objects"
 	"github.com/sapcc/swift-http-import/pkg/util"
@@ -52,7 +53,7 @@ func main() {
 	config, errs := objects.ReadConfiguration(os.Args[1])
 	if len(errs) > 0 {
 		for _, err := range errs {
-			util.Log(util.LogError, err.Error())
+			logg.Error(err.Error())
 		}
 		os.Exit(1)
 	}
@@ -86,7 +87,7 @@ func runPipeline(config *objects.Configuration, report chan<- actors.ReportEvent
 	defer cancelFunc()
 	go func() {
 		<-sigs
-		util.Log(util.LogError, "Interrupt received! Shutting down...")
+		logg.Error("Interrupt received! Shutting down...")
 		cancelFunc()
 	}()
 

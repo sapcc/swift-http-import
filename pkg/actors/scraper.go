@@ -20,8 +20,8 @@
 package actors
 
 import (
+	"github.com/sapcc/go-bits/logg"
 	"github.com/sapcc/swift-http-import/pkg/objects"
-	"github.com/sapcc/swift-http-import/pkg/util"
 	"golang.org/x/net/context"
 )
 
@@ -77,11 +77,11 @@ func (s *Scraper) Run() {
 		//if listing failed, maybe retry later
 		if err != nil {
 			if directory.RetryCounter >= 2 {
-				util.Log(util.LogError, "giving up on %s: %s", err.Location, err.Message)
+				logg.Error("giving up on %s: %s", err.Location, err.Message)
 				s.Report <- ReportEvent{IsDirectory: true, DirectoryFailed: true}
 				continue
 			}
-			util.Log(util.LogError, "skipping %s for now: %s", err.Location, err.Message)
+			logg.Error("skipping %s for now: %s", err.Location, err.Message)
 			directory.RetryCounter++
 			stack = stack.PushBack(directory)
 			continue
@@ -91,7 +91,7 @@ func (s *Scraper) Run() {
 		for _, entry := range entries {
 			excludeReason := job.Matcher.CheckFile(entry)
 			if excludeReason != nil {
-				util.Log(util.LogDebug, "skipping %s: %s", entry.Path, excludeReason.Error())
+				logg.Debug("skipping %s: %s", entry.Path, excludeReason.Error())
 				continue
 			}
 

@@ -37,6 +37,7 @@ import (
 	"golang.org/x/net/html/atom"
 
 	"github.com/majewsky/schwift"
+	"github.com/sapcc/go-bits/logg"
 	"github.com/sapcc/swift-http-import/pkg/util"
 )
 
@@ -122,7 +123,7 @@ func (u *URLSource) Validate(name string) (result []error) {
 			u.URL.RawPath = ""
 		}
 		if !strings.HasSuffix(u.URL.Path, "/") {
-			util.Log(util.LogError, "source URL '%s' does not have a trailing slash (adding one for now; this will become a fatal error in future versions)", u.URLString)
+			logg.Error("source URL '%s' does not have a trailing slash (adding one for now; this will become a fatal error in future versions)", u.URLString)
 			u.URL.Path += "/"
 			if u.URL.RawPath != "" {
 				u.URL.RawPath += "/"
@@ -163,7 +164,7 @@ func (u *URLSource) Connect() error {
 			return fmt.Errorf("cannot load client certificate from %s: %s", u.ClientCertificatePath, err.Error())
 		}
 
-		util.Log(util.LogDebug, "Client certificate %s loaded", u.ClientCertificatePath)
+		logg.Debug("Client certificate %s loaded", u.ClientCertificatePath)
 		tlsConfig.Certificates = []tls.Certificate{clientCertificate}
 	}
 
@@ -177,7 +178,7 @@ func (u *URLSource) Connect() error {
 		certPool := x509.NewCertPool()
 		certPool.AppendCertsFromPEM(serverCA)
 
-		util.Log(util.LogDebug, "Server CA %s loaded", u.ServerCAPath)
+		logg.Debug("Server CA %s loaded", u.ServerCAPath)
 		tlsConfig.RootCAs = certPool
 	}
 
@@ -217,7 +218,7 @@ func (u URLSource) ListEntries(directoryPath string) ([]FileSpec, *ListEntriesEr
 		}
 	}
 
-	util.Log(util.LogDebug, "scraping %s", uri)
+	logg.Debug("scraping %s", uri)
 
 	//retrieve directory listing
 	//TODO: This should send "Accept: text/html", but at least Apache and nginx
@@ -265,7 +266,7 @@ func (u URLSource) ListEntries(directoryPath string) ([]FileSpec, *ListEntriesEr
 
 				hrefURL, err := url.Parse(href)
 				if err != nil {
-					util.Log(util.LogError, "scrape %s: ignoring href attribute '%s' which is not a valid URL", uri.String(), href)
+					logg.Error("scrape %s: ignoring href attribute '%s' which is not a valid URL", uri.String(), href)
 					continue
 				}
 

@@ -31,6 +31,7 @@ import (
 	"github.com/gophercloud/gophercloud/openstack"
 	"github.com/majewsky/schwift"
 	"github.com/majewsky/schwift/gopherschwift"
+	"github.com/sapcc/go-bits/logg"
 	"github.com/sapcc/swift-http-import/pkg/util"
 )
 
@@ -190,9 +191,9 @@ func (s *SwiftLocation) listFiles(path string, recursively bool) ([]FileSpec, *L
 	}
 
 	if recursively {
-		util.Log(util.LogDebug, "listing objects at %s/%s recursively", s.ContainerName, objectPath)
+		logg.Debug("listing objects at %s/%s recursively", s.ContainerName, objectPath)
 	} else {
-		util.Log(util.LogDebug, "listing objects at %s/%s", s.ContainerName, objectPath)
+		logg.Debug("listing objects at %s/%s", s.ContainerName, objectPath)
 	}
 
 	iter := s.Container.Objects()

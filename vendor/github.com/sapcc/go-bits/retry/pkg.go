@@ -1,6 +1,6 @@
 /*******************************************************************************
 *
-* Copyright 2016-2017 SAP SE
+* Copyright 2018 SAP SE
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -17,29 +17,41 @@
 *
 *******************************************************************************/
 
-package util
+//Package retry contains helper methods that create retry loops using
+//different retry strategies.
+package retry
 
 import (
-	"os"
-	"strconv"
+	"time"
 
 	"github.com/sapcc/go-bits/logg"
 )
 
-func init() {
-	if parseBool(os.Getenv("DEBUG")) {
-		logg.ShowDebug = true
-	}
+//Strategy interface type contains methods for different retry strategies.
+type Strategy interface {
+	RetryUntilSuccessful(func() error)
 }
 
-//LogIndividualTransfers is set to the boolean value of the
-//LOG_TRANSFERS environment variable.
-var LogIndividualTransfers = parseBool(os.Getenv("LOG_TRANSFERS"))
+//ExponentialBackoff options.
+type ExponentialBackoff struct {
+	Factor      int
+	MaxInterval time.Duration
+}
 
-func parseBool(str string) bool {
-	b, err := strconv.ParseBool(str)
-	if err != nil {
-		b = false
+//RetryUntilSuccessful creates a retry loop with an exponential backoff.
+func (eb ExponentialBackoff) RetryUntilSuccessful(action func() error) {
+	duration := time.Second
+	for {
+		err := action()
+		if err != nil {
+			logg.Error("%s", err)
+			duration *= time.Duration(eb.Factor)
+			if duration > eb.MaxInterval {
+				duration = eb.MaxInterval
+			}
+			time.Sleep(duration)
+			continue
+		}
+		break
 	}
-	return b
 }

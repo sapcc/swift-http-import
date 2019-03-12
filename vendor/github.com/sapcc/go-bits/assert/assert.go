@@ -1,6 +1,6 @@
 /*******************************************************************************
 *
-* Copyright 2016-2017 SAP SE
+* Copyright 2017 SAP SE
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -17,29 +17,23 @@
 *
 *******************************************************************************/
 
-package util
+package assert
 
 import (
-	"os"
-	"strconv"
-
-	"github.com/sapcc/go-bits/logg"
+	"reflect"
+	"testing"
 )
 
-func init() {
-	if parseBool(os.Getenv("DEBUG")) {
-		logg.ShowDebug = true
+//DeepEqual checks if the actual and expected value are equal as
+//determined by reflect.DeepEqual(), and t.Error()s otherwise.
+func DeepEqual(t *testing.T, variable string, actual, expected interface{}) bool {
+	t.Helper()
+	if reflect.DeepEqual(actual, expected) {
+		return true
 	}
-}
 
-//LogIndividualTransfers is set to the boolean value of the
-//LOG_TRANSFERS environment variable.
-var LogIndividualTransfers = parseBool(os.Getenv("LOG_TRANSFERS"))
-
-func parseBool(str string) bool {
-	b, err := strconv.ParseBool(str)
-	if err != nil {
-		b = false
-	}
-	return b
+	t.Error("assert.DeepEqual failed for " + variable)
+	t.Logf("\texpected = %#v\n", expected)
+	t.Logf("\t  actual = %#v\n", actual)
+	return false
 }

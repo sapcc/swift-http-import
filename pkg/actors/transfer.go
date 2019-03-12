@@ -20,8 +20,8 @@
 package actors
 
 import (
+	"github.com/sapcc/go-bits/logg"
 	"github.com/sapcc/swift-http-import/pkg/objects"
-	"github.com/sapcc/swift-http-import/pkg/util"
 	"golang.org/x/net/context"
 )
 
@@ -66,7 +66,7 @@ LOOP:
 
 	//retry transfer of failed files one more time
 	if !aborted && len(filesToRetry) > 0 {
-		util.Log(util.LogInfo, "retrying %d failed file transfers...", len(filesToRetry))
+		logg.Info("retrying %d failed file transfers...", len(filesToRetry))
 	}
 	for _, file := range filesToRetry {
 		result := objects.TransferFailed
