@@ -4,4 +4,4 @@
 /.golangvend-cache/
 
 # for my own testing
-test.yaml
+/*.yaml
