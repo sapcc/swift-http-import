@@ -21,10 +21,8 @@ package objects
 
 import (
 	"bytes"
-	"compress/gzip"
 	"encoding/xml"
 	"io"
-	"io/ioutil"
 
 	"github.com/majewsky/schwift"
 )
@@ -194,16 +192,11 @@ func (s *YumSource) downloadAndParseXML(path string, data interface{}, cache map
 	}
 
 	//if `buf` has the magic number for GZip, decompress before parsing as XML
-	if bytes.HasPrefix(buf, []byte{0x1f, 0x8b, 0x08}) {
-		reader, err := gzip.NewReader(bytes.NewReader(buf))
-		if err == nil {
-			buf, err = ioutil.ReadAll(reader)
-		}
+	if bytes.HasPrefix(buf, gzipMagicNumber) {
+		var err error
+		buf, err = decompressGZipArchive(buf)
 		if err != nil {
-			return uri, &ListEntriesError{
-				Location: uri,
-				Message:  "error while decompressing GZip archive: " + err.Error(),
-			}
+			return uri, &ListEntriesError{Location: uri, Message: err.Error()}
 		}
 	}
 
