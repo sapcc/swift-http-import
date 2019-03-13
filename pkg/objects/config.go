@@ -165,6 +165,8 @@ func (u *SourceUnmarshaler) UnmarshalYAML(unmarshal func(interface{}) error) err
 			u.src = &URLSource{}
 		case "yum":
 			u.src = &YumSource{}
+		case "debian":
+			u.src = &DebianSource{}
 		default:
 			return fmt.Errorf("unexpected value: type = %q", probe.Type)
 		}
