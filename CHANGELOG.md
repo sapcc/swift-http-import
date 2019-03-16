@@ -3,6 +3,11 @@
 New features:
 - The new `jobs[].match.not_older_than` configuration option can be used to exclude old objects from transfer. As of
   now, it can only be used with Swift sources, not with HTTP sources.
+- When syncing a Debian (Ubuntu) repository, the `jobs[].from.type` may be set
+  to `debian` to instruct `swift-http-import` to parse the repository metadata
+  (Release file) instead of the HTTP server's directory listings to find which
+  files to transfer. Note that any files below the repository URL which are not
+  referenced in the repository metadata will not be transferred.
 
 # v2.5.0 (2018-09-27)
 
