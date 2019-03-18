@@ -126,7 +126,7 @@ func (s *DebianSource) ListAllFiles() ([]FileSpec, *ListEntriesError) {
 
 	//index files for different distributions as specified in the config file
 	for _, distName := range s.Distributions {
-		distRootPath := "dists/" + distName + "/"
+		distRootPath := filepath.Join("dists", distName)
 		distFiles, lerr := s.ListDistFiles(distRootPath, cache)
 		if lerr != nil {
 			return nil, lerr
@@ -161,7 +161,7 @@ func (s *DebianSource) ListDistFiles(distRootPath string, cache map[string]FileS
 	var distFiles []string
 
 	//parse 'inRelease' file to find paths of other control files
-	releasePath := distRootPath + "InRelease"
+	releasePath := filepath.Join(distRootPath, "InRelease")
 
 	var release struct {
 		Architectures []string                 `control:"Architectures" delim:" " strip:" "`
@@ -173,7 +173,7 @@ func (s *DebianSource) ListDistFiles(distRootPath string, cache map[string]FileS
 	_, lerr := s.downloadAndParseDCF(releasePath, &release, cache)
 	if lerr != nil {
 		//some older distros only have the legacy 'Release' file
-		releasePath = distRootPath + "Release"
+		releasePath = filepath.Join(distRootPath, "Release")
 		_, lerr = s.downloadAndParseDCF(releasePath, &release, cache)
 		if lerr != nil {
 			return nil, lerr
@@ -247,7 +247,7 @@ func (s *DebianSource) ListDistFiles(distRootPath string, cache map[string]FileS
 	//note control files for transfer
 	for _, entry := range release.Entries {
 		//entry.Filename is relative to distRootPath therefore
-		fileName := distRootPath + entry.Filename
+		fileName := filepath.Join(distRootPath, entry.Filename)
 
 		//note architecture independant files
 		switch {
@@ -365,7 +365,7 @@ func (s *DebianSource) ListDistFiles(distRootPath string, cache map[string]FileS
 
 		for _, src := range tmp {
 			for _, file := range src.Files {
-				distFiles = append(distFiles, src.Directory+file.Filename)
+				distFiles = append(distFiles, filepath.Join(src.Directory, file.Filename))
 			}
 		}
 	}
@@ -373,11 +373,11 @@ func (s *DebianSource) ListDistFiles(distRootPath string, cache map[string]FileS
 	//transfer 'Release' files at the very end, when everything else has
 	//already been uploaded (to avoid situations where a client might see
 	//repository metadata without being able to see the referenced packages)
-	distFiles = append(distFiles, releasePath)
-	distFiles = append(distFiles, distRootPath+"Release")
+	distFiles = append(distFiles, filepath.Join(distRootPath, "InRelease"))
+	distFiles = append(distFiles, filepath.Join(distRootPath, "Release"))
 	//'Release' file comes with a detached GPG signature rather than an inline
 	//one (as in the case of 'InRelease')
-	distFiles = append(distFiles, distRootPath+"Release.gpg")
+	distFiles = append(distFiles, filepath.Join(distRootPath, "Release.gpg"))
 
 	return distFiles, nil
 }
