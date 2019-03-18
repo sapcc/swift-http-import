@@ -20,47 +20,21 @@
 package util
 
 import (
-	"log"
 	"os"
 	"strconv"
+
+	"github.com/sapcc/go-bits/logg"
 )
 
-//LogLevel is the first argument to Log().
-type LogLevel int
-
-//Acceptable log levels.
-const (
-	LogFatal LogLevel = iota
-	LogError
-	LogInfo
-	LogDebug
-)
-
-var logLevelNames = []string{"FATAL", "ERROR", "INFO", "DEBUG"}
-
-var isDebug = parseBool(os.Getenv("DEBUG"))
+func init() {
+	if parseBool(os.Getenv("DEBUG")) {
+		logg.ShowDebug = true
+	}
+}
 
 //LogIndividualTransfers is set to the boolean value of the
 //LOG_TRANSFERS environment variable.
 var LogIndividualTransfers = parseBool(os.Getenv("LOG_TRANSFERS"))
-
-//Log writes a log message. LogDebug messages are only written if
-//the environment variable `DEBUG` is set.
-func Log(level LogLevel, msg string, args ...interface{}) {
-	if level == LogDebug && !isDebug {
-		return
-	}
-
-	if len(args) > 0 {
-		log.Printf(logLevelNames[level]+": "+msg+"\n", args...)
-	} else {
-		log.Println(logLevelNames[level] + ": " + msg)
-	}
-
-	if level == LogFatal {
-		os.Exit(1)
-	}
-}
 
 func parseBool(str string) bool {
 	b, err := strconv.ParseBool(str)

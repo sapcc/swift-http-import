@@ -24,8 +24,8 @@ import (
 	"sort"
 
 	"github.com/majewsky/schwift"
+	"github.com/sapcc/go-bits/logg"
 	"github.com/sapcc/swift-http-import/pkg/objects"
-	"github.com/sapcc/swift-http-import/pkg/util"
 )
 
 //FileInfoForCleaner contains information about a transferred file for the Cleaner actor.
@@ -69,11 +69,11 @@ func (c *Cleaner) Run() {
 		m[info.File.TargetObject().Name()] = true
 	}
 	if c.Context.Err() != nil {
-		util.Log(util.LogInfo, "skipping cleanup phase: interrupt was received")
+		logg.Info("skipping cleanup phase: interrupt was received")
 		return
 	}
 	if len(isJobFailed) > 0 {
-		util.Log(util.LogInfo,
+		logg.Info(
 			"skipping cleanup phase for %d job(s) because of failed file transfers",
 			len(isJobFailed))
 	}
@@ -107,17 +107,17 @@ func (c *Cleaner) performCleanup(job *objects.Job, isFileTransferred map[string]
 	switch job.Cleanup.Strategy {
 	case objects.ReportUnknownFiles:
 		for _, obj := range objs {
-			util.Log(util.LogInfo, "found unknown object on target side: %s", obj.FullName())
+			logg.Info("found unknown object on target side: %s", obj.FullName())
 		}
 
 	case objects.DeleteUnknownFiles:
 		numDeleted, _, err := job.Target.Container.Account().BulkDelete(objs, nil, nil)
 		c.Report <- ReportEvent{IsCleanup: true, CleanedUpObjectCount: int64(numDeleted)}
 		if err != nil {
-			util.Log(util.LogError, "cleanup of %d objects on target side failed: %s", len(objs), err.Error())
+			logg.Error("cleanup of %d objects on target side failed: %s", len(objs), err.Error())
 			if berr, ok := err.(schwift.BulkError); ok {
 				for _, oerr := range berr.ObjectErrors {
-					util.Log(util.LogError, "DELETE "+oerr.Error())
+					logg.Error("DELETE " + oerr.Error())
 				}
 			}
 		}

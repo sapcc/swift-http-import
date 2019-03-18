@@ -1,7 +1,7 @@
 # swift-http-import
 
-* [Do NOT use if...](#do-not-use-if)
 * [Why this instead of rclone?](#why-this-instead-of-rclone)
+* [Do NOT use if...](#do-not-use-if)
 * [Implicit assumptions](#implicit-assumptions)
 * [Installation](#installation)
 * [Usage](#usage)
@@ -133,8 +133,10 @@ jobs:
       object_prefix: ubuntu-repos
 ```
 
+#### Yum
+
 If `jobs[].from.url` refers to a Yum repository (as used by most RPM-based Linux distributions), setting
-`jobs[].from.type` to Yum will cause `swift-http-import` to parse repository metadata to discover files to transfer,
+`jobs[].from.type` to `yum` will cause `swift-http-import` to parse repository metadata to discover files to transfer,
 instead of looking at directory listings. *Warning:* With this option set, files below the given URL which are not
 referenced by the Yum repository metadata will **not** be picked up.
 
@@ -157,6 +159,35 @@ jobs:
       container: mirror
       object_prefix: redhat/server/7/epel
 ```
+
+#### Debian
+
+If `jobs[].from.url` refers to a Debian repository (or an Ubuntu repository), setting
+`jobs[].from.type` to `debian` will cause `swift-http-import` to parse repository metadata to discover files to transfer,
+instead of looking at directory listings. *Warning:* With this option set, files below the given URL which are not
+referenced by the Debian repository metadata (Release file) will **not** be picked up.
+
+If the optional `jobs[].from.arch` field is given, the Debian repository metadata reader will only consider metadata files and packages for
+these architectures.
+[(Link to full example config file)](./examples/source-debian.yaml)
+
+```yaml
+jobs:
+  - from:
+      url:  http://de.archive.ubuntu.com/ubuntu/
+      type: debian
+      dist: [xenial, xenial-updates, disco, cosmic]
+      arch: [amd64, i386]
+      # SSL certs are optionally supported here, too
+      cert: /path/to/client.pem
+      key:  /path/to/client-key.pem
+      ca:   /path/to/server-ca.pem
+    to:
+      container: mirror
+      object_prefix: ubuntu
+```
+
+#### Swift
 
 Alternatively, the source in `jobs[].from` can also be a private Swift container if Swift credentials are specified
 instead of a source URL.

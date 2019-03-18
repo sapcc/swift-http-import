@@ -24,8 +24,8 @@ import (
 	"time"
 
 	"github.com/cactus/go-statsd-client/statsd"
+	"github.com/sapcc/go-bits/logg"
 	"github.com/sapcc/swift-http-import/pkg/objects"
-	"github.com/sapcc/swift-http-import/pkg/util"
 )
 
 //ReportEvent counts either a directory that was scraped, or a file that was
@@ -76,7 +76,7 @@ func (r *Report) Run() {
 		statter, err = statsd.NewClient(r.Statsd.HostName+":"+strconv.Itoa(r.Statsd.Port), r.Statsd.Prefix)
 		// handle any errors
 		if err != nil {
-			util.Log(util.LogFatal, err.Error())
+			logg.Fatal(err.Error())
 		}
 
 		// make sure to clean up
@@ -126,17 +126,17 @@ func (r *Report) Run() {
 	}
 
 	//report results
-	util.Log(util.LogInfo, "%d dirs scanned, %d failed",
+	logg.Info("%d dirs scanned, %d failed",
 		directoriesScanned, directoriesFailed,
 	)
-	util.Log(util.LogInfo, "%d files found, %d transferred, %d failed",
+	logg.Info("%d files found, %d transferred, %d failed",
 		filesFound, filesTransferred, filesFailed,
 	)
 	if filesCleanedUp > 0 {
-		util.Log(util.LogInfo, "%d old files cleaned up", filesCleanedUp)
+		logg.Info("%d old files cleaned up", filesCleanedUp)
 	}
 
 	duration := time.Since(r.StartTime)
 	gauge("last_run.duration_seconds", int64(duration.Seconds()), 1.0)
-	util.Log(util.LogInfo, "finished in %s", duration.String())
+	logg.Info("finished in %s", duration.String())
 }

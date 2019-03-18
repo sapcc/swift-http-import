@@ -21,11 +21,8 @@ package objects
 
 import (
 	"bytes"
-	"compress/gzip"
 	"encoding/xml"
 	"io"
-	"io/ioutil"
-	"net/http"
 
 	"github.com/majewsky/schwift"
 )
@@ -189,22 +186,17 @@ func (s *YumSource) handlesArchitecture(arch string) bool {
 
 //Helper function for YumSource.ListAllFiles().
 func (s *YumSource) downloadAndParseXML(path string, data interface{}, cache map[string]FileSpec) (uri string, e *ListEntriesError) {
-	buf, uri, lerr := s.getFileContents(path, cache)
+	buf, uri, lerr := s.urlSource.getFileContents(path, cache)
 	if lerr != nil {
 		return uri, lerr
 	}
 
 	//if `buf` has the magic number for GZip, decompress before parsing as XML
-	if bytes.HasPrefix(buf, []byte{0x1f, 0x8b, 0x08}) {
-		reader, err := gzip.NewReader(bytes.NewReader(buf))
-		if err == nil {
-			buf, err = ioutil.ReadAll(reader)
-		}
+	if bytes.HasPrefix(buf, gzipMagicNumber) {
+		var err error
+		buf, err = decompressGZipArchive(buf)
 		if err != nil {
-			return uri, &ListEntriesError{
-				Location: uri,
-				Message:  "error while decompressing GZip archive: " + err.Error(),
-			}
+			return uri, &ListEntriesError{Location: uri, Message: err.Error()}
 		}
 	}
 
@@ -217,33 +209,4 @@ func (s *YumSource) downloadAndParseXML(path string, data interface{}, cache map
 	}
 
 	return uri, nil
-}
-
-//Helper function for YumSource.ListAllFiles().
-func (s *YumSource) getFileContents(path string, cache map[string]FileSpec) (contents []byte, uri string, e *ListEntriesError) {
-	uri = s.urlSource.getURLForPath(path).String()
-
-	req, err := http.NewRequest("GET", uri, nil)
-	if err != nil {
-		return nil, uri, &ListEntriesError{uri, "GET failed: " + err.Error()}
-	}
-
-	resp, err := s.urlSource.HTTPClient.Do(req)
-	if err != nil {
-		return nil, uri, &ListEntriesError{uri, "GET failed: " + err.Error()}
-	}
-	defer resp.Body.Close()
-
-	result, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, uri, &ListEntriesError{uri, "GET failed: " + err.Error()}
-	}
-
-	cache[path] = FileSpec{
-		Path:     path,
-		Contents: result,
-		Headers:  resp.Header,
-	}
-
-	return result, uri, nil
 }

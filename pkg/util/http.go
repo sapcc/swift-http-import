@@ -26,6 +26,8 @@ import (
 	"net/http"
 	"regexp"
 	"strconv"
+
+	"github.com/sapcc/go-bits/logg"
 )
 
 const (
@@ -51,7 +53,7 @@ func EnhancedGet(client *http.Client, uri string, requestHeaders http.Header, se
 	//is that the object is 0 bytes long, so even byte index 0 is already over
 	//EOF -> fall back to a plain HTTP request in this case
 	if resp != nil && resp.StatusCode == http.StatusRequestedRangeNotSatisfiable {
-		Log(LogInfo, "received status code 416 -> falling back to plain GET for %s", uri)
+		logg.Info("received status code 416 -> falling back to plain GET for %s", uri)
 		resp.Body.Close()
 		req, err := d.buildRequest()
 		if err != nil {
@@ -238,12 +240,12 @@ func (d *downloader) Read(buf []byte) (int, error) {
 		if !d.shouldRetry() {
 			return bytesRead, err
 		}
-		Log(LogError, "restarting GET %s after read error at offset %d: %s",
+		logg.Error("restarting GET %s after read error at offset %d: %s",
 			d.URI, d.BytesRead, err.Error(),
 		)
 		err := d.Reader.Close()
 		if err != nil {
-			Log(LogError,
+			logg.Error(
 				"encountered additional error when trying to close the existing reader: %s",
 				err.Error(),
 			)
@@ -285,7 +287,7 @@ func (d *downloader) shouldRetry() bool {
 	//never restart transfer of the same file more than 10 times
 	d.TotalRetryCount++
 	if d.TotalRetryCount > maxTotalRetryCount {
-		Log(LogInfo, "giving up on GET %s after %d read errors", d.URI, maxTotalRetryCount)
+		logg.Info("giving up on GET %s after %d read errors", d.URI, maxTotalRetryCount)
 		return false
 	}
 
@@ -299,7 +301,7 @@ func (d *downloader) shouldRetry() bool {
 	//only retry an error at the same offset for 3 times
 	d.LastErrorRetryCount++
 	if d.LastErrorRetryCount > maxRetryCount {
-		Log(LogInfo, "giving up on GET %s after %d read errors at the same offset (%d)",
+		logg.Info("giving up on GET %s after %d read errors at the same offset (%d)",
 			d.URI,
 			maxRetryCount,
 			d.LastErrorAtBytesRead,

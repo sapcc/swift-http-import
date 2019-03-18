@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"github.com/majewsky/schwift"
+	"github.com/sapcc/go-bits/logg"
 	"github.com/sapcc/swift-http-import/pkg/util"
 )
 
@@ -79,7 +80,7 @@ func (f File) PerformTransfer() TransferResult {
 	//check if this file needs transfer
 	if f.Job.Matcher.ImmutableFileRx != nil && f.Job.Matcher.ImmutableFileRx.MatchString(f.Spec.Path) {
 		if f.Job.Target.FileExists[object.Name()] {
-			util.Log(util.LogDebug, "skipping %s: already transferred", object.FullName())
+			logg.Debug("skipping %s: already transferred", object.FullName())
 			return TransferSkipped
 		}
 	}
@@ -87,7 +88,7 @@ func (f File) PerformTransfer() TransferResult {
 	//can only transfer as a symlink if the target server supports it
 	capabilities, err := f.Job.Target.Container.Account().Capabilities()
 	if err != nil {
-		util.Log(util.LogFatal, "query /info on target failed: %s", err.Error())
+		logg.Fatal("query /info on target failed: %s", err.Error())
 	}
 	if capabilities.Symlink == nil {
 		f.Spec.SymlinkTargetPath = ""
@@ -106,7 +107,7 @@ func (f File) PerformTransfer() TransferResult {
 		}
 	}
 
-	util.Log(util.LogDebug, "transferring to %s", object.FullName())
+	logg.Debug("transferring to %s", object.FullName())
 
 	//query the file metadata at the target
 	hdr, currentSymlinkTarget, err := object.SymlinkHeaders()
@@ -118,7 +119,7 @@ func (f File) PerformTransfer() TransferResult {
 			//log all other errors and skip the file (we don't want to waste
 			//bandwidth downloading stuff if there is reasonable doubt that we will
 			//not be able to upload it to Swift)
-			util.Log(util.LogError, "skipping target %s: HEAD failed: %s",
+			logg.Error("skipping target %s: HEAD failed: %s",
 				object.FullName(), err.Error(),
 			)
 			return TransferFailed
@@ -148,11 +149,11 @@ func (f File) PerformTransfer() TransferResult {
 	if f.Spec.Contents == nil {
 		body, sourceState, err = f.Job.Source.GetFile(f.Spec.Path, requestHeaders)
 	} else {
-		util.Log(util.LogDebug, "using cached contents for %s", f.Spec.Path)
+		logg.Debug("using cached contents for %s", f.Spec.Path)
 		body, sourceState, err = f.Spec.toTransferFormat(requestHeaders)
 	}
 	if err != nil {
-		util.Log(util.LogError, "GET %s failed: %s", f.Spec.Path, err.Error())
+		logg.Error("GET %s failed: %s", f.Spec.Path, err.Error())
 		return TransferFailed
 	}
 	if body != nil {
@@ -163,7 +164,7 @@ func (f File) PerformTransfer() TransferResult {
 	}
 
 	if util.LogIndividualTransfers {
-		util.Log(util.LogInfo, "transferring to %s", object.FullName())
+		logg.Info("transferring to %s", object.FullName())
 	}
 
 	//store some headers from the source to later identify whether this
@@ -201,7 +202,7 @@ func (f File) uploadSymlink(previousTarget *schwift.Object, cleanupOldSegments b
 	newTarget := f.Job.Target.ObjectAtPath(f.Spec.SymlinkTargetPath)
 
 	if previousTarget != nil && newTarget.IsEqualTo(previousTarget) {
-		util.Log(util.LogDebug, "skipping %s: already symlinked to the correct target", object.FullName())
+		logg.Debug("skipping %s: already symlinked to the correct target", object.FullName())
 		return TransferSkipped
 	}
 
@@ -261,7 +262,7 @@ func (f File) uploadNormalObject(body io.Reader, hdr schwift.ObjectHeaders, clea
 		return true
 	}
 
-	util.Log(util.LogError, "PUT %s failed: %s", object.FullName(), err.Error())
+	logg.Error("PUT %s failed: %s", object.FullName(), err.Error())
 
 	if schwift.Is(err, StatusSwiftRateLimit) {
 		//upload failed due to rate limit, object is definitely not uploaded
@@ -293,13 +294,13 @@ func (f File) uploadLargeObject(body io.Reader, hdr schwift.ObjectHeaders, clean
 		err = lo.WriteManifest(hdr.ToOpts())
 	}
 	if err == nil {
-		util.Log(util.LogInfo, "PUT %s has created a Static Large Object with segments in %s/%s/",
+		logg.Info("PUT %s has created a Static Large Object with segments in %s/%s/",
 			object.FullName(), lo.SegmentContainer().Name(), lo.SegmentPrefix(),
 		)
 		return true
 	}
 
-	util.Log(util.LogError, "PUT %s as Static Large Object failed: %s", object.FullName(), err.Error())
+	logg.Error("PUT %s as Static Large Object failed: %s", object.FullName(), err.Error())
 
 	//file was not transferred correctly - cleanup manifest and segments
 	cleanupFailedUpload(object)
@@ -312,6 +313,6 @@ func cleanupFailedUpload(object *schwift.Object) {
 		DeleteSegments: true,
 	}, nil)
 	if err != nil && !schwift.Is(err, http.StatusNotFound) {
-		util.Log(util.LogError, "DELETE %s failed: %s", object.FullName(), err.Error())
+		logg.Error("DELETE %s failed: %s", object.FullName(), err.Error())
 	}
 }

@@ -20,10 +20,16 @@
 package objects
 
 import (
+	"bytes"
+	"compress/gzip"
+	"errors"
 	"fmt"
+	"io/ioutil"
 	"regexp"
 	"strconv"
 	"time"
+
+	"github.com/ulikunitz/xz"
 )
 
 //AgeSpec is a timestamp that is deserialized from a duration in the format
@@ -78,4 +84,40 @@ func (a *AgeSpec) UnmarshalYAML(unmarshal func(interface{}) error) error {
 
 	*a = AgeSpec(unit * time.Duration(count))
 	return nil
+}
+
+var gzipMagicNumber = []byte{0x1f, 0x8b, 0x08}
+
+//decompressGZipArchive decompresses and returns the contents of a slice of
+//gzip compressed bytes.
+func decompressGZipArchive(buf []byte) ([]byte, error) {
+	reader, err := gzip.NewReader(bytes.NewReader(buf))
+	if err != nil {
+		return nil, errors.New("error while decompressing GZip archive: " + err.Error())
+	}
+
+	decompBuf, err := ioutil.ReadAll(reader)
+	if err != nil {
+		return nil, errors.New("error while decompressing GZip archive: " + err.Error())
+	}
+
+	return decompBuf, nil
+}
+
+var xzMagicNumber = []byte{0xfd, 0x37, 0x7a, 0x58, 0x5a, 0x00}
+
+//decompressXZArchive decompresses and returns the contents of a slice of xz
+//compressed bytes.
+func decompressXZArchive(buf []byte) ([]byte, error) {
+	reader, err := xz.NewReader(bytes.NewReader(buf))
+	if err != nil {
+		return nil, errors.New("error while decompressing XZ archive: " + err.Error())
+	}
+
+	decompBuf, err := ioutil.ReadAll(reader)
+	if err != nil {
+		return nil, errors.New("error while decompressing XZ archive: " + err.Error())
+	}
+
+	return decompBuf, nil
 }
