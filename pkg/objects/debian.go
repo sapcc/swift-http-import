@@ -75,9 +75,12 @@ var (
 //on directory listings.
 type DebianSource struct {
 	//options from config file
-	URLString     string   `yaml:"url"`
-	Distributions []string `yaml:"dist"`
-	Architectures []string `yaml:"arch"`
+	URLString                string   `yaml:"url"`
+	ClientCertificatePath    string   `yaml:"cert"`
+	ClientCertificateKeyPath string   `yaml:"key"`
+	ServerCAPath             string   `yaml:"ca"`
+	Distributions            []string `yaml:"dist"`
+	Architectures            []string `yaml:"arch"`
 	//compiled configuration
 	urlSource *URLSource `yaml:"-"`
 }
@@ -85,7 +88,10 @@ type DebianSource struct {
 //Validate implements the Source interface.
 func (s *DebianSource) Validate(name string) []error {
 	s.urlSource = &URLSource{
-		URLString: s.URLString,
+		URLString:                s.URLString,
+		ClientCertificatePath:    s.ClientCertificatePath,
+		ClientCertificateKeyPath: s.ClientCertificateKeyPath,
+		ServerCAPath:             s.ServerCAPath,
 	}
 	return s.urlSource.Validate(name)
 }
