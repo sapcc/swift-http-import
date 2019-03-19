@@ -8,6 +8,12 @@ New features:
   (Release file) instead of the HTTP server's directory listings to find which
   files to transfer. Note that any files below the repository URL which are not
   referenced in the repository metadata will not be transferred.
+- Swift credential passwords can be read from exported environment variables
+  instead of providing them in the config file by using the syntax:
+
+    ```yaml
+    password: { fromEnv: ENVIRONMENT_VARIABLE }
+    ```
 
 # v2.5.0 (2018-09-27)
 
@@ -19,8 +25,15 @@ Changes:
 - Improve log format for skipping decisions to always show which path was rejected by the inclusion/exclusion regexes.
   For example:
 
-    Old:     DEBUG: skipping /files/1.txt: is not included by `[0-9].txt`
-    New:     DEBUG: skipping /files/1.txt: /files/ is not included by `[0-9].txt`
+    Old:
+    ```
+    DEBUG: skipping /files/1.txt: is not included by `[0-9].txt`
+    ```
+
+    New:
+    ```
+    DEBUG: skipping /files/1.txt: /files/ is not included by `[0-9].txt`
+    ```
 
 Bugfixes:
 - When using a Swift source, pseudo-directories are now recognized and transferred correctly.

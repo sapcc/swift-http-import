@@ -100,6 +100,15 @@ jobs:
 The first paragraph contains the authentication parameters for OpenStack's Identity v3 API. Optionally a `region_name`
 can be specified, but this is only required if there are multiple regions to choose from.
 
+Instead of providing the Swift credential's password as plain text in the
+config file, you can use the special syntax for the `password` field which will
+tell `swift-http-import` to read the respective password from an exported
+environment variable:
+
+```yaml
+password: { fromEnv: ENVIRONMENT_VARIABLE }
+```
+
 Each sync job contains the source URL as `from.url`, and `to.container` has the target container name, optionally paired with an
 object name prefix in the target container. For example, in the case above, the file
 
