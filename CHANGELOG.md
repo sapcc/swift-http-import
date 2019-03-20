@@ -6,8 +6,8 @@ New features:
 - When syncing a Debian (Ubuntu) repository, the `jobs[].from.type` may be set
   to `debian` to instruct `swift-http-import` to parse the repository metadata
   (Release file) instead of the HTTP server's directory listings to find which
-  files to transfer. Note that any files below the repository URL which are not
-  referenced in the repository metadata will not be transferred.
+  files to transfer. Note that some files below the repository URL which are
+  not referenced in the repository metadata will not be transferred.
 - Swift credential passwords can be read from exported environment variables
   instead of providing them in the config file by using the syntax:
 

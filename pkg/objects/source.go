@@ -231,6 +231,9 @@ func (u URLSource) ListEntries(directoryPath string) ([]FileSpec, *ListEntriesEr
 
 	//check that we actually got a directory listing
 	if !strings.HasPrefix(response.Status, "2") {
+		//DebianSource parses error message strings that end in "GET returned
+		//status 404". Changes to this error format will break things on the
+		//DebianSource end
 		return nil, &ListEntriesError{uri.String(), "GET returned status " + response.Status}
 	}
 	contentType := response.Header.Get("Content-Type")

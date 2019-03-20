@@ -308,6 +308,55 @@ func (s *DebianSource) ListDistFiles(distRootPath string, cache map[string]FileS
 		}
 	}
 
+	//note other miscellanous files that exist under the main component
+	//for some $DIST
+	for _, arch := range architectures {
+		//get a file listing for '$DIST_ROOT/main/installer-$ARCH/'
+		entries, lerr := s.recursivelyListEntries(filepath.Join(distRootPath, "main", "installer-"+arch))
+		if lerr != nil {
+			if !strings.Contains(lerr.Message, "GET returned status 404") {
+				return nil, lerr
+			}
+		}
+		distFiles = append(distFiles, entries...)
+	}
+
+	//get a file listing for '$DIST_ROOT/main/cnf/'
+	entries, lerr := s.recursivelyListEntries(filepath.Join(distRootPath, "main", "cnf"))
+	if lerr != nil {
+		if !strings.Contains(lerr.Message, "GET returned status 404") {
+			return nil, lerr
+		}
+	}
+	distFiles = append(distFiles, entries...)
+
+	//get a file listing for '$DIST_ROOT/main/dist-upgrader-all/'
+	entries, lerr = s.recursivelyListEntries(filepath.Join(distRootPath, "main", "dist-upgrader-all"))
+	if lerr != nil {
+		if !strings.Contains(lerr.Message, "GET returned status 404") {
+			return nil, lerr
+		}
+	}
+	distFiles = append(distFiles, entries...)
+
+	//get a file listing for '$DIST_ROOT/main/signed/'
+	entries, lerr = s.recursivelyListEntries(filepath.Join(distRootPath, "main", "signed"))
+	if lerr != nil {
+		if !strings.Contains(lerr.Message, "GET returned status 404") {
+			return nil, lerr
+		}
+	}
+	distFiles = append(distFiles, entries...)
+
+	//get a file listing for '$DIST_ROOT/main/uefi/'
+	entries, lerr = s.recursivelyListEntries(filepath.Join(distRootPath, "main", "uefi"))
+	if lerr != nil {
+		if !strings.Contains(lerr.Message, "GET returned status 404") {
+			return nil, lerr
+		}
+	}
+	distFiles = append(distFiles, entries...)
+
 	//parse 'Packages' file to find paths for package files (.deb)
 	type packageIndex []struct {
 		Filename string `control:"Filename"`
