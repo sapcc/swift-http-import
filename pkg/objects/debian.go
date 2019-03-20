@@ -116,6 +116,13 @@ func (s *DebianSource) GetFile(directoryPath string, requestHeaders schwift.Obje
 
 //ListAllFiles implements the Source interface.
 func (s *DebianSource) ListAllFiles() ([]FileSpec, *ListEntriesError) {
+	if len(s.Distributions) == 0 {
+		return nil, &ListEntriesError{
+			Location: s.URLString,
+			Message:  "no distributions specified in the config file",
+		}
+	}
+
 	cache := make(map[string]FileSpec)
 
 	//since package and source files for different distributions are kept in
@@ -283,7 +290,6 @@ func (s *DebianSource) ListDistFiles(distRootPath string, cache map[string]FileS
 					packageIndices[stripFileExtension(fileName)] = true
 				}
 			}
-
 		} else {
 			//if config file specifies architectures then only the respective
 			//files are noted
