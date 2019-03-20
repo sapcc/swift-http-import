@@ -173,7 +173,7 @@ jobs:
 
 If `jobs[].from.url` refers to a Debian repository (or an Ubuntu repository), setting
 `jobs[].from.type` to `debian` will cause `swift-http-import` to parse repository metadata to discover files to transfer,
-instead of looking at directory listings. *Warning:* With this option set, files below the given URL which are not
+instead of looking at directory listings. *Warning:* With this option set, some files below the given URL which are not
 referenced by the Debian repository metadata (Release file) will **not** be picked up.
 
 If the optional `jobs[].from.arch` field is given, the Debian repository metadata reader will only consider metadata files and packages for
