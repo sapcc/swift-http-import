@@ -187,6 +187,12 @@ func (s *DebianSource) ListDistFiles(distRootPath string, cache map[string]FileS
 		}
 	}
 
+	//the architectures that we are interested in
+	architectures := release.Architectures
+	if len(s.Architectures) != 0 {
+		architectures = s.Architectures
+	}
+
 	//some repos support the optional 'by-hash' locations as an alternative to
 	//the canonical location (and name) of an index file
 	//note 'by-hash/SHA256' files for transfer
@@ -198,15 +204,9 @@ func (s *DebianSource) ListDistFiles(distRootPath string, cache map[string]FileS
 		}
 		distFiles = append(distFiles, entries...)
 
-		//the architectures that we are interested in
-		arches := release.Architectures
-		if len(s.Architectures) != 0 {
-			arches = s.Architectures
-		}
-
 		for _, component := range release.Components {
 			//get a file listing for each '$DIST_ROOT/$COMPONENT/binary-$ARCH/by-hash/'
-			for _, arch := range arches {
+			for _, arch := range architectures {
 				entries, lerr := s.recursivelyListEntries(filepath.Join(distRootPath, component, "binary-"+arch, "by-hash"))
 				if lerr != nil {
 					return nil, lerr
@@ -272,57 +272,36 @@ func (s *DebianSource) ListDistFiles(distRootPath string, cache map[string]FileS
 		}
 
 		//note architecture specific files
-		if len(s.Architectures) == 0 {
+		for _, arch := range architectures {
+			//note 'Contents' indices
 			switch {
-			//note all 'Contents' indices
 			case debReleaseContentsEntryRx.MatchString(entry.Filename):
-				distFiles = append(distFiles, fileName)
-
-			//note all 'dep11' files
-			case debReleaseDep11EntryRx.MatchString(entry.Filename):
-				distFiles = append(distFiles, fileName)
-
-			//note all 'Packages' indices
-			case debReleasePackagesEntryRx.MatchString(entry.Filename):
-				distFiles = append(distFiles, fileName)
-
-				if exists := packageIndices[stripFileExtension(fileName)]; !exists {
-					packageIndices[stripFileExtension(fileName)] = true
+				matchList := debReleaseContentsEntryRx.FindStringSubmatch(entry.Filename)
+				if matchList[4] == arch {
+					distFiles = append(distFiles, fileName)
 				}
-			}
-		} else {
-			//if config file specifies architectures then only the respective
-			//files are noted
-			for _, arch := range s.Architectures {
-				//note 'Contents' indices
-				switch {
-				case debReleaseContentsEntryRx.MatchString(entry.Filename):
-					matchList := debReleaseContentsEntryRx.FindStringSubmatch(entry.Filename)
-					if matchList[4] == arch {
+
+			//note 'dep11' files
+			case debReleaseDep11EntryRx.MatchString(entry.Filename):
+				matchList := debReleaseDep11EntryRx.FindStringSubmatch(entry.Filename)
+				if matchList[6] != "" {
+					if matchList[6] == arch {
+						//'dep11' components files
 						distFiles = append(distFiles, fileName)
 					}
+				} else {
+					//'dep11' icon files
+					distFiles = append(distFiles, fileName)
+				}
 
-				//note 'dep11' files
-				case debReleaseDep11EntryRx.MatchString(entry.Filename):
-					matchList := debReleaseDep11EntryRx.FindStringSubmatch(entry.Filename)
-					if matchList[6] != "" {
-						if matchList[6] == arch {
-							distFiles = append(distFiles, fileName)
-						}
-					} else {
-						//'dep11' icon files
-						distFiles = append(distFiles, fileName)
-					}
+			//note 'Packages' indices
+			case debReleasePackagesEntryRx.MatchString(entry.Filename):
+				matchList := debReleasePackagesEntryRx.FindStringSubmatch(entry.Filename)
+				if matchList[3] == arch {
+					distFiles = append(distFiles, fileName)
 
-				//note 'Packages' indices
-				case debReleasePackagesEntryRx.MatchString(entry.Filename):
-					matchList := debReleasePackagesEntryRx.FindStringSubmatch(entry.Filename)
-					if matchList[3] == arch {
-						distFiles = append(distFiles, fileName)
-
-						if exists := packageIndices[stripFileExtension(fileName)]; !exists {
-							packageIndices[stripFileExtension(fileName)] = true
-						}
+					if exists := packageIndices[stripFileExtension(fileName)]; !exists {
+						packageIndices[stripFileExtension(fileName)] = true
 					}
 				}
 			}
