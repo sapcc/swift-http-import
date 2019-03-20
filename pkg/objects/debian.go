@@ -191,8 +191,8 @@ func (s *DebianSource) ListDistFiles(distRootPath string, cache map[string]FileS
 	//the canonical location (and name) of an index file
 	//note 'by-hash/SHA256' files for transfer
 	if release.AcquireByHash {
-		//get a file listing for '$DIST_ROOT/by-hash/SHA256'
-		entries, lerr := s.listByHashEntries(distRootPath)
+		//get a file listing for '$DIST_ROOT/by-hash/'
+		entries, lerr := s.recursivelyListEntries(filepath.Join(distRootPath, "by-hash"))
 		if lerr != nil {
 			return nil, lerr
 		}
@@ -205,38 +205,38 @@ func (s *DebianSource) ListDistFiles(distRootPath string, cache map[string]FileS
 		}
 
 		for _, component := range release.Components {
-			//get a file listing for each '$DIST_ROOT/$COMPONENT/binary-$ARCH/by-hash/SHA256'
+			//get a file listing for each '$DIST_ROOT/$COMPONENT/binary-$ARCH/by-hash/'
 			for _, arch := range arches {
-				entries, lerr := s.listByHashEntries(filepath.Join(distRootPath, component, "binary-"+arch))
+				entries, lerr := s.recursivelyListEntries(filepath.Join(distRootPath, component, "binary-"+arch, "by-hash"))
 				if lerr != nil {
 					return nil, lerr
 				}
 				distFiles = append(distFiles, entries...)
 
-				//get a file listing for each '$DIST_ROOT/$COMPONENT/debian-installer/binary-$ARCH/by-hash/SHA256'
-				entries, lerr = s.listByHashEntries(filepath.Join(distRootPath, component, "debian-installer", "binary-"+arch))
+				//get a file listing for each '$DIST_ROOT/$COMPONENT/debian-installer/binary-$ARCH/by-hash/'
+				entries, lerr = s.recursivelyListEntries(filepath.Join(distRootPath, component, "debian-installer", "binary-"+arch, "by-hash"))
 				if lerr != nil {
 					return nil, lerr
 				}
 				distFiles = append(distFiles, entries...)
 			}
 
-			//get a file listing for each '$DIST_ROOT/$COMPONENT/dep11/by-hash/SHA256'
-			entries, lerr = s.listByHashEntries(filepath.Join(distRootPath, component, "dep11"))
+			//get a file listing for each '$DIST_ROOT/$COMPONENT/dep11/by-hash/'
+			entries, lerr = s.recursivelyListEntries(filepath.Join(distRootPath, component, "dep11", "by-hash"))
 			if lerr != nil {
 				return nil, lerr
 			}
 			distFiles = append(distFiles, entries...)
 
-			//get a file listing for each '$DIST_ROOT/$COMPONENT/i18n/by-hash/SHA256'
-			entries, lerr = s.listByHashEntries(filepath.Join(distRootPath, component, "i18n"))
+			//get a file listing for each '$DIST_ROOT/$COMPONENT/i18n/by-hash/'
+			entries, lerr = s.recursivelyListEntries(filepath.Join(distRootPath, component, "i18n", "by-hash"))
 			if lerr != nil {
 				return nil, lerr
 			}
 			distFiles = append(distFiles, entries...)
 
-			//get a file listing for each '$DIST_ROOT/$COMPONENT/source/by-hash/SHA256'
-			entries, lerr = s.listByHashEntries(filepath.Join(distRootPath, component, "source"))
+			//get a file listing for each '$DIST_ROOT/$COMPONENT/source/by-hash/'
+			entries, lerr = s.recursivelyListEntries(filepath.Join(distRootPath, component, "source", "by-hash"))
 			if lerr != nil {
 				return nil, lerr
 			}
@@ -435,15 +435,24 @@ func stripFileExtension(fileName string) string {
 }
 
 //Helper function for DebianSource.ListAllFiles().
-func (s *DebianSource) listByHashEntries(path string) ([]string, *ListEntriesError) {
-	entries, lerr := s.urlSource.ListEntries(filepath.Join(path, "by-hash", "SHA256"))
+func (s *DebianSource) recursivelyListEntries(path string) ([]string, *ListEntriesError) {
+	var files []string
+
+	entries, lerr := s.urlSource.ListEntries(path)
 	if lerr != nil {
 		return nil, lerr
 	}
 
-	files := make([]string, 0, len(entries))
 	for _, entry := range entries {
-		files = append(files, entry.Path)
+		if entry.IsDirectory {
+			tmpFiles, lerr := s.recursivelyListEntries(entry.Path)
+			if lerr != nil {
+				return nil, lerr
+			}
+			files = append(files, tmpFiles...)
+		} else {
+			files = append(files, entry.Path)
+		}
 	}
 
 	return files, nil
