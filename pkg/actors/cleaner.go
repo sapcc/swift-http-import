@@ -103,6 +103,10 @@ func (c *Cleaner) performCleanup(job *objects.Job, isFileTransferred map[string]
 		return objs[i].Name() < objs[j].Name()
 	})
 
+	if job.Cleanup.Strategy != "" {
+		logg.Info("starting cleanup of %d objects on target side", len(objs))
+	}
+
 	//perform cleanup according to selected strategy
 	switch job.Cleanup.Strategy {
 	case objects.ReportUnknownFiles:
