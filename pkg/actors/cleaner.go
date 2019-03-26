@@ -103,7 +103,7 @@ func (c *Cleaner) performCleanup(job *objects.Job, isFileTransferred map[string]
 		return objs[i].Name() < objs[j].Name()
 	})
 
-	if job.Cleanup.Strategy != "" {
+	if job.Cleanup.Strategy != objects.KeepUnknownFiles {
 		logg.Info("starting cleanup of %d objects on target side", len(objs))
 	}
 
@@ -118,7 +118,7 @@ func (c *Cleaner) performCleanup(job *objects.Job, isFileTransferred map[string]
 		numDeleted, _, err := job.Target.Container.Account().BulkDelete(objs, nil, nil)
 		c.Report <- ReportEvent{IsCleanup: true, CleanedUpObjectCount: int64(numDeleted)}
 		if err != nil {
-			logg.Error("cleanup of %d objects on target side failed: %s", len(objs), err.Error())
+			logg.Error("cleanup of %d objects on target side failed: %s", (len(objs) - numDeleted), err.Error())
 			if berr, ok := err.(schwift.BulkError); ok {
 				for _, oerr := range berr.ObjectErrors {
 					logg.Error("DELETE " + oerr.Error())
