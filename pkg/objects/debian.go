@@ -163,7 +163,7 @@ func (s *DebianSource) ListAllFiles() ([]FileSpec, *ListEntriesError) {
 	return result, nil
 }
 
-//Helper function for DebianSource.ListAllFiles().
+//ListDistFiles is a helper function for DebianSource.ListAllFiles().
 func (s *DebianSource) ListDistFiles(distRootPath string, cache map[string]FileSpec) ([]string, *ListEntriesError) {
 	var distFiles []string
 
