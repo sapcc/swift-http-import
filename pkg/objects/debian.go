@@ -413,6 +413,16 @@ func (s *DebianSource) ListDistFiles(distRootPath string, cache map[string]FileS
 	//one (as in the case of 'InRelease')
 	distFiles = append(distFiles, filepath.Join(distRootPath, "Release.gpg"))
 
+	//transfer 'Release' files of binary-$arch directories
+	//TODO (majewsky): These files are apparently necessary. Why did we not catch
+	//them in the initial implementation?
+	for _, component := range release.Components {
+		//get a file listing for each '$DIST_ROOT/$COMPONENT/binary-$ARCH/by-hash/'
+		for _, arch := range architectures {
+			distFiles = append(distFiles, filepath.Join(distRootPath, component, "binary-"+arch, "Release"))
+		}
+	}
+
 	return distFiles, nil
 }
 
