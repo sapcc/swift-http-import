@@ -30,44 +30,14 @@ import (
 	"pault.ag/go/debian/control"
 )
 
-var (
-	//'Contents' indices
-	//Reference:
-	//  For '$COMP/Contents-$SARCH.(gz|xz)' or '$COMP/Contents-udeb-$SARCH.(gz|xz)',
-	//  where '$SARCH' is either a binary architecture or the
-	//  pseudo-architecture "source" that represents source packages.
-	//
-	//  matchList[1] = "$COMP"
-	//  matchList[4] = "$SARCH"
-	debReleaseContentsEntryRx = regexp.MustCompile(`^(([a-zA-Z]+)\/)?Contents\-(udeb\-)?([a-zA-Z0-9]+)(\.gz|\.xz)$`)
-
-	//'dep11' files
-	//Reference:
-	//  For '$COMP/dep11/icons-$DIMENSIONS.tar.gz', where $DIMENSIONS are
-	//  in pixels (e.g. 64x64) or '$COMP/dep11/Components-$ARCH.yml.gz'.
-	//
-	//  matchList[1] = "$COMP"
-	//  matchList[2] = "filename with extension"
-	//  matchList[4] = "icon dimensions"
-	//  matchList[6] = "$ARCH"
-	debReleaseDep11EntryRx = regexp.MustCompile(`^([a-zA-Z]+)\/dep11\/((icons\-([0-9]+x[0-9]+)\.tar)|(Components\-([a-zA-Z0-9]+)\.yml))(\.xz|\.gz)$`)
-
-	//'Packages' indices
-	//Reference:
-	//  For '$COMP/binary-$ARCH/Packages.(gz|xz)' or
-	//  '$COMP/debian-installer/binary-$ARCH/Packages.(gz|xz)'.
-	//
-	//  matchList[1] = "$COMP"
-	//  matchList[3] = "$ARCH"
-	debReleasePackagesEntryRx = regexp.MustCompile(`^([a-zA-Z]+)\/(debian\-installer\/)?binary\-([a-zA-Z0-9]+)\/Packages(\.gz|\.xz)$`)
-
-	//'Translations' indices
-	//Reference:
-	//  For '$COMP/i18n/Translation-$LANG(.gz|.xz)'.
-	//
-	//  matchList[1] = "$COMP"
-	debReleaseTranslationEntryRx = regexp.MustCompile(`^([a-zA-Z]+)\/i18n\/((Index)|(Translation\-[a-zA-Z0-9_-]+(\.gz|\.xz)))$`)
-)
+//'Packages' indices
+//Reference:
+//  For '$COMP/binary-$ARCH/Packages.(gz|xz)' or
+//  '$COMP/debian-installer/binary-$ARCH/Packages.(gz|xz)'.
+//
+//  matchList[1] = "$COMP"
+//  matchList[3] = "$ARCH"
+var debReleasePackagesEntryRx = regexp.MustCompile(`^([a-zA-Z]+)\/(debian\-installer\/)?binary\-([a-zA-Z0-9]+)\/Packages(\.gz|\.xz)$`)
 
 //DebianSource is a URLSource containing a Debian repository. This type reuses
 //the Validate() and Connect() logic of URLSource, but adds a custom scraping
@@ -134,7 +104,7 @@ func (s *DebianSource) ListAllFiles() ([]FileSpec, *ListEntriesError) {
 	//index files for different distributions as specified in the config file
 	for _, distName := range s.Distributions {
 		distRootPath := filepath.Join("dists", distName)
-		distFiles, lerr := s.ListDistFiles(distRootPath, cache)
+		distFiles, lerr := s.listDistFiles(distRootPath, cache)
 		if lerr != nil {
 			return nil, lerr
 		}
@@ -163,8 +133,8 @@ func (s *DebianSource) ListAllFiles() ([]FileSpec, *ListEntriesError) {
 	return result, nil
 }
 
-//ListDistFiles is a helper function for DebianSource.ListAllFiles().
-func (s *DebianSource) ListDistFiles(distRootPath string, cache map[string]FileSpec) ([]string, *ListEntriesError) {
+//Helper function for DebianSource.ListAllFiles().
+func (s *DebianSource) listDistFiles(distRootPath string, cache map[string]FileSpec) ([]string, *ListEntriesError) {
 	var distFiles []string
 
 	//parse 'inRelease' file to find paths of other control files
@@ -172,9 +142,7 @@ func (s *DebianSource) ListDistFiles(distRootPath string, cache map[string]FileS
 
 	var release struct {
 		Architectures []string                 `control:"Architectures" delim:" " strip:" "`
-		Components    []string                 `control:"Components" delim:" " strip:" "`
 		Entries       []control.SHA256FileHash `control:"SHA256" delim:"\n" strip:"\n\r\t "`
-		AcquireByHash bool                     `control:"Acquire-By-Hash"`
 	}
 
 	_, lerr := s.downloadAndParseDCF(releasePath, &release, cache)
@@ -193,57 +161,6 @@ func (s *DebianSource) ListDistFiles(distRootPath string, cache map[string]FileS
 		architectures = s.Architectures
 	}
 
-	//some repos support the optional 'by-hash' locations as an alternative to
-	//the canonical location (and name) of an index file
-	//note 'by-hash/SHA256' files for transfer
-	if release.AcquireByHash {
-		//get a file listing for '$DIST_ROOT/by-hash/'
-		entries, lerr := s.recursivelyListEntries(filepath.Join(distRootPath, "by-hash"))
-		if lerr != nil {
-			return nil, lerr
-		}
-		distFiles = append(distFiles, entries...)
-
-		for _, component := range release.Components {
-			//get a file listing for each '$DIST_ROOT/$COMPONENT/binary-$ARCH/by-hash/'
-			for _, arch := range architectures {
-				entries, lerr := s.recursivelyListEntries(filepath.Join(distRootPath, component, "binary-"+arch, "by-hash"))
-				if lerr != nil {
-					return nil, lerr
-				}
-				distFiles = append(distFiles, entries...)
-
-				//get a file listing for each '$DIST_ROOT/$COMPONENT/debian-installer/binary-$ARCH/by-hash/'
-				entries, lerr = s.recursivelyListEntries(filepath.Join(distRootPath, component, "debian-installer", "binary-"+arch, "by-hash"))
-				if lerr != nil {
-					return nil, lerr
-				}
-				distFiles = append(distFiles, entries...)
-			}
-
-			//get a file listing for each '$DIST_ROOT/$COMPONENT/dep11/by-hash/'
-			entries, lerr = s.recursivelyListEntries(filepath.Join(distRootPath, component, "dep11", "by-hash"))
-			if lerr != nil {
-				return nil, lerr
-			}
-			distFiles = append(distFiles, entries...)
-
-			//get a file listing for each '$DIST_ROOT/$COMPONENT/i18n/by-hash/'
-			entries, lerr = s.recursivelyListEntries(filepath.Join(distRootPath, component, "i18n", "by-hash"))
-			if lerr != nil {
-				return nil, lerr
-			}
-			distFiles = append(distFiles, entries...)
-
-			//get a file listing for each '$DIST_ROOT/$COMPONENT/source/by-hash/'
-			entries, lerr = s.recursivelyListEntries(filepath.Join(distRootPath, component, "source", "by-hash"))
-			if lerr != nil {
-				return nil, lerr
-			}
-			distFiles = append(distFiles, entries...)
-		}
-	}
-
 	//some repos offer multiple compression types for the same 'Sources' and
 	//'Packages' indices. These maps contain the indices with out their file
 	//extension. This allows us to choose a compression type at the time of
@@ -254,110 +171,26 @@ func (s *DebianSource) ListDistFiles(distRootPath string, cache map[string]FileS
 	//note control files for transfer
 	for _, entry := range release.Entries {
 		//entry.Filename is relative to distRootPath therefore
-		fileName := filepath.Join(distRootPath, entry.Filename)
+		fileName := stripFileExtension(filepath.Join(distRootPath, entry.Filename))
 
-		//note architecture independant files
-		switch {
-		//note all 'Sources' indices (as they are architecture independent)
-		case strings.HasSuffix(entry.Filename, "Sources.gz") || strings.HasSuffix(entry.Filename, "Sources.xz"):
-			distFiles = append(distFiles, fileName)
-
-			if exists := sourceIndices[stripFileExtension(fileName)]; !exists {
-				sourceIndices[stripFileExtension(fileName)] = true
-			}
-
-		//note all 'Translation' indices
-		case debReleaseTranslationEntryRx.MatchString(entry.Filename):
-			distFiles = append(distFiles, fileName)
+		//note all 'Sources' indices as they are architecture independent
+		if strings.HasSuffix(entry.Filename, "Sources.gz") || strings.HasSuffix(entry.Filename, "Sources.xz") {
+			sourceIndices[fileName] = true
+			continue // to next entry
 		}
 
-		//note architecture specific files
-		for _, arch := range architectures {
-			//note 'Contents' indices
-			switch {
-			case debReleaseContentsEntryRx.MatchString(entry.Filename):
-				matchList := debReleaseContentsEntryRx.FindStringSubmatch(entry.Filename)
-				if matchList[4] == arch {
-					distFiles = append(distFiles, fileName)
-				}
-
-			//note 'dep11' files
-			case debReleaseDep11EntryRx.MatchString(entry.Filename):
-				matchList := debReleaseDep11EntryRx.FindStringSubmatch(entry.Filename)
-				if matchList[6] != "" {
-					if matchList[6] == arch {
-						//'dep11' components files
-						distFiles = append(distFiles, fileName)
-					}
-				} else {
-					//'dep11' icon files
-					distFiles = append(distFiles, fileName)
-				}
-
-			//note 'Packages' indices
-			case debReleasePackagesEntryRx.MatchString(entry.Filename):
-				matchList := debReleasePackagesEntryRx.FindStringSubmatch(entry.Filename)
+		//note architecture specific 'Packages' indices
+		matchList := debReleasePackagesEntryRx.FindStringSubmatch(entry.Filename)
+		if matchList != nil {
+			for _, arch := range architectures {
 				if matchList[3] == arch {
-					distFiles = append(distFiles, fileName)
-
-					if exists := packageIndices[stripFileExtension(fileName)]; !exists {
-						packageIndices[stripFileExtension(fileName)] = true
-					}
+					packageIndices[fileName] = true
 				}
 			}
 		}
 	}
 
-	//note other miscellanous files that exist under the main component
-	//for some $DIST
-	for _, arch := range architectures {
-		//get a file listing for '$DIST_ROOT/main/installer-$ARCH/'
-		entries, lerr := s.recursivelyListEntries(filepath.Join(distRootPath, "main", "installer-"+arch))
-		if lerr != nil {
-			if !strings.Contains(lerr.Message, "GET returned status 404") {
-				return nil, lerr
-			}
-		}
-		distFiles = append(distFiles, entries...)
-	}
-
-	//get a file listing for '$DIST_ROOT/main/cnf/'
-	entries, lerr := s.recursivelyListEntries(filepath.Join(distRootPath, "main", "cnf"))
-	if lerr != nil {
-		if !strings.Contains(lerr.Message, "GET returned status 404") {
-			return nil, lerr
-		}
-	}
-	distFiles = append(distFiles, entries...)
-
-	//get a file listing for '$DIST_ROOT/main/dist-upgrader-all/'
-	entries, lerr = s.recursivelyListEntries(filepath.Join(distRootPath, "main", "dist-upgrader-all"))
-	if lerr != nil {
-		if !strings.Contains(lerr.Message, "GET returned status 404") {
-			return nil, lerr
-		}
-	}
-	distFiles = append(distFiles, entries...)
-
-	//get a file listing for '$DIST_ROOT/main/signed/'
-	entries, lerr = s.recursivelyListEntries(filepath.Join(distRootPath, "main", "signed"))
-	if lerr != nil {
-		if !strings.Contains(lerr.Message, "GET returned status 404") {
-			return nil, lerr
-		}
-	}
-	distFiles = append(distFiles, entries...)
-
-	//get a file listing for '$DIST_ROOT/main/uefi/'
-	entries, lerr = s.recursivelyListEntries(filepath.Join(distRootPath, "main", "uefi"))
-	if lerr != nil {
-		if !strings.Contains(lerr.Message, "GET returned status 404") {
-			return nil, lerr
-		}
-	}
-	distFiles = append(distFiles, entries...)
-
-	//parse 'Packages' file to find paths for package files (.deb)
+	//parse 'Packages' indices to find paths for package files (.deb)
 	type packageIndex []struct {
 		Filename string `control:"Filename"`
 	}
@@ -379,7 +212,7 @@ func (s *DebianSource) ListDistFiles(distRootPath string, cache map[string]FileS
 		}
 	}
 
-	//parse 'Sources' file to find paths for source files (.dsc, .tar.gz, etc.)
+	//parse 'Sources' indices to find paths for source files (.dsc, .tar.gz, etc.)
 	type sourceIndex []struct {
 		Directory string                `control:"Directory"`
 		Files     []control.MD5FileHash `control:"Files" delim:"\n" strip:"\n\r\t "`
@@ -404,24 +237,17 @@ func (s *DebianSource) ListDistFiles(distRootPath string, cache map[string]FileS
 		}
 	}
 
-	//transfer 'Release' files at the very end, when everything else has
-	//already been uploaded (to avoid situations where a client might see
-	//repository metadata without being able to see the referenced packages)
-	distFiles = append(distFiles, filepath.Join(distRootPath, "InRelease"))
-	distFiles = append(distFiles, filepath.Join(distRootPath, "Release"))
-	//'Release' file comes with a detached GPG signature rather than an inline
-	//one (as in the case of 'InRelease')
-	distFiles = append(distFiles, filepath.Join(distRootPath, "Release.gpg"))
-
-	//transfer 'Release' files of binary-$arch directories
-	//TODO (majewsky): These files are apparently necessary. Why did we not catch
-	//them in the initial implementation?
-	for _, component := range release.Components {
-		//get a file listing for each '$DIST_ROOT/$COMPONENT/binary-$ARCH/by-hash/'
-		for _, arch := range architectures {
-			distFiles = append(distFiles, filepath.Join(distRootPath, component, "binary-"+arch, "Release"))
+	//transfer files in '$DIST_ROOT' at the very end, when package and source
+	//files have already been uploaded (to avoid situations where a client
+	//might see repository metadata without being able to see the referenced
+	//packages)
+	entries, lerr := s.recursivelyListEntries(distRootPath)
+	if lerr != nil {
+		if !strings.Contains(lerr.Message, "GET returned status 404") {
+			return nil, lerr
 		}
 	}
+	distFiles = append(distFiles, entries...)
 
 	return distFiles, nil
 }
