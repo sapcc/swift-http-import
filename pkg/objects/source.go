@@ -373,6 +373,9 @@ func (u URLSource) getFileContents(path string, cache map[string]FileSpec) (cont
 	if err != nil {
 		return nil, uri, &ListEntriesError{uri, "GET failed: " + err.Error()}
 	}
+	if resp.StatusCode >= 400 {
+		return nil, uri, &ListEntriesError{uri, "GET failed: " + resp.Status}
+	}
 
 	cache[path] = FileSpec{
 		Path:     path,
