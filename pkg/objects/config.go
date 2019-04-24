@@ -208,7 +208,7 @@ func (cfg JobConfiguration) Compile(name string, swift SwiftLocation) (job *Job,
 	if cfg.Match.NotOlderThan != nil {
 		_, isSwiftSource := cfg.Source.src.(*SwiftLocation)
 		if !isSwiftSource {
-			errors = append(errors, fmt.Errorf("invalid value for %s.match.not_older_than: this option is only supported for source type %t", name, cfg.Source.src))
+			errors = append(errors, fmt.Errorf("invalid value for %s.match.not_older_than: this option is not supported for source type %T", name, cfg.Source.src))
 		}
 	}
 
