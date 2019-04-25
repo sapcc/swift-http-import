@@ -20,14 +20,13 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/signal"
 	"sync"
 	"syscall"
 	"time"
-
-	"golang.org/x/net/context"
 
 	"github.com/sapcc/go-bits/logg"
 	"github.com/sapcc/swift-http-import/pkg/actors"

@@ -20,9 +20,10 @@
 package actors
 
 import (
+	"context"
+
 	"github.com/sapcc/go-bits/logg"
 	"github.com/sapcc/swift-http-import/pkg/objects"
-	"golang.org/x/net/context"
 )
 
 //Scraper is an actor that reads directory listings on the source side to
