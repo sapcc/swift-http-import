@@ -236,11 +236,11 @@ func (s *SwiftLocation) GetFile(path string, requestHeaders schwift.ObjectHeader
 	object := s.ObjectAtPath(path)
 
 	body, err := object.Download(requestHeaders.ToOpts()).AsReadCloser()
-	if schwift.Is(err, http.StatusNotModified) {
-		return nil, FileState{SkipTransfer: true}, nil
-	}
+	skipTransfer := schwift.Is(err, http.StatusNotModified)
 	if err != nil {
-		return nil, FileState{}, err
+		if !skipTransfer {
+			return nil, FileState{}, err
+		}
 	}
 	//NOTE: Download() uses a GET request, so object metadata has already been
 	//received and cached, so Headers() is cheap now and will never fail.
@@ -261,6 +261,7 @@ func (s *SwiftLocation) GetFile(path string, requestHeaders schwift.ObjectHeader
 		LastModified: hdr.Get("Last-Modified"),
 		SizeBytes:    int64(hdr.SizeBytes().Get()),
 		ExpiryTime:   expiryTime,
+		SkipTransfer: skipTransfer,
 		ContentType:  hdr.ContentType().Get(),
 	}, nil
 }

@@ -29,10 +29,11 @@ import (
 
 //Matcher determines if files shall be included or excluded in a transfer.
 type Matcher struct {
-	ExcludeRx       *regexp.Regexp //pointers because nil signifies absence
-	IncludeRx       *regexp.Regexp
-	ImmutableFileRx *regexp.Regexp
-	NotOlderThan    *time.Time
+	ExcludeRx            *regexp.Regexp //pointers because nil signifies absence
+	IncludeRx            *regexp.Regexp
+	ImmutableFileRx      *regexp.Regexp
+	NotOlderThan         *time.Time
+	SimplisticComparison *bool
 }
 
 //MatchError is returned by the functions on type Matcher.

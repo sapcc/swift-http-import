@@ -103,7 +103,8 @@ type JobConfiguration struct {
 
 //MatchConfiguration contains the "match" section of a JobConfiguration.
 type MatchConfiguration struct {
-	NotOlderThan *AgeSpec `yaml:"not_older_than"`
+	NotOlderThan         *AgeSpec `yaml:"not_older_than"`
+	SimplisticComparison *bool    `yaml:"simplistic_comparison"`
 }
 
 //SegmentingConfiguration contains the "segmenting" section of a JobConfiguration.
@@ -212,6 +213,13 @@ func (cfg JobConfiguration) Compile(name string, swift SwiftLocation) (job *Job,
 		}
 	}
 
+	if cfg.Match.SimplisticComparison != nil {
+		if cfg.Source.src == cfg.Source.src.(*DebianSource) ||
+			cfg.Source.src == cfg.Source.src.(*YumSource) {
+			errors = append(errors, fmt.Errorf("invalid value for %s.match.simplistic_comparsion: this option is not supported for source type %T", name, cfg.Source.src))
+		}
+	}
+
 	if cfg.Segmenting != nil {
 		if cfg.Segmenting.MinObjectSize == 0 {
 			errors = append(errors, fmt.Errorf("missing value for %s.segmenting.min_bytes", name))
@@ -262,6 +270,7 @@ func (cfg JobConfiguration) Compile(name string, swift SwiftLocation) (job *Job,
 		cutoff := time.Now().Add(-age)
 		job.Matcher.NotOlderThan = &cutoff
 	}
+	job.Matcher.SimplisticComparison = cfg.Match.SimplisticComparison
 
 	//do not try connecting to Swift if credentials are invalid etc.
 	if len(errors) > 0 {

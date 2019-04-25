@@ -219,7 +219,9 @@ jobs:
       object_prefix: ubuntu-repos
 ```
 
-### File selection: By name
+### File selection
+
+#### By name
 
 For each job, you may supply three [regular expressions](https://golang.org/pkg/regexp/syntax/) to influence which files
 are transferred:
@@ -274,7 +276,7 @@ jobs:
     immutable: '.*\.deb$'
 ```
 
-### File selection: By age
+#### By age
 
 The `jobs[].match.not_older_than` configuration option can be used to exclude objects that are older than some
 threshold, as indicated by the `Last-Modified` header of the source object.
@@ -300,6 +302,23 @@ The value of `jobs[].match.not_older_than` is a value with one of the following 
 - `weeks` (`w`)
 
 *Warning:* As of this version, this configuration option only works with Swift sources.
+
+
+#### Simplistic file comparison
+
+The `jobs[].match.simplistic_comparison` configuration option can be used to force `swift-http-import` to only use
+file size and last modified time to determine file transfer eligibility. This option can be used for compatibility with other similar tools (e.g. `rclone`) without it, `swift-http-import` is likely to retransfer same files that were already transferred by other tools due to its strict comparison constraints. [(Link to full example config file)](./examples/filter-simplistic-comparison.yaml)
+
+```yaml
+jobs:
+  - from:
+      ...
+    to:
+      container: off-site-backup
+    match:
+      simplistic_comparison: true
+```
+
 
 ### Transfer behavior: Segmenting on the source side
 
