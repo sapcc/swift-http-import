@@ -214,8 +214,9 @@ func (cfg JobConfiguration) Compile(name string, swift SwiftLocation) (job *Job,
 	}
 
 	if cfg.Match.SimplisticComparison != nil {
-		if cfg.Source.src != cfg.Source.src.(*URLSource) ||
-			cfg.Source.src != cfg.Source.src.(*SwiftLocation) {
+		_, isURLSource := cfg.Source.src.(*URLSource)
+		_, isSwiftSource := cfg.Source.src.(*SwiftLocation)
+		if !isURLSource && !isSwiftSource {
 			errors = append(errors, fmt.Errorf("invalid value for %s.match.simplistic_comparsion: this option is not supported for source type %T", name, cfg.Source.src))
 		}
 	}
