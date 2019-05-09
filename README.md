@@ -309,8 +309,18 @@ The value of `jobs[].match.not_older_than` is a value with one of the following 
 
 #### Simplistic file comparison
 
-The `jobs[].match.simplistic_comparison` configuration option can be used to force `swift-http-import` to only use
-file size and last modified time to determine file transfer eligibility. This option can be used for compatibility with other similar tools (e.g. `rclone`) without it, `swift-http-import` is likely to retransfer same files that were already transferred by other tools due to its strict comparison constraints. [(Link to full example config file)](./examples/filter-simplistic-comparison.yaml)
+The `jobs[].match.simplistic_comparison` configuration option can be used to
+force `swift-http-import` to only use last modified time to determine file
+transfer eligibility. This option can be used for compatibility with other
+similar tools (e.g. `rclone`). Without it, `swift-http-import` is likely to
+retransfer files that were already transferred by other tools due to its strict
+comparison constraints.
+
+**Note**: This option is only _99.9% reliable_, if you need 100% reliability
+for file transfer eligibility then you should not use this option and let
+`swift-http-import` default to its strong comparison constraints.
+
+[(Link to full example config file)](./examples/filter-simplistic-comparison.yaml)
 
 ```yaml
 jobs:

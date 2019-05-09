@@ -165,13 +165,7 @@ func (f File) PerformTransfer() TransferResult {
 	if body != nil {
 		defer body.Close()
 	}
-	if f.Job.Matcher.SimplisticComparison != nil && *f.Job.Matcher.SimplisticComparison {
-		targetSize := int64(hdr.SizeBytes().Get())
-		sourceSize := sourceState.SizeBytes
-		if sourceState.SkipTransfer && targetSize == sourceSize {
-			return TransferSkipped
-		}
-	} else if sourceState.SkipTransfer { // 304 Not Modified
+	if sourceState.SkipTransfer { // 304 Not Modified
 		return TransferSkipped
 	}
 
