@@ -671,7 +671,7 @@ upload_test_file_using_rclone() {
 }
 
 if hash gdate &>/dev/null; then
-  alias date=gdate
+  date() { gdate "$@"; }
 fi
 
 get_swift_object_mtime() {
