@@ -669,7 +669,7 @@ rclone_cmd() {
 
 upload_test_file_using_rclone() {
   local file_name="$1"
-  echo "This is a test file." > ${file_name}
+  echo "This is a test file." > "${file_name}"
   rclone_cmd copy "${file_name}" TESTREMOTE:"${CONTAINER_BASE}/from"
   rclone_cmd copy "${file_name}" TESTREMOTE:"${CONTAINER_BASE}/to"
 }
