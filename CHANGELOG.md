@@ -7,6 +7,10 @@ New features:
   to `debian` to instruct `swift-http-import` to parse the source and package
   metadata files instead of the HTTP server's directory listings to find which
   package and source files to transfer.
+- For better compatibility with other similar tools (e.g. `rclone`), the
+  `jobs[].match.simplistic_comparison` configuration option can be used which
+  will allow `swift-http-import` to use less metadata for determining file
+  transfer eligibility.
 - Swift credential passwords can be read from exported environment variables
   instead of providing them in the config file by using the syntax:
 

@@ -15,12 +15,13 @@ if [ -z "${OS_AUTH_URL:-}" ]; then
   exit 1
 fi
 
-# containe rnames
+# container names
 DISAMBIGUATOR="$(date +%s)"
 CONTAINER_PUBLIC="swift-http-import-source"
 CONTAINER_BASE="swift-http-import-${DISAMBIGUATOR}"
 # a temporary file that is used for various purposes
-TEST_FILENAME="$(mktemp -p ${TMPDIR:-/tmp} tmp.XXXXXX)"
+TEST_DIR="$(mktemp -d)"
+TEST_FILENAME="$(mktemp ${TEST_DIR}/tmp.XXXXXX)"
 # YAML object (except for {}) with the auth parameters from the environment
 AUTH_PARAMS="
   auth_url:            \"${OS_AUTH_URL}\",
@@ -39,15 +40,19 @@ eval "$(swift auth)"
 # cleanup from previous test runs
 
 step() {
-  echo -e "\e[1;36m>>\e[0;36m $@...\e[0m"
+  printf "\e[1;36m>>\e[0;36m $@...\e[0m\n"
 }
 
 cleanup_containers() {
   for CONTAINER_NAME in $(swift list | grep "^swift-http-import"); do
     step "Cleaning up container ${CONTAINER_NAME}"
     if [ "${CONTAINER_NAME}" = "${CONTAINER_PUBLIC}" ]; then
+      # macOS's xargs does not support -r
+      if [ "$(uname -s)" != "Darwin" ]; then
+        alias xargs='xargs -r'
+      fi
       # do not delete the public container itself; want to keep the metadata
-      swift list "${CONTAINER_NAME}" | xargs -r swift delete "${CONTAINER_NAME}"
+      swift list "${CONTAINER_NAME}" | xargs swift delete "${CONTAINER_NAME}"
     else
       swift delete "${CONTAINER_NAME}"
     fi
@@ -119,7 +124,7 @@ expect() {
   local ACTUAL="$(dump "$1")"
   local EXPECTED="$(cat)"
   if ! diff -q <(echo "${EXPECTED}") <(echo "${ACTUAL}") > /dev/null; then
-    echo -e "\e[1;31m>>\e[0;31m Contents of target container ${CONTAINER_BASE}-$1 do not match expectation. Diff follows:\e[0m"
+    printf "\e[1;31m>>\e[0;31m Contents of target container ${CONTAINER_BASE}-$1 do not match expectation. Diff follows:\e[0m\n"
     diff -u <(echo "${EXPECTED}") <(echo "${ACTUAL}")
   fi
 }
@@ -317,7 +322,7 @@ EOF
 
 SEGMENT_COUNT="$(swift list ${CONTAINER_BASE}-test6-segments | wc -l)"
 if [ "${SEGMENT_COUNT}" -ne 5 ]; then
-  echo -e "\e[1;31m>>\e[0;31m Expected SLO to have 5 segments, but got ${SEGMENT_COUNT} instead:\e[0m"
+  printf "\e[1;31m>>\e[0;31m Expected SLO to have 5 segments, but got ${SEGMENT_COUNT} instead:\e[0m\n"
   swift list ${CONTAINER_BASE}-test6-segments | sed 's/^/    /'
   exit 1
 fi
@@ -401,7 +406,7 @@ EOF
 for OBJECT_NAME in expires.txt expires-with-segments.txt; do
   EXPIRY_TIMESTAMP="$(swift stat ${CONTAINER_BASE}-test7 ${OBJECT_NAME} | awk '/X-Delete-At:/ { print $2 }')"
   if [ "${EXPIRY_TIMESTAMP}" != 2000000042 ]; then
-    echo -e "\e[1;31m>>\e[0;31m Expected file \"${OBJECT_NAME}\" to expire at timestamp 2000000042, but expires at timestamp '${EXPIRY_TIMESTAMP}' instead.\e[0m"
+    printf "\e[1;31m>>\e[0;31m Expected file \"${OBJECT_NAME}\" to expire at timestamp 2000000042, but expires at timestamp '${EXPIRY_TIMESTAMP}' instead.\e[0m\n"
     exit 1
   fi
 done
@@ -410,11 +415,11 @@ done
 swift list ${CONTAINER_BASE}-test7-segments | while read OBJECT_NAME; do
   EXPIRY_TIMESTAMP="$(swift stat ${CONTAINER_BASE}-test7-segments ${OBJECT_NAME} | awk '/X-Delete-At:/ { print $2 }')"
   if [ "${EXPIRY_TIMESTAMP}" != 2000000042 ]; then
-    echo -e "\e[1;31m>>\e[0;31m Expected segment '${OBJECT_NAME}' to expire at timestamp 2000000042, but expires at timestamp '${EXPIRY_TIMESTAMP}' instead.\e[0m"
+    printf "\e[1;31m>>\e[0;31m Expected segment '${OBJECT_NAME}' to expire at timestamp 2000000042, but expires at timestamp '${EXPIRY_TIMESTAMP}' instead.\e[0m\n"
     exit 1
   fi
 done || (
-  echo -e "\e[1;31m>>\e[0;31m Expected object 'expires-with-segments.txt' to be an SLO, but it's not segmented.\e[0m"
+  printf "\e[1;31m>>\e[0;31m Expected object 'expires-with-segments.txt' to be an SLO, but it's not segmented.\e[0m\n"
   exit 1
 )
 
@@ -468,7 +473,7 @@ EOF
 
 SEGMENT_COUNT="$(swift list ${CONTAINER_BASE}-test8-segments | wc -l)"
 if [ "${SEGMENT_COUNT}" -ne 5 ]; then
-  echo -e "\e[1;31m>>\e[0;31m Expected SLO to have 5 segments, but got ${SEGMENT_COUNT} instead:\e[0m"
+  printf "\e[1;31m>>\e[0;31m Expected SLO to have 5 segments, but got ${SEGMENT_COUNT} instead:\e[0m\n"
   dump test8-segments
   exit 1
 fi
@@ -515,7 +520,7 @@ EOF
 # check that the "only-symlink" job transfers symlink.txt as a regular file (it cannot
 # transfer as a symlink because the link target is missing on the target side)
 if curl -si -H "X-Auth-Token: ${OS_AUTH_TOKEN}" "${OS_STORAGE_URL}/${CONTAINER_BASE}-test9/only-symlink/just/a/symlink.txt?symlink=get" | grep -q '^X-Symlink-Target'; then
-  echo -e "\e[1;31m>>\e[0;31m Expected only-symlink/just/a/symlink.txt not to be a symlink, but it is one:\e[0m"
+  printf "\e[1;31m>>\e[0;31m Expected only-symlink/just/a/symlink.txt not to be a symlink, but it is one:\e[0m\n"
   curl -si -H "X-Auth-Token: ${OS_AUTH_TOKEN}" "${OS_STORAGE_URL}/${CONTAINER_BASE}-test9/only-symlink/just/a/symlink.txt?symlink=get"
   exit 1
 fi
@@ -523,7 +528,7 @@ fi
 # check that the "symlink-and-target" job transfers symlink.txt as a symlink
 # (since its link target is also included in the job)
 if ! curl -si -H "X-Auth-Token: ${OS_AUTH_TOKEN}" "${OS_STORAGE_URL}/${CONTAINER_BASE}-test9/symlink-and-target/just/a/symlink.txt?symlink=get" | grep -q '^X-Symlink-Target'; then
-  echo -e "\e[1;31m>>\e[0;31m Expected symlink-and-target/just/a/symlink.txt to be a symlink, but it is not:\e[0m"
+  printf "\e[1;31m>>\e[0;31m Expected symlink-and-target/just/a/symlink.txt to be a symlink, but it is not:\e[0m\n"
   curl -si -H "X-Auth-Token: ${OS_AUTH_TOKEN}" "${OS_STORAGE_URL}/${CONTAINER_BASE}-test9/symlink-and-target/just/a/symlink.txt?symlink=get"
   exit 1
 fi
@@ -648,10 +653,68 @@ EOF
 fi # end of: if [ "$1" = http ]
 
 ################################################################################
+step 'Test 13: "simplistic_comparison" config option'
+
+if ! hash rclone &>/dev/null; then
+  echo ">> Test skipped (rclone is not installed, instructions: https://rclone.org/install/)."
+else
+
+rclone_cmd() {
+  RCLONE_CONFIG_TESTREMOTE_TYPE=swift RCLONE_CONFIG_TESTREMOTE_ENV_AUTH=1 rclone "$@"
+}
+
+upload_test_file_using_rclone() {
+  local file_name="$1"
+  echo "This is a test file." > "${file_name}"
+  rclone_cmd copy "${file_name}" TESTREMOTE:"${CONTAINER_BASE}/from"
+  rclone_cmd copy "${file_name}" TESTREMOTE:"${CONTAINER_BASE}/to"
+}
+
+if hash gdate &>/dev/null; then
+  date() { gdate "$@"; }
+fi
+
+get_swift_object_mtime() {
+  date -d "$(swift stat ${CONTAINER_BASE} $1 |
+    grep 'Last Modified:' |
+    sed -E 's/Last Modified:\s*(.*)/\1/')" '+%s'
+}
+
+# upload test files using rclone and get their mtime
+upload_test_file_using_rclone "${TEST_DIR}/rclone-test-file-1"
+upload_test_file_using_rclone "${TEST_DIR}/rclone-test-file-2"
+sleep 10 # wait for container listing to get updated
+
+before_mtime_1="$(get_swift_object_mtime to/rclone-test-file-1)"
+before_mtime_2="$(get_swift_object_mtime to/rclone-test-file-2)"
+
+# mirror test files using swift-http-import and compare the mtime
+mirror <<-EOF
+  swift: { $AUTH_PARAMS }
+  jobs:
+    - from: { container: ${CONTAINER_BASE}, object_prefix: from, ${AUTH_PARAMS} }
+      to:
+        container: ${CONTAINER_BASE}
+        object_prefix: to
+      match:
+        simplistic_comparison: true
+EOF
+
+after_mtime_1="$(get_swift_object_mtime to/rclone-test-file-1)"
+after_mtime_2="$(get_swift_object_mtime to/rclone-test-file-2)"
+
+if ! [ "$before_mtime_1" == "$after_mtime_1" ]  || ! [ "$before_mtime_2" == "$after_mtime_2" ]; then
+  printf "\e[1;31m>>\e[0;31m Files in ${CONTAINER_BASE} have been modified by swift-http-import. They were expected not to be modified.\e[0m\n"
+  exit 1
+fi
+
+fi # end of: if ! hash rclone &>/dev/null
+
+################################################################################
 # cleanup before exiting
 
 # do not make an error during cleanup_containers fail the test
 set +e
 
 cleanup_containers
-rm -f "${TEST_FILENAME}"
+rm -rf "${TEST_DIR}"

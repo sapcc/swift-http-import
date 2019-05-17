@@ -29,10 +29,11 @@ import (
 
 //Matcher determines if files shall be included or excluded in a transfer.
 type Matcher struct {
-	ExcludeRx       *regexp.Regexp //pointers because nil signifies absence
-	IncludeRx       *regexp.Regexp
-	ImmutableFileRx *regexp.Regexp
-	NotOlderThan    *time.Time
+	ExcludeRx            *regexp.Regexp //pointers because nil signifies absence
+	IncludeRx            *regexp.Regexp
+	ImmutableFileRx      *regexp.Regexp
+	NotOlderThan         *time.Time
+	SimplisticComparison *bool
 }
 
 //MatchError is returned by the functions on type Matcher.
@@ -46,10 +47,10 @@ func (e MatchError) Error() string {
 	return e.Path + " " + e.Reason
 }
 
-//Check checks whether the directory at `path` should be scraped, or
-//whether the file at `path` should be transferred. If so, an empty string is
-//returned. If not, a non-empty string is returned that contains a
-//human-readable message why the file is excluded from the transfer.
+//Check checks whether the directory at `path` should be scraped, or whether
+//the file at `path` should be transferred.
+//If not, a MatchError is returned that contains the concerning `path` and a
+//human-readable message describing the exclusion.
 //
 //If `path` is a directory, `path` must have a trailing slash.
 //If `path` is a file, `path` must not have a trailing slash.
@@ -95,9 +96,9 @@ func (m Matcher) CheckFile(spec FileSpec) error {
 func (m Matcher) CheckRecursive(path string, lastModified *time.Time) error {
 	steps := strings.Split(filepath.Clean(path), "/")
 	for i := 1; i < len(steps); i++ {
-		result := m.Check(filepath.Join(steps[0:i]...)+"/", nil)
-		if result != nil {
-			return result
+		err := m.Check(filepath.Join(steps[0:i]...)+"/", nil)
+		if err != nil {
+			return err
 		}
 	}
 	return m.Check(path, lastModified)

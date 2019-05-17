@@ -20,9 +20,10 @@
 package actors
 
 import (
+	"context"
+
 	"github.com/sapcc/go-bits/logg"
 	"github.com/sapcc/swift-http-import/pkg/objects"
-	"golang.org/x/net/context"
 )
 
 //Transferor is an actor that transfers files from a Source to a target SwiftLocation.

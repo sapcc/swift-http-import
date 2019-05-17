@@ -133,13 +133,19 @@ func (f File) PerformTransfer() TransferResult {
 	}
 
 	//retrieve object from source, taking advantage of Etag and Last-Modified where possible
-	metadata := hdr.Metadata()
 	requestHeaders := schwift.NewObjectHeaders()
-	if val := metadata.Get("Source-Etag"); val != "" {
-		requestHeaders.Set("If-None-Match", val)
-	}
-	if val := metadata.Get("Source-Last-Modified"); val != "" {
-		requestHeaders.Set("If-Modified-Since", val)
+	if f.Job.Matcher.SimplisticComparison != nil && *f.Job.Matcher.SimplisticComparison {
+		if val := hdr.Get("Last-Modified"); val != "" {
+			requestHeaders.Set("If-Modified-Since", val)
+		}
+	} else {
+		metadata := hdr.Metadata()
+		if val := metadata.Get("Source-Etag"); val != "" {
+			requestHeaders.Set("If-None-Match", val)
+		}
+		if val := metadata.Get("Source-Last-Modified"); val != "" {
+			requestHeaders.Set("If-Modified-Since", val)
+		}
 	}
 
 	var (
