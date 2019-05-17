@@ -18,5 +18,5 @@ jobs:
     to:
       container: off-site-backup
     match:
-      # only use file size and last modified time for comparison
+      # only use last modified time for comparison
       simplisitic_comparison: true
