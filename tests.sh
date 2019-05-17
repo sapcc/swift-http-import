@@ -39,15 +39,20 @@ eval "$(swift auth)"
 # cleanup from previous test runs
 
 step() {
-  echo -e "\e[1;36m>>\e[0;36m $@...\e[0m"
+  printf "\e[1;36m>>\e[0;36m $@...\e[0m\n"
 }
 
 cleanup_containers() {
   for CONTAINER_NAME in $(swift list | grep "^swift-http-import"); do
     step "Cleaning up container ${CONTAINER_NAME}"
     if [ "${CONTAINER_NAME}" = "${CONTAINER_PUBLIC}" ]; then
+      if [ "$(uname -s)" = "Darwin" ]; then
+        xargz() { xargs "$@"; }
+      else
+        xargz() { xargs -r "$@"; }
+      fi
       # do not delete the public container itself; want to keep the metadata
-      swift list "${CONTAINER_NAME}" | xargs -r swift delete "${CONTAINER_NAME}"
+      swift list "${CONTAINER_NAME}" | xargz swift delete "${CONTAINER_NAME}"
     else
       swift delete "${CONTAINER_NAME}"
     fi
@@ -119,7 +124,7 @@ expect() {
   local ACTUAL="$(dump "$1")"
   local EXPECTED="$(cat)"
   if ! diff -q <(echo "${EXPECTED}") <(echo "${ACTUAL}") > /dev/null; then
-    echo -e "\e[1;31m>>\e[0;31m Contents of target container ${CONTAINER_BASE}-$1 do not match expectation. Diff follows:\e[0m"
+    printf "\e[1;31m>>\e[0;31m Contents of target container ${CONTAINER_BASE}-$1 do not match expectation. Diff follows:\e[0m\n"
     diff -u <(echo "${EXPECTED}") <(echo "${ACTUAL}")
   fi
 }
@@ -317,7 +322,7 @@ EOF
 
 SEGMENT_COUNT="$(swift list ${CONTAINER_BASE}-test6-segments | wc -l)"
 if [ "${SEGMENT_COUNT}" -ne 5 ]; then
-  echo -e "\e[1;31m>>\e[0;31m Expected SLO to have 5 segments, but got ${SEGMENT_COUNT} instead:\e[0m"
+  printf "\e[1;31m>>\e[0;31m Expected SLO to have 5 segments, but got ${SEGMENT_COUNT} instead:\e[0m\n"
   swift list ${CONTAINER_BASE}-test6-segments | sed 's/^/    /'
   exit 1
 fi
@@ -401,7 +406,7 @@ EOF
 for OBJECT_NAME in expires.txt expires-with-segments.txt; do
   EXPIRY_TIMESTAMP="$(swift stat ${CONTAINER_BASE}-test7 ${OBJECT_NAME} | awk '/X-Delete-At:/ { print $2 }')"
   if [ "${EXPIRY_TIMESTAMP}" != 2000000042 ]; then
-    echo -e "\e[1;31m>>\e[0;31m Expected file \"${OBJECT_NAME}\" to expire at timestamp 2000000042, but expires at timestamp '${EXPIRY_TIMESTAMP}' instead.\e[0m"
+    printf "\e[1;31m>>\e[0;31m Expected file \"${OBJECT_NAME}\" to expire at timestamp 2000000042, but expires at timestamp '${EXPIRY_TIMESTAMP}' instead.\e[0m\n"
     exit 1
   fi
 done
@@ -410,11 +415,11 @@ done
 swift list ${CONTAINER_BASE}-test7-segments | while read OBJECT_NAME; do
   EXPIRY_TIMESTAMP="$(swift stat ${CONTAINER_BASE}-test7-segments ${OBJECT_NAME} | awk '/X-Delete-At:/ { print $2 }')"
   if [ "${EXPIRY_TIMESTAMP}" != 2000000042 ]; then
-    echo -e "\e[1;31m>>\e[0;31m Expected segment '${OBJECT_NAME}' to expire at timestamp 2000000042, but expires at timestamp '${EXPIRY_TIMESTAMP}' instead.\e[0m"
+    printf "\e[1;31m>>\e[0;31m Expected segment '${OBJECT_NAME}' to expire at timestamp 2000000042, but expires at timestamp '${EXPIRY_TIMESTAMP}' instead.\e[0m\n"
     exit 1
   fi
 done || (
-  echo -e "\e[1;31m>>\e[0;31m Expected object 'expires-with-segments.txt' to be an SLO, but it's not segmented.\e[0m"
+  printf "\e[1;31m>>\e[0;31m Expected object 'expires-with-segments.txt' to be an SLO, but it's not segmented.\e[0m\n"
   exit 1
 )
 
@@ -468,7 +473,7 @@ EOF
 
 SEGMENT_COUNT="$(swift list ${CONTAINER_BASE}-test8-segments | wc -l)"
 if [ "${SEGMENT_COUNT}" -ne 5 ]; then
-  echo -e "\e[1;31m>>\e[0;31m Expected SLO to have 5 segments, but got ${SEGMENT_COUNT} instead:\e[0m"
+  printf "\e[1;31m>>\e[0;31m Expected SLO to have 5 segments, but got ${SEGMENT_COUNT} instead:\e[0m\n"
   dump test8-segments
   exit 1
 fi
@@ -515,7 +520,7 @@ EOF
 # check that the "only-symlink" job transfers symlink.txt as a regular file (it cannot
 # transfer as a symlink because the link target is missing on the target side)
 if curl -si -H "X-Auth-Token: ${OS_AUTH_TOKEN}" "${OS_STORAGE_URL}/${CONTAINER_BASE}-test9/only-symlink/just/a/symlink.txt?symlink=get" | grep -q '^X-Symlink-Target'; then
-  echo -e "\e[1;31m>>\e[0;31m Expected only-symlink/just/a/symlink.txt not to be a symlink, but it is one:\e[0m"
+  printf "\e[1;31m>>\e[0;31m Expected only-symlink/just/a/symlink.txt not to be a symlink, but it is one:\e[0m\n"
   curl -si -H "X-Auth-Token: ${OS_AUTH_TOKEN}" "${OS_STORAGE_URL}/${CONTAINER_BASE}-test9/only-symlink/just/a/symlink.txt?symlink=get"
   exit 1
 fi
@@ -523,7 +528,7 @@ fi
 # check that the "symlink-and-target" job transfers symlink.txt as a symlink
 # (since its link target is also included in the job)
 if ! curl -si -H "X-Auth-Token: ${OS_AUTH_TOKEN}" "${OS_STORAGE_URL}/${CONTAINER_BASE}-test9/symlink-and-target/just/a/symlink.txt?symlink=get" | grep -q '^X-Symlink-Target'; then
-  echo -e "\e[1;31m>>\e[0;31m Expected symlink-and-target/just/a/symlink.txt to be a symlink, but it is not:\e[0m"
+  printf "\e[1;31m>>\e[0;31m Expected symlink-and-target/just/a/symlink.txt to be a symlink, but it is not:\e[0m\n"
   curl -si -H "X-Auth-Token: ${OS_AUTH_TOKEN}" "${OS_STORAGE_URL}/${CONTAINER_BASE}-test9/symlink-and-target/just/a/symlink.txt?symlink=get"
   exit 1
 fi
