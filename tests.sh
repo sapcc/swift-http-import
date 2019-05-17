@@ -47,13 +47,12 @@ cleanup_containers() {
   for CONTAINER_NAME in $(swift list | grep "^swift-http-import"); do
     step "Cleaning up container ${CONTAINER_NAME}"
     if [ "${CONTAINER_NAME}" = "${CONTAINER_PUBLIC}" ]; then
-      if [ "$(uname -s)" = "Darwin" ]; then
-        xargz() { xargs "$@"; }
-      else
-        xargz() { xargs -r "$@"; }
+      # macOS's xargs does not support -r
+      if [ "$(uname -s)" != "Darwin" ]; then
+        alias xargs='xargs -r'
       fi
       # do not delete the public container itself; want to keep the metadata
-      swift list "${CONTAINER_NAME}" | xargz swift delete "${CONTAINER_NAME}"
+      swift list "${CONTAINER_NAME}" | xargs swift delete "${CONTAINER_NAME}"
     else
       swift delete "${CONTAINER_NAME}"
     fi
@@ -676,9 +675,7 @@ upload_test_file_using_rclone() {
 }
 
 if hash gdate &>/dev/null; then
-  date() {
-    gdate "$@"
-  }
+  alias date=gdate
 fi
 
 get_swift_object_mtime() {
