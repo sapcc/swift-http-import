@@ -697,7 +697,7 @@ mirror <<-EOF
         container: ${CONTAINER_BASE}
         object_prefix: to
       match:
-        simplistic_comparison: false
+        simplistic_comparison: true
 EOF
 
 after_mtime_1="$(get_swift_object_mtime to/rclone-test-file-1)"
