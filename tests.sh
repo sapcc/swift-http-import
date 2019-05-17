@@ -655,10 +655,6 @@ fi # end of: if [ "$1" = http ]
 ################################################################################
 step 'Test 13: "simplistic_comparison" config option'
 
-if [ "$1" = http ]; then
-  echo ">> Test skipped (works only with Swift source)."
-else
-
 if ! hash rclone &>/dev/null; then
   echo ">> Test skipped (rclone is not installed, instructions: https://rclone.org/install/)."
 else
@@ -712,8 +708,7 @@ if ! [ "$before_mtime_1" == "$after_mtime_1" ]  || ! [ "$before_mtime_2" == "$af
   exit 1
 fi
 
-fi # end of: if ! hash rclone &>/dev/null; then
-fi # end of: if [ "$1" = http ]
+fi # end of: if ! hash rclone &>/dev/null
 
 ################################################################################
 # cleanup before exiting
