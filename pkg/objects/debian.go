@@ -37,7 +37,7 @@ import (
 //
 //  matchList[1] = "$COMP"
 //  matchList[3] = "$ARCH"
-var debReleasePackagesEntryRx = regexp.MustCompile(`^([a-zA-Z]+)\/(debian\-installer\/)?binary\-([a-zA-Z0-9]+)\/Packages(\.gz|\.xz)$`)
+var debReleasePackagesEntryRx = regexp.MustCompile(`^([a-zA-Z]+)/(debian-installer/)?binary-(\w+)/Packages(\.gz|\.xz)$`)
 
 //DebianSource is a URLSource containing a Debian repository. This type reuses
 //the Validate() and Connect() logic of URLSource, but adds a custom scraping
@@ -99,7 +99,7 @@ func (s *DebianSource) ListAllFiles() ([]FileSpec, *ListEntriesError) {
 	//the common '$REPO_ROOT/pool' directory therefore a record is kept of
 	//unique files in order to avoid duplicates in the allFiles slice
 	var allFiles []string
-	uniqueFiles := make(map[string]bool)
+	isDuplicate := make(map[string]bool)
 
 	//index files for different distributions as specified in the config file
 	for _, distName := range s.Distributions {
@@ -110,12 +110,10 @@ func (s *DebianSource) ListAllFiles() ([]FileSpec, *ListEntriesError) {
 		}
 
 		for _, file := range distFiles {
-			if duplicate := uniqueFiles[file]; duplicate {
-				continue //skip this duplicate
+			if !isDuplicate[file] {
+				allFiles = append(allFiles, file)
+				isDuplicate[file] = true
 			}
-
-			allFiles = append(allFiles, file)
-			uniqueFiles[file] = true
 		}
 	}
 
@@ -191,46 +189,43 @@ func (s *DebianSource) listDistFiles(distRootPath string, cache map[string]FileS
 	}
 
 	//parse 'Packages' indices to find paths for package files (.deb)
-	type packageIndex []struct {
-		Filename string `control:"Filename"`
-	}
-
 	for pkgIndexPath := range packageIndices {
-		var tmp packageIndex
+		var packageIndex []struct {
+			Filename string `control:"Filename"`
+		}
 		//get package index from 'Packages.xz'
-		_, lerr := s.downloadAndParseDCF(pkgIndexPath+".xz", &tmp, cache)
+		_, lerr := s.downloadAndParseDCF(pkgIndexPath+".xz", &packageIndex, cache)
 		if lerr != nil {
 			//some older distros only have 'Packages.gz'
-			_, lerr = s.downloadAndParseDCF(pkgIndexPath+".gz", &tmp, cache)
+			_, lerr = s.downloadAndParseDCF(pkgIndexPath+".gz", &packageIndex, cache)
 			if lerr != nil {
 				return nil, lerr
 			}
 		}
 
-		for _, pkg := range tmp {
+		for _, pkg := range packageIndex {
 			distFiles = append(distFiles, pkg.Filename)
 		}
 	}
 
 	//parse 'Sources' indices to find paths for source files (.dsc, .tar.gz, etc.)
-	type sourceIndex []struct {
-		Directory string                `control:"Directory"`
-		Files     []control.MD5FileHash `control:"Files" delim:"\n" strip:"\n\r\t "`
-	}
-
 	for srcIndexPath := range sourceIndices {
-		var tmp sourceIndex
+		var sourceIndex []struct {
+			Directory string                `control:"Directory"`
+			Files     []control.MD5FileHash `control:"Files" delim:"\n" strip:"\n\r\t "`
+		}
+
 		//get source index from 'Sources.xz'
-		_, lerr := s.downloadAndParseDCF(srcIndexPath+".xz", &tmp, cache)
+		_, lerr := s.downloadAndParseDCF(srcIndexPath+".xz", &sourceIndex, cache)
 		if lerr != nil {
 			//some older distros only have 'Sources.gz'
-			_, lerr = s.downloadAndParseDCF(srcIndexPath+".gz", &tmp, cache)
+			_, lerr = s.downloadAndParseDCF(srcIndexPath+".gz", &sourceIndex, cache)
 			if lerr != nil {
 				return nil, lerr
 			}
 		}
 
-		for _, src := range tmp {
+		for _, src := range sourceIndex {
 			for _, file := range src.Files {
 				distFiles = append(distFiles, filepath.Join(src.Directory, file.Filename))
 			}
