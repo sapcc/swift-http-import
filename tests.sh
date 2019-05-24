@@ -670,12 +670,8 @@ upload_test_file_using_rclone() {
   rclone_cmd copy "${file_name}" TESTREMOTE:"${CONTAINER_BASE}/to"
 }
 
-if hash gdate &>/dev/null; then
-  date() { gdate "$@"; }
-fi
-
 get_swift_object_mtime() {
-  date -d "$(swift stat ${CONTAINER_BASE} $1 |
+  date -D "$(swift stat ${CONTAINER_BASE} $1 |
     grep 'Last Modified:' |
     sed -E 's/Last Modified:\s*(.*)/\1/')" '+%s'
 }
