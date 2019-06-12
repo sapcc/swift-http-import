@@ -27,6 +27,8 @@ import (
 	"strings"
 
 	"github.com/majewsky/schwift"
+	"github.com/sapcc/go-bits/logg"
+	"github.com/sapcc/swift-http-import/pkg/util"
 	"pault.ag/go/debian/control"
 )
 
@@ -143,15 +145,39 @@ func (s *DebianSource) listDistFiles(distRootPath string, cache map[string]FileS
 		Entries       []control.SHA256FileHash `control:"SHA256" delim:"\n" strip:"\n\r\t "`
 	}
 
-	_, lerr := s.downloadAndParseDCF(releasePath, &release, cache)
+	releaseBytes, releaseURI, lerr := s.downloadAndParseDCF(releasePath, &release, cache)
 	if lerr != nil {
 		//some older distros only have the legacy 'Release' file
 		releasePath = filepath.Join(distRootPath, "Release")
-		_, lerr = s.downloadAndParseDCF(releasePath, &release, cache)
+		releaseBytes, releaseURI, lerr = s.downloadAndParseDCF(releasePath, &release, cache)
 		if lerr != nil {
 			return nil, lerr
 		}
 	}
+
+	//verify release file's GPG signature
+	var signatureURI, signaturePath string
+	var err error
+	if filepath.Base(releasePath) == "Release" {
+		var signatureBytes []byte
+		signaturePath = filepath.Join(distRootPath, "Release.gpg")
+		signatureBytes, signatureURI, lerr = s.urlSource.getFileContents(signaturePath, cache)
+		if lerr != nil {
+			return nil, lerr
+		}
+		err = util.VerifyDetachedGPGSignature(releaseBytes, signatureBytes)
+	} else {
+		signatureURI = releaseURI
+		signaturePath = releasePath
+		err = util.VerifyClearSignedGPGSignature(releaseBytes)
+	}
+	if err != nil {
+		return nil, &ListEntriesError{
+			Location: signatureURI,
+			Message:  "error while verifying GPG signature: " + err.Error(),
+		}
+	}
+	logg.Debug("successfully verified GPG signature at %s for file %s", signaturePath, "-"+filepath.Base(releasePath))
 
 	//the architectures that we are interested in
 	architectures := release.Architectures
@@ -194,10 +220,10 @@ func (s *DebianSource) listDistFiles(distRootPath string, cache map[string]FileS
 			Filename string `control:"Filename"`
 		}
 		//get package index from 'Packages.xz'
-		_, lerr := s.downloadAndParseDCF(pkgIndexPath+".xz", &packageIndex, cache)
+		_, _, lerr := s.downloadAndParseDCF(pkgIndexPath+".xz", &packageIndex, cache)
 		if lerr != nil {
 			//some older distros only have 'Packages.gz'
-			_, lerr = s.downloadAndParseDCF(pkgIndexPath+".gz", &packageIndex, cache)
+			_, _, lerr = s.downloadAndParseDCF(pkgIndexPath+".gz", &packageIndex, cache)
 			if lerr != nil {
 				return nil, lerr
 			}
@@ -216,10 +242,10 @@ func (s *DebianSource) listDistFiles(distRootPath string, cache map[string]FileS
 		}
 
 		//get source index from 'Sources.xz'
-		_, lerr := s.downloadAndParseDCF(srcIndexPath+".xz", &sourceIndex, cache)
+		_, _, lerr := s.downloadAndParseDCF(srcIndexPath+".xz", &sourceIndex, cache)
 		if lerr != nil {
 			//some older distros only have 'Sources.gz'
-			_, lerr = s.downloadAndParseDCF(srcIndexPath+".gz", &sourceIndex, cache)
+			_, _, lerr = s.downloadAndParseDCF(srcIndexPath+".gz", &sourceIndex, cache)
 			if lerr != nil {
 				return nil, lerr
 			}
@@ -248,10 +274,10 @@ func (s *DebianSource) listDistFiles(distRootPath string, cache map[string]FileS
 }
 
 //Helper function for DebianSource.ListAllFiles().
-func (s *DebianSource) downloadAndParseDCF(path string, data interface{}, cache map[string]FileSpec) (uri string, e *ListEntriesError) {
+func (s *DebianSource) downloadAndParseDCF(path string, data interface{}, cache map[string]FileSpec) (contents []byte, uri string, e *ListEntriesError) {
 	buf, uri, lerr := s.urlSource.getFileContents(path, cache)
 	if lerr != nil {
-		return uri, lerr
+		return nil, uri, lerr
 	}
 
 	//if `buf` has the magic number for XZ, decompress before parsing as DCF
@@ -259,7 +285,7 @@ func (s *DebianSource) downloadAndParseDCF(path string, data interface{}, cache 
 		var err error
 		buf, err = decompressXZArchive(buf)
 		if err != nil {
-			return uri, &ListEntriesError{Location: uri, Message: err.Error()}
+			return nil, uri, &ListEntriesError{Location: uri, Message: err.Error()}
 		}
 	}
 
@@ -268,19 +294,19 @@ func (s *DebianSource) downloadAndParseDCF(path string, data interface{}, cache 
 		var err error
 		buf, err = decompressGZipArchive(buf)
 		if err != nil {
-			return uri, &ListEntriesError{Location: uri, Message: err.Error()}
+			return nil, uri, &ListEntriesError{Location: uri, Message: err.Error()}
 		}
 	}
 
 	err := control.Unmarshal(data, bytes.NewReader(buf))
 	if err != nil {
-		return uri, &ListEntriesError{
+		return nil, uri, &ListEntriesError{
 			Location: uri,
 			Message:  "error while parsing Debian Control File: " + err.Error(),
 		}
 	}
 
-	return uri, nil
+	return buf, uri, nil
 }
 
 //Helper function for DebianSource.ListAllFiles().
