@@ -77,9 +77,10 @@ func (s *YumSource) GetFile(directoryPath string, requestHeaders schwift.ObjectH
 
 //ListAllFiles implements the Source interface.
 func (s *YumSource) ListAllFiles() ([]FileSpec, *ListEntriesError) {
-	repomdPath := "repodata/repomd.xml"
 	cache := make(map[string]FileSpec)
+	var allFiles []string
 
+	repomdPath := "repodata/repomd.xml"
 	//parse repomd.xml to find paths of all other metadata files
 	var repomd struct {
 		Entries []struct {
@@ -105,6 +106,7 @@ func (s *YumSource) ListAllFiles() ([]FileSpec, *ListEntriesError) {
 				Message:  "error while verifying GPG signature: " + err.Error(),
 			}
 		}
+		allFiles = append(allFiles, signaturePath)
 	} else {
 		if !strings.Contains(lerr.Message, "GET returned status 404") {
 			return nil, lerr
@@ -114,7 +116,6 @@ func (s *YumSource) ListAllFiles() ([]FileSpec, *ListEntriesError) {
 
 	//note metadata files for transfer
 	hrefsByType := make(map[string]string)
-	var allFiles []string
 	for _, entry := range repomd.Entries {
 		allFiles = append(allFiles, entry.Location.Href)
 		hrefsByType[entry.Type] = entry.Location.Href
@@ -169,9 +170,18 @@ func (s *YumSource) ListAllFiles() ([]FileSpec, *ListEntriesError) {
 		}
 	}
 
-	//transfer repomd.xml at the very end, when everything else has already been
+	//transfer repomd.xml.* files at the very end, when everything else has already been
 	//uploaded (to avoid situations where a client might see repository metadata
 	//without being able to see the referenced packages)
+	repomdKeyPath := repomdPath + ".key"
+	_, _, lerr = s.urlSource.getFileContents(repomdKeyPath, cache)
+	if lerr == nil {
+		allFiles = append(allFiles, repomdKeyPath)
+	} else {
+		if !strings.Contains(lerr.Message, "GET returned status 404") {
+			return nil, lerr
+		}
+	}
 	allFiles = append(allFiles, repomdPath)
 
 	//for files that were already downloaded, pass the contents and HTTP headers
