@@ -54,12 +54,17 @@ func verifyGPGSignature(message []byte, signature *armor.Block) error {
 			return err
 		}
 
-		sig, ok := pkt.(*packet.Signature)
-		if !ok {
-			return fmt.Errorf("invalid OpenPGP packet type: expected \"packet.Signature\", got %T", pkt)
+		var issuerKeyID string
+		switch t := pkt.(type) {
+		default:
+			return fmt.Errorf("invalid OpenPGP packet type: expected either %q or %q, got %T", "*packet.Signature", "*packet.SignatureV3", t)
+		case *packet.Signature:
+			issuerKeyID = fmt.Sprintf("%X", *pkt.(*packet.Signature).IssuerKeyId)
+		case *packet.SignatureV3:
+			issuerKeyID = fmt.Sprintf("%X", pkt.(*packet.SignatureV3).IssuerKeyId)
 		}
 
-		b, err := getPublicKey(fmt.Sprintf("%X", *sig.IssuerKeyId))
+		b, err := getPublicKey(issuerKeyID)
 		if err != nil {
 			return err
 		}

@@ -23,8 +23,12 @@ import (
 	"bytes"
 	"encoding/xml"
 	"io"
+	"path/filepath"
+	"strings"
 
 	"github.com/majewsky/schwift"
+	"github.com/sapcc/go-bits/logg"
+	"github.com/sapcc/swift-http-import/pkg/util"
 )
 
 //YumSource is a URLSource containing a Yum repository. This type reuses the
@@ -85,10 +89,28 @@ func (s *YumSource) ListAllFiles() ([]FileSpec, *ListEntriesError) {
 			} `xml:"location"`
 		} `xml:"data"`
 	}
-	repomdURL, lerr := s.downloadAndParseXML(repomdPath, &repomd, cache)
+	repomdBytes, repomdURL, lerr := s.downloadAndParseXML(repomdPath, &repomd, cache)
 	if lerr != nil {
 		return nil, lerr
 	}
+
+	//verify repomd's GPG signature
+	signaturePath := repomdPath + ".asc"
+	signatureBytes, signatureURI, lerr := s.urlSource.getFileContents(signaturePath, cache)
+	if lerr == nil {
+		err := util.VerifyDetachedGPGSignature(repomdBytes, signatureBytes)
+		if err != nil {
+			return nil, &ListEntriesError{
+				Location: signatureURI,
+				Message:  "error while verifying GPG signature: " + err.Error(),
+			}
+		}
+	} else {
+		if !strings.Contains(lerr.Message, "GET returned status 404") {
+			return nil, lerr
+		}
+	}
+	logg.Debug("successfully verified GPG signature at %s for file %s", signaturePath, "-"+filepath.Base(repomdPath))
 
 	//note metadata files for transfer
 	hrefsByType := make(map[string]string)
@@ -114,7 +136,7 @@ func (s *YumSource) ListAllFiles() ([]FileSpec, *ListEntriesError) {
 			} `xml:"location"`
 		} `xml:"package"`
 	}
-	_, lerr = s.downloadAndParseXML(href, &primary, cache)
+	_, _, lerr = s.downloadAndParseXML(href, &primary, cache)
 	if lerr != nil {
 		return nil, lerr
 	}
@@ -138,7 +160,7 @@ func (s *YumSource) ListAllFiles() ([]FileSpec, *ListEntriesError) {
 				} `xml:"delta"`
 			} `xml:"newpackage"`
 		}
-		_, lerr = s.downloadAndParseXML(href, &prestodelta, cache)
+		_, _, lerr = s.downloadAndParseXML(href, &prestodelta, cache)
 		if lerr != nil {
 			return nil, lerr
 		}
@@ -185,10 +207,10 @@ func (s *YumSource) handlesArchitecture(arch string) bool {
 }
 
 //Helper function for YumSource.ListAllFiles().
-func (s *YumSource) downloadAndParseXML(path string, data interface{}, cache map[string]FileSpec) (uri string, e *ListEntriesError) {
+func (s *YumSource) downloadAndParseXML(path string, data interface{}, cache map[string]FileSpec) (contents []byte, uri string, e *ListEntriesError) {
 	buf, uri, lerr := s.urlSource.getFileContents(path, cache)
 	if lerr != nil {
-		return uri, lerr
+		return nil, uri, lerr
 	}
 
 	//if `buf` has the magic number for GZip, decompress before parsing as XML
@@ -196,17 +218,17 @@ func (s *YumSource) downloadAndParseXML(path string, data interface{}, cache map
 		var err error
 		buf, err = decompressGZipArchive(buf)
 		if err != nil {
-			return uri, &ListEntriesError{Location: uri, Message: err.Error()}
+			return nil, uri, &ListEntriesError{Location: uri, Message: err.Error()}
 		}
 	}
 
 	err := xml.Unmarshal(buf, data)
 	if err != nil {
-		return uri, &ListEntriesError{
+		return nil, uri, &ListEntriesError{
 			Location: uri,
 			Message:  "error while parsing XML: " + err.Error(),
 		}
 	}
 
-	return uri, nil
+	return buf, uri, nil
 }
