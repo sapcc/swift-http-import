@@ -156,11 +156,11 @@ func (s *DebianSource) listDistFiles(distRootPath string, cache map[string]FileS
 	}
 
 	//verify release file's GPG signature
-	var signatureURI, signaturePath string
+	var signatureURI string
 	var err error
 	if filepath.Base(releasePath) == "Release" {
 		var signatureBytes []byte
-		signaturePath = filepath.Join(distRootPath, "Release.gpg")
+		signaturePath := filepath.Join(distRootPath, "Release.gpg")
 		signatureBytes, signatureURI, lerr = s.urlSource.getFileContents(signaturePath, cache)
 		if lerr != nil {
 			return nil, lerr
@@ -168,7 +168,6 @@ func (s *DebianSource) listDistFiles(distRootPath string, cache map[string]FileS
 		err = util.VerifyDetachedGPGSignature(releaseBytes, signatureBytes)
 	} else {
 		signatureURI = releaseURI
-		signaturePath = releasePath
 		err = util.VerifyClearSignedGPGSignature(releaseBytes)
 	}
 	if err != nil {
@@ -177,7 +176,7 @@ func (s *DebianSource) listDistFiles(distRootPath string, cache map[string]FileS
 			Message:  "error while verifying GPG signature: " + err.Error(),
 		}
 	}
-	logg.Debug("successfully verified GPG signature at %s for file %s", signaturePath, "-"+filepath.Base(releasePath))
+	logg.Debug("successfully verified GPG signature at %s for file %s", signatureURI, "-"+filepath.Base(releasePath))
 
 	//the architectures that we are interested in
 	architectures := release.Architectures

@@ -112,7 +112,7 @@ func (s *YumSource) ListAllFiles() ([]FileSpec, *ListEntriesError) {
 			return nil, lerr
 		}
 	}
-	logg.Debug("successfully verified GPG signature at %s for file %s", signaturePath, "-"+filepath.Base(repomdPath))
+	logg.Debug("successfully verified GPG signature at %s for file %s", signatureURI, "-"+filepath.Base(repomdPath))
 
 	//note metadata files for transfer
 	hrefsByType := make(map[string]string)
