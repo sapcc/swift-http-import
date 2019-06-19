@@ -156,7 +156,8 @@ func (s *YumSource) ListAllFiles() ([]FileSpec, *ListEntriesError) {
 	if exists {
 		var prestodelta struct {
 			Packages []struct {
-				Delta struct {
+				Architecture string `xml:"arch,attr"`
+				Deltas       []struct {
 					Href string `xml:"filename"`
 				} `xml:"delta"`
 			} `xml:"newpackage"`
@@ -166,7 +167,11 @@ func (s *YumSource) ListAllFiles() ([]FileSpec, *ListEntriesError) {
 			return nil, lerr
 		}
 		for _, pkg := range prestodelta.Packages {
-			allFiles = append(allFiles, pkg.Delta.Href)
+			if s.handlesArchitecture(pkg.Architecture) {
+				for _, d := range pkg.Deltas {
+					allFiles = append(allFiles, d.Href)
+				}
+			}
 		}
 	}
 
