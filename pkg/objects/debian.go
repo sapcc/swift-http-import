@@ -53,8 +53,10 @@ type DebianSource struct {
 	ServerCAPath             string   `yaml:"ca"`
 	Distributions            []string `yaml:"dist"`
 	Architectures            []string `yaml:"arch"`
+	VerifySignature          *bool    `yaml:"verify_signature"`
 	//compiled configuration
-	urlSource *URLSource `yaml:"-"`
+	urlSource       *URLSource `yaml:"-"`
+	gpgVerification bool       `yaml:"-"`
 }
 
 //Validate implements the Source interface.
@@ -64,6 +66,10 @@ func (s *DebianSource) Validate(name string) []error {
 		ClientCertificatePath:    s.ClientCertificatePath,
 		ClientCertificateKeyPath: s.ClientCertificateKeyPath,
 		ServerCAPath:             s.ServerCAPath,
+	}
+	s.gpgVerification = true
+	if s.VerifySignature != nil {
+		s.gpgVerification = *s.VerifySignature
 	}
 	return s.urlSource.Validate(name)
 }
@@ -156,27 +162,29 @@ func (s *DebianSource) listDistFiles(distRootPath string, cache map[string]FileS
 	}
 
 	//verify release file's GPG signature
-	var signatureURI string
-	var err error
-	if filepath.Base(releasePath) == "Release" {
-		var signatureBytes []byte
-		signaturePath := filepath.Join(distRootPath, "Release.gpg")
-		signatureBytes, signatureURI, lerr = s.urlSource.getFileContents(signaturePath, cache)
-		if lerr != nil {
-			return nil, lerr
+	if s.gpgVerification {
+		var signatureURI string
+		var err error
+		if filepath.Base(releasePath) == "Release" {
+			var signatureBytes []byte
+			signaturePath := filepath.Join(distRootPath, "Release.gpg")
+			signatureBytes, signatureURI, lerr = s.urlSource.getFileContents(signaturePath, cache)
+			if lerr != nil {
+				return nil, lerr
+			}
+			err = util.VerifyDetachedGPGSignature(releaseBytes, signatureBytes)
+		} else {
+			signatureURI = releaseURI
+			err = util.VerifyClearSignedGPGSignature(releaseBytes)
 		}
-		err = util.VerifyDetachedGPGSignature(releaseBytes, signatureBytes)
-	} else {
-		signatureURI = releaseURI
-		err = util.VerifyClearSignedGPGSignature(releaseBytes)
-	}
-	if err != nil {
-		return nil, &ListEntriesError{
-			Location: signatureURI,
-			Message:  "error while verifying GPG signature: " + err.Error(),
+		if err != nil {
+			return nil, &ListEntriesError{
+				Location: signatureURI,
+				Message:  "error while verifying GPG signature: " + err.Error(),
+			}
 		}
+		logg.Debug("successfully verified GPG signature at %s for file %s", signatureURI, "-"+filepath.Base(releasePath))
 	}
-	logg.Debug("successfully verified GPG signature at %s for file %s", signatureURI, "-"+filepath.Base(releasePath))
 
 	//the architectures that we are interested in
 	architectures := release.Architectures

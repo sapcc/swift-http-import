@@ -42,8 +42,10 @@ type YumSource struct {
 	ClientCertificateKeyPath string   `yaml:"key"`
 	ServerCAPath             string   `yaml:"ca"`
 	Architectures            []string `yaml:"arch"`
+	VerifySignature          *bool    `yaml:"verify_signature"`
 	//compiled configuration
-	urlSource *URLSource `yaml:"-"`
+	urlSource       *URLSource `yaml:"-"`
+	gpgVerification bool       `yaml:"-"`
 }
 
 //Validate implements the Source interface.
@@ -53,6 +55,10 @@ func (s *YumSource) Validate(name string) []error {
 		ClientCertificatePath:    s.ClientCertificatePath,
 		ClientCertificateKeyPath: s.ClientCertificateKeyPath,
 		ServerCAPath:             s.ServerCAPath,
+	}
+	s.gpgVerification = true
+	if s.VerifySignature != nil {
+		s.gpgVerification = *s.VerifySignature
 	}
 	return s.urlSource.Validate(name)
 }
@@ -96,23 +102,25 @@ func (s *YumSource) ListAllFiles() ([]FileSpec, *ListEntriesError) {
 	}
 
 	//verify repomd's GPG signature
-	signaturePath := repomdPath + ".asc"
-	signatureBytes, signatureURI, lerr := s.urlSource.getFileContents(signaturePath, cache)
-	if lerr == nil {
-		err := util.VerifyDetachedGPGSignature(repomdBytes, signatureBytes)
-		if err != nil {
-			return nil, &ListEntriesError{
-				Location: signatureURI,
-				Message:  "error while verifying GPG signature: " + err.Error(),
+	if s.gpgVerification {
+		signaturePath := repomdPath + ".asc"
+		signatureBytes, signatureURI, lerr := s.urlSource.getFileContents(signaturePath, cache)
+		if lerr == nil {
+			err := util.VerifyDetachedGPGSignature(repomdBytes, signatureBytes)
+			if err != nil {
+				return nil, &ListEntriesError{
+					Location: signatureURI,
+					Message:  "error while verifying GPG signature: " + err.Error(),
+				}
+			}
+			allFiles = append(allFiles, signaturePath)
+		} else {
+			if !strings.Contains(lerr.Message, "GET returned status 404") {
+				return nil, lerr
 			}
 		}
-		allFiles = append(allFiles, signaturePath)
-	} else {
-		if !strings.Contains(lerr.Message, "GET returned status 404") {
-			return nil, lerr
-		}
+		logg.Debug("successfully verified GPG signature at %s for file %s", signatureURI, "-"+filepath.Base(repomdPath))
 	}
-	logg.Debug("successfully verified GPG signature at %s for file %s", signatureURI, "-"+filepath.Base(repomdPath))
 
 	//note metadata files for transfer
 	hrefsByType := make(map[string]string)
