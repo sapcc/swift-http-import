@@ -27,6 +27,9 @@ import (
 	"strings"
 
 	"github.com/majewsky/schwift"
+	"github.com/sapcc/go-bits/logg"
+	"github.com/sapcc/swift-http-import/pkg/util"
+	"golang.org/x/crypto/openpgp"
 	"pault.ag/go/debian/control"
 )
 
@@ -37,7 +40,7 @@ import (
 //
 //  matchList[1] = "$COMP"
 //  matchList[3] = "$ARCH"
-var debReleasePackagesEntryRx = regexp.MustCompile(`^([a-zA-Z]+)\/(debian\-installer\/)?binary\-([a-zA-Z0-9]+)\/Packages(\.gz|\.xz)$`)
+var debReleasePackagesEntryRx = regexp.MustCompile(`^([a-zA-Z]+)/(debian-installer/)?binary-(\w+)/Packages(\.gz|\.xz)$`)
 
 //DebianSource is a URLSource containing a Debian repository. This type reuses
 //the Validate() and Connect() logic of URLSource, but adds a custom scraping
@@ -51,8 +54,11 @@ type DebianSource struct {
 	ServerCAPath             string   `yaml:"ca"`
 	Distributions            []string `yaml:"dist"`
 	Architectures            []string `yaml:"arch"`
+	VerifySignature          *bool    `yaml:"verify_signature"`
 	//compiled configuration
-	urlSource *URLSource `yaml:"-"`
+	urlSource       *URLSource          `yaml:"-"`
+	gpgVerification bool                `yaml:"-"`
+	gpgKeyRing      *openpgp.EntityList `yaml:"-"`
 }
 
 //Validate implements the Source interface.
@@ -62,6 +68,10 @@ func (s *DebianSource) Validate(name string) []error {
 		ClientCertificatePath:    s.ClientCertificatePath,
 		ClientCertificateKeyPath: s.ClientCertificateKeyPath,
 		ServerCAPath:             s.ServerCAPath,
+	}
+	s.gpgVerification = true
+	if s.VerifySignature != nil {
+		s.gpgVerification = *s.VerifySignature
 	}
 	return s.urlSource.Validate(name)
 }
@@ -99,7 +109,7 @@ func (s *DebianSource) ListAllFiles() ([]FileSpec, *ListEntriesError) {
 	//the common '$REPO_ROOT/pool' directory therefore a record is kept of
 	//unique files in order to avoid duplicates in the allFiles slice
 	var allFiles []string
-	uniqueFiles := make(map[string]bool)
+	isDuplicate := make(map[string]bool)
 
 	//index files for different distributions as specified in the config file
 	for _, distName := range s.Distributions {
@@ -110,12 +120,10 @@ func (s *DebianSource) ListAllFiles() ([]FileSpec, *ListEntriesError) {
 		}
 
 		for _, file := range distFiles {
-			if duplicate := uniqueFiles[file]; duplicate {
-				continue //skip this duplicate
+			if !isDuplicate[file] {
+				allFiles = append(allFiles, file)
+				isDuplicate[file] = true
 			}
-
-			allFiles = append(allFiles, file)
-			uniqueFiles[file] = true
 		}
 	}
 
@@ -145,14 +153,39 @@ func (s *DebianSource) listDistFiles(distRootPath string, cache map[string]FileS
 		Entries       []control.SHA256FileHash `control:"SHA256" delim:"\n" strip:"\n\r\t "`
 	}
 
-	_, lerr := s.downloadAndParseDCF(releasePath, &release, cache)
+	releaseBytes, releaseURI, lerr := s.downloadAndParseDCF(releasePath, &release, cache)
 	if lerr != nil {
 		//some older distros only have the legacy 'Release' file
 		releasePath = filepath.Join(distRootPath, "Release")
-		_, lerr = s.downloadAndParseDCF(releasePath, &release, cache)
+		releaseBytes, releaseURI, lerr = s.downloadAndParseDCF(releasePath, &release, cache)
 		if lerr != nil {
 			return nil, lerr
 		}
+	}
+
+	//verify release file's GPG signature
+	if s.gpgVerification {
+		var signatureURI string
+		var err error
+		if filepath.Base(releasePath) == "Release" {
+			var signatureBytes []byte
+			signaturePath := filepath.Join(distRootPath, "Release.gpg")
+			signatureBytes, signatureURI, lerr = s.urlSource.getFileContents(signaturePath, cache)
+			if lerr != nil {
+				return nil, lerr
+			}
+			err = util.VerifyDetachedGPGSignature(s.gpgKeyRing, releaseBytes, signatureBytes)
+		} else {
+			signatureURI = releaseURI
+			err = util.VerifyClearSignedGPGSignature(s.gpgKeyRing, releaseBytes)
+		}
+		if err != nil {
+			return nil, &ListEntriesError{
+				Location: signatureURI,
+				Message:  "error while verifying GPG signature: " + err.Error(),
+			}
+		}
+		logg.Debug("successfully verified GPG signature at %s for file %s", signatureURI, "-"+filepath.Base(releasePath))
 	}
 
 	//the architectures that we are interested in
@@ -191,46 +224,43 @@ func (s *DebianSource) listDistFiles(distRootPath string, cache map[string]FileS
 	}
 
 	//parse 'Packages' indices to find paths for package files (.deb)
-	type packageIndex []struct {
-		Filename string `control:"Filename"`
-	}
-
 	for pkgIndexPath := range packageIndices {
-		var tmp packageIndex
+		var packageIndex []struct {
+			Filename string `control:"Filename"`
+		}
 		//get package index from 'Packages.xz'
-		_, lerr := s.downloadAndParseDCF(pkgIndexPath+".xz", &tmp, cache)
+		_, _, lerr := s.downloadAndParseDCF(pkgIndexPath+".xz", &packageIndex, cache)
 		if lerr != nil {
 			//some older distros only have 'Packages.gz'
-			_, lerr = s.downloadAndParseDCF(pkgIndexPath+".gz", &tmp, cache)
+			_, _, lerr = s.downloadAndParseDCF(pkgIndexPath+".gz", &packageIndex, cache)
 			if lerr != nil {
 				return nil, lerr
 			}
 		}
 
-		for _, pkg := range tmp {
+		for _, pkg := range packageIndex {
 			distFiles = append(distFiles, pkg.Filename)
 		}
 	}
 
 	//parse 'Sources' indices to find paths for source files (.dsc, .tar.gz, etc.)
-	type sourceIndex []struct {
-		Directory string                `control:"Directory"`
-		Files     []control.MD5FileHash `control:"Files" delim:"\n" strip:"\n\r\t "`
-	}
-
 	for srcIndexPath := range sourceIndices {
-		var tmp sourceIndex
+		var sourceIndex []struct {
+			Directory string                `control:"Directory"`
+			Files     []control.MD5FileHash `control:"Files" delim:"\n" strip:"\n\r\t "`
+		}
+
 		//get source index from 'Sources.xz'
-		_, lerr := s.downloadAndParseDCF(srcIndexPath+".xz", &tmp, cache)
+		_, _, lerr := s.downloadAndParseDCF(srcIndexPath+".xz", &sourceIndex, cache)
 		if lerr != nil {
 			//some older distros only have 'Sources.gz'
-			_, lerr = s.downloadAndParseDCF(srcIndexPath+".gz", &tmp, cache)
+			_, _, lerr = s.downloadAndParseDCF(srcIndexPath+".gz", &sourceIndex, cache)
 			if lerr != nil {
 				return nil, lerr
 			}
 		}
 
-		for _, src := range tmp {
+		for _, src := range sourceIndex {
 			for _, file := range src.Files {
 				distFiles = append(distFiles, filepath.Join(src.Directory, file.Filename))
 			}
@@ -253,10 +283,10 @@ func (s *DebianSource) listDistFiles(distRootPath string, cache map[string]FileS
 }
 
 //Helper function for DebianSource.ListAllFiles().
-func (s *DebianSource) downloadAndParseDCF(path string, data interface{}, cache map[string]FileSpec) (uri string, e *ListEntriesError) {
+func (s *DebianSource) downloadAndParseDCF(path string, data interface{}, cache map[string]FileSpec) (contents []byte, uri string, e *ListEntriesError) {
 	buf, uri, lerr := s.urlSource.getFileContents(path, cache)
 	if lerr != nil {
-		return uri, lerr
+		return nil, uri, lerr
 	}
 
 	//if `buf` has the magic number for XZ, decompress before parsing as DCF
@@ -264,7 +294,7 @@ func (s *DebianSource) downloadAndParseDCF(path string, data interface{}, cache 
 		var err error
 		buf, err = decompressXZArchive(buf)
 		if err != nil {
-			return uri, &ListEntriesError{Location: uri, Message: err.Error()}
+			return nil, uri, &ListEntriesError{Location: uri, Message: err.Error()}
 		}
 	}
 
@@ -273,19 +303,19 @@ func (s *DebianSource) downloadAndParseDCF(path string, data interface{}, cache 
 		var err error
 		buf, err = decompressGZipArchive(buf)
 		if err != nil {
-			return uri, &ListEntriesError{Location: uri, Message: err.Error()}
+			return nil, uri, &ListEntriesError{Location: uri, Message: err.Error()}
 		}
 	}
 
 	err := control.Unmarshal(data, bytes.NewReader(buf))
 	if err != nil {
-		return uri, &ListEntriesError{
+		return nil, uri, &ListEntriesError{
 			Location: uri,
 			Message:  "error while parsing Debian Control File: " + err.Error(),
 		}
 	}
 
-	return uri, nil
+	return buf, uri, nil
 }
 
 //Helper function for DebianSource.ListAllFiles().

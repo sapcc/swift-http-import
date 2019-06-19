@@ -23,8 +23,13 @@ import (
 	"bytes"
 	"encoding/xml"
 	"io"
+	"path/filepath"
+	"strings"
 
 	"github.com/majewsky/schwift"
+	"github.com/sapcc/go-bits/logg"
+	"github.com/sapcc/swift-http-import/pkg/util"
+	"golang.org/x/crypto/openpgp"
 )
 
 //YumSource is a URLSource containing a Yum repository. This type reuses the
@@ -38,8 +43,11 @@ type YumSource struct {
 	ClientCertificateKeyPath string   `yaml:"key"`
 	ServerCAPath             string   `yaml:"ca"`
 	Architectures            []string `yaml:"arch"`
+	VerifySignature          *bool    `yaml:"verify_signature"`
 	//compiled configuration
-	urlSource *URLSource `yaml:"-"`
+	urlSource       *URLSource          `yaml:"-"`
+	gpgVerification bool                `yaml:"-"`
+	gpgKeyRing      *openpgp.EntityList `yaml:"-"`
 }
 
 //Validate implements the Source interface.
@@ -49,6 +57,10 @@ func (s *YumSource) Validate(name string) []error {
 		ClientCertificatePath:    s.ClientCertificatePath,
 		ClientCertificateKeyPath: s.ClientCertificateKeyPath,
 		ServerCAPath:             s.ServerCAPath,
+	}
+	s.gpgVerification = true
+	if s.VerifySignature != nil {
+		s.gpgVerification = *s.VerifySignature
 	}
 	return s.urlSource.Validate(name)
 }
@@ -73,9 +85,10 @@ func (s *YumSource) GetFile(directoryPath string, requestHeaders schwift.ObjectH
 
 //ListAllFiles implements the Source interface.
 func (s *YumSource) ListAllFiles() ([]FileSpec, *ListEntriesError) {
-	repomdPath := "repodata/repomd.xml"
 	cache := make(map[string]FileSpec)
+	var allFiles []string
 
+	repomdPath := "repodata/repomd.xml"
 	//parse repomd.xml to find paths of all other metadata files
 	var repomd struct {
 		Entries []struct {
@@ -85,14 +98,34 @@ func (s *YumSource) ListAllFiles() ([]FileSpec, *ListEntriesError) {
 			} `xml:"location"`
 		} `xml:"data"`
 	}
-	repomdURL, lerr := s.downloadAndParseXML(repomdPath, &repomd, cache)
+	repomdBytes, repomdURL, lerr := s.downloadAndParseXML(repomdPath, &repomd, cache)
 	if lerr != nil {
 		return nil, lerr
 	}
 
+	//verify repomd's GPG signature
+	if s.gpgVerification {
+		signaturePath := repomdPath + ".asc"
+		signatureBytes, signatureURI, lerr := s.urlSource.getFileContents(signaturePath, cache)
+		if lerr == nil {
+			err := util.VerifyDetachedGPGSignature(s.gpgKeyRing, repomdBytes, signatureBytes)
+			if err != nil {
+				return nil, &ListEntriesError{
+					Location: signatureURI,
+					Message:  "error while verifying GPG signature: " + err.Error(),
+				}
+			}
+			allFiles = append(allFiles, signaturePath)
+		} else {
+			if !strings.Contains(lerr.Message, "GET returned status 404") {
+				return nil, lerr
+			}
+		}
+		logg.Debug("successfully verified GPG signature at %s for file %s", signatureURI, "-"+filepath.Base(repomdPath))
+	}
+
 	//note metadata files for transfer
 	hrefsByType := make(map[string]string)
-	var allFiles []string
 	for _, entry := range repomd.Entries {
 		allFiles = append(allFiles, entry.Location.Href)
 		hrefsByType[entry.Type] = entry.Location.Href
@@ -114,7 +147,7 @@ func (s *YumSource) ListAllFiles() ([]FileSpec, *ListEntriesError) {
 			} `xml:"location"`
 		} `xml:"package"`
 	}
-	_, lerr = s.downloadAndParseXML(href, &primary, cache)
+	_, _, lerr = s.downloadAndParseXML(href, &primary, cache)
 	if lerr != nil {
 		return nil, lerr
 	}
@@ -133,23 +166,37 @@ func (s *YumSource) ListAllFiles() ([]FileSpec, *ListEntriesError) {
 	if exists {
 		var prestodelta struct {
 			Packages []struct {
-				Delta struct {
+				Architecture string `xml:"arch,attr"`
+				Deltas       []struct {
 					Href string `xml:"filename"`
 				} `xml:"delta"`
 			} `xml:"newpackage"`
 		}
-		_, lerr = s.downloadAndParseXML(href, &prestodelta, cache)
+		_, _, lerr = s.downloadAndParseXML(href, &prestodelta, cache)
 		if lerr != nil {
 			return nil, lerr
 		}
 		for _, pkg := range prestodelta.Packages {
-			allFiles = append(allFiles, pkg.Delta.Href)
+			if s.handlesArchitecture(pkg.Architecture) {
+				for _, d := range pkg.Deltas {
+					allFiles = append(allFiles, d.Href)
+				}
+			}
 		}
 	}
 
-	//transfer repomd.xml at the very end, when everything else has already been
+	//transfer repomd.xml.* files at the very end, when everything else has already been
 	//uploaded (to avoid situations where a client might see repository metadata
 	//without being able to see the referenced packages)
+	repomdKeyPath := repomdPath + ".key"
+	_, _, lerr = s.urlSource.getFileContents(repomdKeyPath, cache)
+	if lerr == nil {
+		allFiles = append(allFiles, repomdKeyPath)
+	} else {
+		if !strings.Contains(lerr.Message, "GET returned status 404") {
+			return nil, lerr
+		}
+	}
 	allFiles = append(allFiles, repomdPath)
 
 	//for files that were already downloaded, pass the contents and HTTP headers
@@ -185,10 +232,10 @@ func (s *YumSource) handlesArchitecture(arch string) bool {
 }
 
 //Helper function for YumSource.ListAllFiles().
-func (s *YumSource) downloadAndParseXML(path string, data interface{}, cache map[string]FileSpec) (uri string, e *ListEntriesError) {
+func (s *YumSource) downloadAndParseXML(path string, data interface{}, cache map[string]FileSpec) (contents []byte, uri string, e *ListEntriesError) {
 	buf, uri, lerr := s.urlSource.getFileContents(path, cache)
 	if lerr != nil {
-		return uri, lerr
+		return nil, uri, lerr
 	}
 
 	//if `buf` has the magic number for GZip, decompress before parsing as XML
@@ -196,17 +243,17 @@ func (s *YumSource) downloadAndParseXML(path string, data interface{}, cache map
 		var err error
 		buf, err = decompressGZipArchive(buf)
 		if err != nil {
-			return uri, &ListEntriesError{Location: uri, Message: err.Error()}
+			return nil, uri, &ListEntriesError{Location: uri, Message: err.Error()}
 		}
 	}
 
 	err := xml.Unmarshal(buf, data)
 	if err != nil {
-		return uri, &ListEntriesError{
+		return nil, uri, &ListEntriesError{
 			Location: uri,
 			Message:  "error while parsing XML: " + err.Error(),
 		}
 	}
 
-	return uri, nil
+	return buf, uri, nil
 }
