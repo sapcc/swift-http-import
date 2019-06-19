@@ -149,13 +149,22 @@ jobs:
 
 If `jobs[].from.url` refers to a Yum repository (as used by most RPM-based Linux distributions), setting
 `jobs[].from.type` to `yum` will cause `swift-http-import` to parse repository metadata to discover files to transfer,
-instead of looking at directory listings. *Warning:* With this option set, files below the given URL which are not
+instead of looking at directory listings.
+
+*Warning:* With this option set, files below the given URL which are not
 referenced by the Yum repository metadata will **not** be picked up.
+Conversely, files mentioned in the repo metadata that don't exist in the repo
+will result in `404` errors.
 
 If the optional `jobs[].from.arch` field is given, the Yum repository metadata reader will only consider packages for
 these architectures. Special values include "noarch" for architecture-independent packages and "src" for source
 packages.
-[(Link to full example config file)](./examples/source-yum.yaml)
+
+The GPG signature for the repository's metadata file is verified by default and
+the job will fail if the verification is unsuccessful. This behavior can be disabled by
+specifying the `jobs[].from.verify_signature` option.
+
+[Link to full example config file](./examples/source-yum.yaml)
 
 ```yaml
 jobs:
@@ -163,6 +172,7 @@ jobs:
       url:  https://dl.fedoraproject.org/pub/epel/7Server/x86_64/
       type: yum
       arch: [x86_64, noarch]
+      verify_signature: true
       # SSL certs are optionally supported here, too
       cert: /path/to/client.pem
       key:  /path/to/client-key.pem
@@ -181,8 +191,17 @@ transfer, instead of looking at directory listings.
 
 If the optional `jobs[].from.arch` field is given, the Debian repository
 metadata reader will only consider package and source files for these
-architectures. [(Link to full example config
-file)](./examples/source-debian.yaml)
+architectures.
+
+*Warning:* If `arch` field is omitted then files mentioned in the repository
+metadata that don't actually exist in the repository will result in `404`
+errors.
+
+The GPG signature for the repository's metadata file is verified by default and
+the job will fail if the verification is unsuccessful. This behavior can be disabled by
+specifying the `jobs[].from.verify_signature` option.
+
+ [Link to full example config file](./examples/source-debian.yaml)
 
 ```yaml
 jobs:
@@ -191,6 +210,7 @@ jobs:
       type: debian
       dist: [xenial, xenial-updates, disco, cosmic]
       arch: [amd64, i386]
+      verify_signature: true
       # SSL certs are optionally supported here, too
       cert: /path/to/client.pem
       key:  /path/to/client-key.pem
