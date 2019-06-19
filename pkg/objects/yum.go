@@ -29,6 +29,7 @@ import (
 	"github.com/majewsky/schwift"
 	"github.com/sapcc/go-bits/logg"
 	"github.com/sapcc/swift-http-import/pkg/util"
+	"golang.org/x/crypto/openpgp"
 )
 
 //YumSource is a URLSource containing a Yum repository. This type reuses the
@@ -44,8 +45,9 @@ type YumSource struct {
 	Architectures            []string `yaml:"arch"`
 	VerifySignature          *bool    `yaml:"verify_signature"`
 	//compiled configuration
-	urlSource       *URLSource `yaml:"-"`
-	gpgVerification bool       `yaml:"-"`
+	urlSource       *URLSource          `yaml:"-"`
+	gpgVerification bool                `yaml:"-"`
+	gpgKeyRing      *openpgp.EntityList `yaml:"-"`
 }
 
 //Validate implements the Source interface.
@@ -106,7 +108,7 @@ func (s *YumSource) ListAllFiles() ([]FileSpec, *ListEntriesError) {
 		signaturePath := repomdPath + ".asc"
 		signatureBytes, signatureURI, lerr := s.urlSource.getFileContents(signaturePath, cache)
 		if lerr == nil {
-			err := util.VerifyDetachedGPGSignature(repomdBytes, signatureBytes)
+			err := util.VerifyDetachedGPGSignature(s.gpgKeyRing, repomdBytes, signatureBytes)
 			if err != nil {
 				return nil, &ListEntriesError{
 					Location: signatureURI,

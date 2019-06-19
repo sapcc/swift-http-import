@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/majewsky/schwift"
+	"golang.org/x/crypto/openpgp"
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -64,9 +65,14 @@ func ReadConfiguration(path string) (*Configuration, []error) {
 		cfg.Statsd.Prefix = "swift_http_import"
 	}
 
+	//gpgKeyRing is used to cache GPG public keys that are used by custom source
+	//types (e.g. YumSource), and is passed on to the different Job(s)
+	gpgKeyRing := make(openpgp.EntityList, 0)
+
 	cfg.Swift.ValidateIgnoreEmptyContainer = true
 	errors := cfg.Swift.Validate("swift")
 	for idx, jobConfig := range cfg.JobConfigs {
+		jobConfig.gpgKeyRing = &gpgKeyRing
 		job, jobErrors := jobConfig.Compile(
 			fmt.Sprintf("swift.jobs[%d]", idx),
 			cfg.Swift,
@@ -99,6 +105,9 @@ type JobConfiguration struct {
 	Segmenting           *SegmentingConfiguration `yaml:"segmenting"`
 	Expiration           ExpirationConfiguration  `yaml:"expiration"`
 	Cleanup              CleanupConfiguration     `yaml:"cleanup"`
+	//gpgKeyRing is the common KeyRing cache that is passed on to the
+	//custom source type Job(s).
+	gpgKeyRing *openpgp.EntityList `yaml:"-"`
 }
 
 //MatchConfiguration contains the "match" section of a JobConfiguration.
@@ -219,6 +228,15 @@ func (cfg JobConfiguration) Compile(name string, swift SwiftLocation) (job *Job,
 		if !isURLSource && !isSwiftSource {
 			errors = append(errors, fmt.Errorf("invalid value for %s.match.simplistic_comparsion: this option is not supported for source type %T", name, cfg.Source.src))
 		}
+	}
+
+	_, isYumSource := cfg.Source.src.(*YumSource)
+	if isYumSource {
+		cfg.Source.src.(*YumSource).gpgKeyRing = cfg.gpgKeyRing
+	}
+	_, isDebianSource := cfg.Source.src.(*DebianSource)
+	if isDebianSource {
+		cfg.Source.src.(*DebianSource).gpgKeyRing = cfg.gpgKeyRing
 	}
 
 	if cfg.Segmenting != nil {
