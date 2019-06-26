@@ -29,7 +29,6 @@ import (
 	"github.com/majewsky/schwift"
 	"github.com/sapcc/go-bits/logg"
 	"github.com/sapcc/swift-http-import/pkg/util"
-	"golang.org/x/crypto/openpgp"
 )
 
 //YumSource is a URLSource containing a Yum repository. This type reuses the
@@ -45,9 +44,9 @@ type YumSource struct {
 	Architectures            []string `yaml:"arch"`
 	VerifySignature          *bool    `yaml:"verify_signature"`
 	//compiled configuration
-	urlSource       *URLSource          `yaml:"-"`
-	gpgVerification bool                `yaml:"-"`
-	gpgKeyRing      *openpgp.EntityList `yaml:"-"`
+	urlSource       *URLSource       `yaml:"-"`
+	gpgVerification bool             `yaml:"-"`
+	gpgKeyRing      *util.GPGKeyRing `yaml:"-"`
 }
 
 //Validate implements the Source interface.
