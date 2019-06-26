@@ -31,6 +31,9 @@ import (
 //ReportEvent counts either a directory that was scraped, or a file that was
 //found (and maybe transferred). It is consumed by the Report actor.
 type ReportEvent struct {
+	IsJob      bool
+	JobSkipped bool
+
 	IsDirectory     bool
 	DirectoryFailed bool
 
@@ -67,6 +70,7 @@ func (r *Report) Run() {
 		filesFailed        int64
 		filesTransferred   int64
 		filesCleanedUp     int64
+		jobsSkipped        int64
 		statter            statsd.Statter
 	)
 
@@ -101,6 +105,10 @@ func (r *Report) Run() {
 			}
 		case mark.IsCleanup:
 			filesCleanedUp += mark.CleanedUpObjectCount
+		case mark.IsJob:
+			if mark.JobSkipped {
+				jobsSkipped++
+			}
 		}
 	}
 
@@ -111,6 +119,7 @@ func (r *Report) Run() {
 	} else {
 		gauge = func(bucket string, value int64, rate float32) error { return nil }
 	}
+	gauge("last_run.jobs_skipped", jobsSkipped, 1.0)
 	gauge("last_run.dirs_scanned", directoriesScanned, 1.0)
 	gauge("last_run.files_found", filesFound, 1.0)
 	gauge("last_run.files_transfered", filesTransferred, 1.0)
@@ -126,6 +135,7 @@ func (r *Report) Run() {
 	}
 
 	//report results
+	logg.Info("%d jobs skipped", jobsSkipped)
 	logg.Info("%d dirs scanned, %d failed",
 		directoriesScanned, directoriesFailed,
 	)

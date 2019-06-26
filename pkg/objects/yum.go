@@ -29,7 +29,6 @@ import (
 	"github.com/majewsky/schwift"
 	"github.com/sapcc/go-bits/logg"
 	"github.com/sapcc/swift-http-import/pkg/util"
-	"golang.org/x/crypto/openpgp"
 )
 
 //YumSource is a URLSource containing a Yum repository. This type reuses the
@@ -45,9 +44,9 @@ type YumSource struct {
 	Architectures            []string `yaml:"arch"`
 	VerifySignature          *bool    `yaml:"verify_signature"`
 	//compiled configuration
-	urlSource       *URLSource          `yaml:"-"`
-	gpgVerification bool                `yaml:"-"`
-	gpgKeyRing      *openpgp.EntityList `yaml:"-"`
+	urlSource       *URLSource       `yaml:"-"`
+	gpgVerification bool             `yaml:"-"`
+	gpgKeyRing      *util.GPGKeyRing `yaml:"-"`
 }
 
 //Validate implements the Source interface.
@@ -110,9 +109,11 @@ func (s *YumSource) ListAllFiles() ([]FileSpec, *ListEntriesError) {
 		if lerr == nil {
 			err := util.VerifyDetachedGPGSignature(s.gpgKeyRing, repomdBytes, signatureBytes)
 			if err != nil {
+				logg.Debug("could not verify GPG signature at %s for file %s", signatureURI, "-"+filepath.Base(repomdPath))
 				return nil, &ListEntriesError{
-					Location: signatureURI,
-					Message:  "error while verifying GPG signature: " + err.Error(),
+					Location: s.urlSource.getURLForPath("/").String(),
+					Message:  ErrMessageGPGVerificationFailed,
+					Inner:    err,
 				}
 			}
 			allFiles = append(allFiles, signaturePath)
@@ -243,7 +244,7 @@ func (s *YumSource) downloadAndParseXML(path string, data interface{}, cache map
 		var err error
 		buf, err = decompressGZipArchive(buf)
 		if err != nil {
-			return nil, uri, &ListEntriesError{Location: uri, Message: err.Error()}
+			return nil, uri, &ListEntriesError{Location: uri, Message: "cannot decompress gzip stream", Inner: err}
 		}
 	}
 
@@ -251,7 +252,8 @@ func (s *YumSource) downloadAndParseXML(path string, data interface{}, cache map
 	if err != nil {
 		return nil, uri, &ListEntriesError{
 			Location: uri,
-			Message:  "error while parsing XML: " + err.Error(),
+			Message:  "error while parsing XML",
+			Inner:    err,
 		}
 	}
 

@@ -77,12 +77,18 @@ func (s *Scraper) Run() {
 
 		//if listing failed, maybe retry later
 		if err != nil {
+			if err.Message == objects.ErrMessageGPGVerificationFailed {
+				logg.Error("skipping job for source %s: %s", err.Location, err.FullMessage())
+				//report that a job was skipped
+				s.Report <- ReportEvent{IsJob: true, JobSkipped: true}
+				continue
+			}
 			if directory.RetryCounter >= 2 {
-				logg.Error("giving up on %s: %s", err.Location, err.Message)
+				logg.Error("giving up on %s: %s", err.Location, err.FullMessage())
 				s.Report <- ReportEvent{IsDirectory: true, DirectoryFailed: true}
 				continue
 			}
-			logg.Error("skipping %s for now: %s", err.Location, err.Message)
+			logg.Error("skipping %s for now: %s", err.Location, err.FullMessage())
 			directory.RetryCounter++
 			stack = stack.PushBack(directory)
 			continue

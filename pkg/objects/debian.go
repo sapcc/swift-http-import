@@ -29,7 +29,6 @@ import (
 	"github.com/majewsky/schwift"
 	"github.com/sapcc/go-bits/logg"
 	"github.com/sapcc/swift-http-import/pkg/util"
-	"golang.org/x/crypto/openpgp"
 	"pault.ag/go/debian/control"
 )
 
@@ -56,9 +55,9 @@ type DebianSource struct {
 	Architectures            []string `yaml:"arch"`
 	VerifySignature          *bool    `yaml:"verify_signature"`
 	//compiled configuration
-	urlSource       *URLSource          `yaml:"-"`
-	gpgVerification bool                `yaml:"-"`
-	gpgKeyRing      *openpgp.EntityList `yaml:"-"`
+	urlSource       *URLSource       `yaml:"-"`
+	gpgVerification bool             `yaml:"-"`
+	gpgKeyRing      *util.GPGKeyRing `yaml:"-"`
 }
 
 //Validate implements the Source interface.
@@ -180,9 +179,11 @@ func (s *DebianSource) listDistFiles(distRootPath string, cache map[string]FileS
 			err = util.VerifyClearSignedGPGSignature(s.gpgKeyRing, releaseBytes)
 		}
 		if err != nil {
+			logg.Debug("could not verify GPG signature at %s for file %s", signatureURI, "-"+filepath.Base(releasePath))
 			return nil, &ListEntriesError{
-				Location: signatureURI,
-				Message:  "error while verifying GPG signature: " + err.Error(),
+				Location: s.urlSource.getURLForPath("/").String(),
+				Message:  ErrMessageGPGVerificationFailed,
+				Inner:    err,
 			}
 		}
 		logg.Debug("successfully verified GPG signature at %s for file %s", signatureURI, "-"+filepath.Base(releasePath))
@@ -294,7 +295,7 @@ func (s *DebianSource) downloadAndParseDCF(path string, data interface{}, cache 
 		var err error
 		buf, err = decompressXZArchive(buf)
 		if err != nil {
-			return nil, uri, &ListEntriesError{Location: uri, Message: err.Error()}
+			return nil, uri, &ListEntriesError{Location: uri, Message: "cannot decompress xz stream", Inner: err}
 		}
 	}
 
@@ -303,7 +304,7 @@ func (s *DebianSource) downloadAndParseDCF(path string, data interface{}, cache 
 		var err error
 		buf, err = decompressGZipArchive(buf)
 		if err != nil {
-			return nil, uri, &ListEntriesError{Location: uri, Message: err.Error()}
+			return nil, uri, &ListEntriesError{Location: uri, Message: "cannot decompress gzip stream", Inner: err}
 		}
 	}
 
@@ -311,7 +312,8 @@ func (s *DebianSource) downloadAndParseDCF(path string, data interface{}, cache 
 	if err != nil {
 		return nil, uri, &ListEntriesError{
 			Location: uri,
-			Message:  "error while parsing Debian Control File: " + err.Error(),
+			Message:  "error while parsing Debian Control File",
+			Inner:    err,
 		}
 	}
 

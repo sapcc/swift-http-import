@@ -161,7 +161,7 @@ these architectures. Special values include "noarch" for architecture-independen
 packages.
 
 The GPG signature for the repository's metadata file is verified by default and
-the job will fail if the verification is unsuccessful. This behavior can be disabled by
+the job will be skipped if the verification is unsuccessful. This behavior can be disabled by
 specifying the `jobs[].from.verify_signature` option.
 
 [Link to full example config file](./examples/source-yum.yaml)
@@ -198,7 +198,7 @@ metadata that don't actually exist in the repository will result in `404`
 errors.
 
 The GPG signature for the repository's metadata file is verified by default and
-the job will fail if the verification is unsuccessful. This behavior can be disabled by
+the job will be skipped if the verification is unsuccessful. This behavior can be disabled by
 specifying the `jobs[].from.verify_signature` option.
 
  [Link to full example config file](./examples/source-debian.yaml)
@@ -533,6 +533,7 @@ The following metric are sent:
 | Gauge   | `last_run.success`           | `1` if no error occurred, otherwise 0
 | Gauge   | `last_run.success_timestamp` | UNIX timestamp of last successful run
 | Gauge   | `last_run.duration_seconds`  | Runtime in seconds
+| Gauge   | `last_run.jobs_skipped`      | Number of jobs skipped
 | Gauge   | `last_run.dirs_scanned`      | Number of directories scanned
 | Gauge   | `last_run.files_found`       | Number of files found
 | Gauge   | `last_run.files_transfered`  | Number of files actually transferred

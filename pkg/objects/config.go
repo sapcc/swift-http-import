@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/majewsky/schwift"
+	"github.com/sapcc/swift-http-import/pkg/util"
 	"golang.org/x/crypto/openpgp"
 	yaml "gopkg.in/yaml.v2"
 )
@@ -67,12 +68,12 @@ func ReadConfiguration(path string) (*Configuration, []error) {
 
 	//gpgKeyRing is used to cache GPG public keys that are used by custom source
 	//types (e.g. YumSource), and is passed on to the different Job(s)
-	gpgKeyRing := make(openpgp.EntityList, 0)
+	gpgKeyRing := &util.GPGKeyRing{EntityList: make(openpgp.EntityList, 0)}
 
 	cfg.Swift.ValidateIgnoreEmptyContainer = true
 	errors := cfg.Swift.Validate("swift")
 	for idx, jobConfig := range cfg.JobConfigs {
-		jobConfig.gpgKeyRing = &gpgKeyRing
+		jobConfig.gpgKeyRing = gpgKeyRing
 		job, jobErrors := jobConfig.Compile(
 			fmt.Sprintf("swift.jobs[%d]", idx),
 			cfg.Swift,
@@ -105,9 +106,9 @@ type JobConfiguration struct {
 	Segmenting           *SegmentingConfiguration `yaml:"segmenting"`
 	Expiration           ExpirationConfiguration  `yaml:"expiration"`
 	Cleanup              CleanupConfiguration     `yaml:"cleanup"`
-	//gpgKeyRing is the common KeyRing cache that is passed on to the
+	//gpgKeyRing is the common key ring cache that is passed on to the
 	//custom source type Job(s).
-	gpgKeyRing *openpgp.EntityList `yaml:"-"`
+	gpgKeyRing *util.GPGKeyRing
 }
 
 //MatchConfiguration contains the "match" section of a JobConfiguration.
