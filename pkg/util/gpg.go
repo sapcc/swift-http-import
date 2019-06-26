@@ -19,7 +19,7 @@ import (
 //types of GPG signatures.
 type GPGKeyRing struct {
 	EntityList openpgp.EntityList
-	Mux        sync.Mutex
+	Mux        sync.RWMutex
 }
 
 //VerifyClearSignedGPGSignature takes a clear signed message and a GPGKeyRing to check
@@ -77,7 +77,9 @@ func verifyGPGSignature(keyring *GPGKeyRing, message []byte, signature *armor.Bl
 		}
 
 		//only download the public key if not found in the existing key ring
+		keyring.Mux.RLock()
 		foundKeys := keyring.EntityList.KeysById(issuerKeyID)
+		keyring.Mux.RUnlock()
 		if len(foundKeys) == 0 {
 			b, err := getPublicKey(fmt.Sprintf("%X", issuerKeyID))
 			if err != nil {
@@ -98,7 +100,10 @@ func verifyGPGSignature(keyring *GPGKeyRing, message []byte, signature *armor.Bl
 		keyring.Mux.Unlock()
 	}
 
+	keyring.Mux.RLock()
 	_, err = openpgp.CheckDetachedSignature(keyring.EntityList, bytes.NewReader(message), bytes.NewReader(signatureBytes))
+	keyring.Mux.RUnlock()
+
 	return err
 }
 
