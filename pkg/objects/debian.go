@@ -179,8 +179,9 @@ func (s *DebianSource) listDistFiles(distRootPath string, cache map[string]FileS
 			err = util.VerifyClearSignedGPGSignature(s.gpgKeyRing, releaseBytes)
 		}
 		if err != nil {
+			logg.Debug("could not verify GPG signature at %s for file %s", signatureURI, "-"+filepath.Base(releasePath))
 			return nil, &ListEntriesError{
-				Location: signatureURI,
+				Location: s.urlSource.getURLForPath("/").String(),
 				Message:  ErrMessageGPGVerificationFailed,
 				Inner:    err,
 			}

@@ -109,8 +109,9 @@ func (s *YumSource) ListAllFiles() ([]FileSpec, *ListEntriesError) {
 		if lerr == nil {
 			err := util.VerifyDetachedGPGSignature(s.gpgKeyRing, repomdBytes, signatureBytes)
 			if err != nil {
+				logg.Debug("could not verify GPG signature at %s for file %s", signatureURI, "-"+filepath.Base(repomdPath))
 				return nil, &ListEntriesError{
-					Location: signatureURI,
+					Location: s.urlSource.getURLForPath("/").String(),
 					Message:  ErrMessageGPGVerificationFailed,
 					Inner:    err,
 				}
