@@ -65,9 +65,29 @@ type Source interface {
 type ListEntriesError struct {
 	//the location of the directory (e.g. an URL)
 	Location string
-	//error message
+	//error message (either of those is optional, but at least one must be set)
 	Message string
+	Inner   error
 }
+
+//FullMessage returns the full error message for this error. This merges the
+//.Messages with the .Inner.Error().
+func (e ListEntriesError) FullMessage() string {
+	if e.Inner == nil {
+		return e.Message
+	}
+	msg := e.Inner.Error()
+	if e.Message != "" {
+		msg = e.Message + ": " + msg
+	}
+	return msg
+}
+
+//Some common values for ListEntriesError.Message that are always accompanied
+//by an Inner error.
+const (
+	ErrMessageGPGVerificationFailed = "error while verifying GPG signature"
+)
 
 //ErrListAllFilesNotSupported is returned by ListAllFiles() for sources that do
 //not support it.
@@ -225,7 +245,7 @@ func (u URLSource) ListEntries(directoryPath string) ([]FileSpec, *ListEntriesEr
 	//don't care about the Accept header, anyway, as far as my testing showed.
 	response, err := u.HTTPClient.Get(uri.String())
 	if err != nil {
-		return nil, &ListEntriesError{uri.String(), "GET failed: " + err.Error()}
+		return nil, &ListEntriesError{uri.String(), "GET failed", err}
 	}
 	defer response.Body.Close()
 
@@ -234,11 +254,11 @@ func (u URLSource) ListEntries(directoryPath string) ([]FileSpec, *ListEntriesEr
 		//DebianSource parses error message strings that end in "GET returned
 		//status 404". Changes to this error format will break things on the
 		//DebianSource end
-		return nil, &ListEntriesError{uri.String(), "GET returned status " + response.Status}
+		return nil, &ListEntriesError{uri.String(), "GET returned status " + response.Status, nil}
 	}
 	contentType := response.Header.Get("Content-Type")
 	if !strings.HasPrefix(contentType, "text/html") {
-		return nil, &ListEntriesError{uri.String(), "GET returned unexpected Content-Type: " + contentType}
+		return nil, &ListEntriesError{uri.String(), "GET returned unexpected Content-Type: " + contentType, nil}
 	}
 
 	//find links inside the HTML document
@@ -360,21 +380,21 @@ func (u URLSource) getFileContents(path string, cache map[string]FileSpec) (cont
 
 	req, err := http.NewRequest("GET", uri, nil)
 	if err != nil {
-		return nil, uri, &ListEntriesError{uri, "GET failed: " + err.Error()}
+		return nil, uri, &ListEntriesError{uri, "GET failed", err}
 	}
 
 	resp, err := u.HTTPClient.Do(req)
 	if err != nil {
-		return nil, uri, &ListEntriesError{uri, "GET failed: " + err.Error()}
+		return nil, uri, &ListEntriesError{uri, "GET failed", err}
 	}
 	defer resp.Body.Close()
 
 	result, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return nil, uri, &ListEntriesError{uri, "GET failed: " + err.Error()}
+		return nil, uri, &ListEntriesError{uri, "GET failed", err}
 	}
 	if resp.StatusCode >= 400 {
-		return nil, uri, &ListEntriesError{uri, fmt.Sprintf("GET returned status %d", resp.StatusCode)}
+		return nil, uri, &ListEntriesError{uri, fmt.Sprintf("GET returned status %d", resp.StatusCode), nil}
 	}
 
 	cache[path] = FileSpec{

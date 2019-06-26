@@ -205,7 +205,8 @@ func (s *SwiftLocation) listFiles(path string, recursively bool) ([]FileSpec, *L
 	if err != nil {
 		return nil, &ListEntriesError{
 			Location: s.ContainerName + "/" + objectPath,
-			Message:  "GET failed: " + err.Error(),
+			Message:  "GET failed",
+			Inner:    err,
 		}
 	}
 

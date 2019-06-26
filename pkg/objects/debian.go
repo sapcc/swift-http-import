@@ -181,7 +181,8 @@ func (s *DebianSource) listDistFiles(distRootPath string, cache map[string]FileS
 		if err != nil {
 			return nil, &ListEntriesError{
 				Location: signatureURI,
-				Message:  "error while verifying GPG signature: " + err.Error(),
+				Message:  ErrMessageGPGVerificationFailed,
+				Inner:    err,
 			}
 		}
 		logg.Debug("successfully verified GPG signature at %s for file %s", signatureURI, "-"+filepath.Base(releasePath))
@@ -293,7 +294,7 @@ func (s *DebianSource) downloadAndParseDCF(path string, data interface{}, cache 
 		var err error
 		buf, err = decompressXZArchive(buf)
 		if err != nil {
-			return nil, uri, &ListEntriesError{Location: uri, Message: err.Error()}
+			return nil, uri, &ListEntriesError{Location: uri, Message: "cannot decompress xz stream", Inner: err}
 		}
 	}
 
@@ -302,7 +303,7 @@ func (s *DebianSource) downloadAndParseDCF(path string, data interface{}, cache 
 		var err error
 		buf, err = decompressGZipArchive(buf)
 		if err != nil {
-			return nil, uri, &ListEntriesError{Location: uri, Message: err.Error()}
+			return nil, uri, &ListEntriesError{Location: uri, Message: "cannot decompress gzip stream", Inner: err}
 		}
 	}
 
@@ -310,7 +311,8 @@ func (s *DebianSource) downloadAndParseDCF(path string, data interface{}, cache 
 	if err != nil {
 		return nil, uri, &ListEntriesError{
 			Location: uri,
-			Message:  "error while parsing Debian Control File: " + err.Error(),
+			Message:  "error while parsing Debian Control File",
+			Inner:    err,
 		}
 	}
 

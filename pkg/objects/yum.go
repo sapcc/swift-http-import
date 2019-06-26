@@ -111,7 +111,8 @@ func (s *YumSource) ListAllFiles() ([]FileSpec, *ListEntriesError) {
 			if err != nil {
 				return nil, &ListEntriesError{
 					Location: signatureURI,
-					Message:  "error while verifying GPG signature: " + err.Error(),
+					Message:  ErrMessageGPGVerificationFailed,
+					Inner:    err,
 				}
 			}
 			allFiles = append(allFiles, signaturePath)
@@ -242,7 +243,7 @@ func (s *YumSource) downloadAndParseXML(path string, data interface{}, cache map
 		var err error
 		buf, err = decompressGZipArchive(buf)
 		if err != nil {
-			return nil, uri, &ListEntriesError{Location: uri, Message: err.Error()}
+			return nil, uri, &ListEntriesError{Location: uri, Message: "cannot decompress gzip stream", Inner: err}
 		}
 	}
 
@@ -250,7 +251,8 @@ func (s *YumSource) downloadAndParseXML(path string, data interface{}, cache map
 	if err != nil {
 		return nil, uri, &ListEntriesError{
 			Location: uri,
-			Message:  "error while parsing XML: " + err.Error(),
+			Message:  "error while parsing XML",
+			Inner:    err,
 		}
 	}
 
