@@ -538,3 +538,4 @@ The following metric are sent:
 | Gauge   | `last_run.files_found`       | Number of files found
 | Gauge   | `last_run.files_transfered`  | Number of files actually transferred
 | Gauge   | `last_run.files_failed`      | Number of files failed (download or upload)
+| Gauge   | `last_run.bytes_transfered`  | Number of bytes transferred

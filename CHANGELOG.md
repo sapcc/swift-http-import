@@ -1,8 +1,9 @@
 # v2.6.0 (TBD)
 
 New features:
-- Verify GPG signatures for `yum` and `debian` source types. This behaviour can
-  be disabled using the new config option: `jobs[].from.verify_signature`.
+- Report the total number of bytes transferred per run.
+- The GPG signatures for `yum` and `debian` source types are verified by
+  default. This behaviour can be disabled using the new config option: `jobs[].from.verify_signature`.
 - The new `jobs[].match.not_older_than` configuration option can be used to exclude old objects from transfer. As of
   now, it can only be used with Swift sources, not with HTTP sources.
 - When syncing a Debian (Ubuntu) repository, the `jobs[].from.type` may be set
