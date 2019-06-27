@@ -73,15 +73,16 @@ const (
 )
 
 //PerformTransfer transfers this file from the source to the target.
-//The return value indicates if the transfer finished successfully.
-func (f File) PerformTransfer() TransferResult {
+//It returns the TransferResult (which indicates if the transfer finished successfully)
+//and the number of bytes transferred.
+func (f File) PerformTransfer() (TransferResult, int64) {
 	object := f.TargetObject()
 
 	//check if this file needs transfer
 	if f.Job.Matcher.ImmutableFileRx != nil && f.Job.Matcher.ImmutableFileRx.MatchString(f.Spec.Path) {
 		if f.Job.Target.FileExists[object.Name()] {
 			logg.Debug("skipping %s: already transferred", object.FullName())
-			return TransferSkipped
+			return TransferSkipped, 0
 		}
 	}
 
@@ -122,14 +123,14 @@ func (f File) PerformTransfer() TransferResult {
 			logg.Error("skipping target %s: HEAD failed: %s",
 				object.FullName(), err.Error(),
 			)
-			return TransferFailed
+			return TransferFailed, 0
 		}
 	}
 
 	//if we want to upload a symlink, we can skip the whole Last-Modified/Etag
 	//shebang and straight-up compare the symlink target
 	if f.Spec.SymlinkTargetPath != "" {
-		return f.uploadSymlink(currentSymlinkTarget, hdr.IsLargeObject())
+		return f.uploadSymlink(currentSymlinkTarget, hdr.IsLargeObject()), 0
 	}
 
 	//retrieve object from source, taking advantage of Etag and Last-Modified where possible
@@ -160,13 +161,13 @@ func (f File) PerformTransfer() TransferResult {
 	}
 	if err != nil {
 		logg.Error("GET %s failed: %s", f.Spec.Path, err.Error())
-		return TransferFailed
+		return TransferFailed, 0
 	}
 	if body != nil {
 		defer body.Close()
 	}
 	if sourceState.SkipTransfer { // 304 Not Modified
-		return TransferSkipped
+		return TransferSkipped, 0
 	}
 
 	if util.LogIndividualTransfers {
@@ -198,9 +199,9 @@ func (f File) PerformTransfer() TransferResult {
 	}
 
 	if ok {
-		return TransferSuccess
+		return TransferSuccess, size
 	}
-	return TransferFailed
+	return TransferFailed, 0
 }
 
 func (f File) uploadSymlink(previousTarget *schwift.Object, cleanupOldSegments bool) TransferResult {

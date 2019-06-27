@@ -55,12 +55,12 @@ LOOP:
 			if !ok {
 				break LOOP
 			}
-			result := file.PerformTransfer()
+			result, size := file.PerformTransfer()
 			if result == objects.TransferFailed {
 				filesToRetry = append(filesToRetry, file)
 			} else {
 				t.Output <- FileInfoForCleaner{File: file, Failed: false}
-				t.Report <- ReportEvent{IsFile: true, FileTransferResult: result}
+				t.Report <- ReportEvent{IsFile: true, FileTransferResult: result, FileTransferBytes: size}
 			}
 		}
 	}
@@ -71,14 +71,15 @@ LOOP:
 	}
 	for _, file := range filesToRetry {
 		result := objects.TransferFailed
+		var size int64
 		//...but only if we were not aborted (this is checked in every loop
 		//iteration because the abort signal (i.e. Ctrl-C) could also happen
 		//during this loop)
 		if !aborted && t.Context.Err() == nil {
-			result = file.PerformTransfer()
+			result, size = file.PerformTransfer()
 		}
 		t.Output <- FileInfoForCleaner{File: file, Failed: result == objects.TransferFailed}
-		t.Report <- ReportEvent{IsFile: true, FileTransferResult: result}
+		t.Report <- ReportEvent{IsFile: true, FileTransferResult: result, FileTransferBytes: size}
 	}
 
 	//if interrupt was received, consume all remaining input to get the Scraper
