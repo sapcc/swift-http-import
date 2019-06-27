@@ -39,6 +39,7 @@ type ReportEvent struct {
 
 	IsFile             bool
 	FileTransferResult objects.TransferResult
+	FileTransferBytes  int64
 
 	IsCleanup            bool
 	CleanedUpObjectCount int64
@@ -70,6 +71,7 @@ func (r *Report) Run() {
 		filesFailed        int64
 		filesTransferred   int64
 		filesCleanedUp     int64
+		bytesTransferred   int64
 		jobsSkipped        int64
 		statter            statsd.Statter
 	)
@@ -100,6 +102,7 @@ func (r *Report) Run() {
 			switch mark.FileTransferResult {
 			case objects.TransferSuccess:
 				filesTransferred++
+				bytesTransferred += mark.FileTransferBytes
 			case objects.TransferFailed:
 				filesFailed++
 			}
@@ -125,6 +128,7 @@ func (r *Report) Run() {
 	gauge("last_run.files_transfered", filesTransferred, 1.0)
 	gauge("last_run.files_failed", filesFailed, 1.0)
 	gauge("last_run.files_cleaned_up", filesCleanedUp, 1.0)
+	gauge("last_run.bytes_transfered", bytesTransferred, 1.0)
 	if filesFailed > 0 || directoriesFailed > 0 {
 		gauge("last_run.success", 0, 1.0)
 		r.ExitCode = 1
@@ -145,6 +149,7 @@ func (r *Report) Run() {
 	if filesCleanedUp > 0 {
 		logg.Info("%d old files cleaned up", filesCleanedUp)
 	}
+	logg.Info("%d bytes transferred", bytesTransferred)
 
 	duration := time.Since(r.StartTime)
 	gauge("last_run.duration_seconds", int64(duration.Seconds()), 1.0)
