@@ -108,7 +108,7 @@ func (f File) PerformTransfer() (TransferResult, int64) {
 		}
 	}
 
-	logg.Debug("transferring to %s", object.FullName())
+	logg.Debug("considering transfer of %s", object.FullName())
 
 	//query the file metadata at the target
 	hdr, currentSymlinkTarget, err := object.SymlinkHeaders()
