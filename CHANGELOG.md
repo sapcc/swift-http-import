@@ -1,4 +1,4 @@
-# v2.6.0 (TBD)
+# v2.6.0 (2019-11-27)
 
 New features:
 - Report the total number of bytes transferred per run.
