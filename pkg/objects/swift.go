@@ -29,6 +29,7 @@ import (
 
 	"github.com/gophercloud/gophercloud"
 	"github.com/gophercloud/gophercloud/openstack"
+	"github.com/gophercloud/utils/client"
 	"github.com/gophercloud/utils/openstack/clientconfig"
 	"github.com/majewsky/schwift"
 	"github.com/majewsky/schwift/gopherschwift"
@@ -61,8 +62,8 @@ type SwiftLocation struct {
 	FileExists map[string]bool `yaml:"-"`
 }
 
-func (s SwiftLocation) cacheKey() string {
-	return strings.Join([]string{
+func (s SwiftLocation) cacheKey(name string) string {
+	v := []string{
 		s.AuthURL,
 		s.UserName,
 		s.UserDomainName,
@@ -73,7 +74,11 @@ func (s SwiftLocation) cacheKey() string {
 		s.ApplicationCredentialName,
 		string(s.ApplicationCredentialSecret),
 		s.RegionName,
-	}, "\000")
+	}
+	if logg.ShowDebug {
+		v = append(v, name)
+	}
+	return strings.Join(v, "\000")
 }
 
 //Validate returns an empty list only if all required credentials are present.
@@ -129,14 +134,24 @@ func (s SwiftLocation) Validate(name string) []error {
 
 var accountCache = map[string]*schwift.Account{}
 
+type logger struct {
+	Prefix string
+}
+
+func (l logger) Printf(format string, args ...interface{}) {
+	for _, v := range strings.Split(fmt.Sprintf(format, args...), "\n") {
+		logg.Debug("[%s] %s", l.Prefix, v)
+	}
+}
+
 //Connect implements the Source interface. It establishes the connection to Swift.
-func (s *SwiftLocation) Connect() error {
+func (s *SwiftLocation) Connect(name string) error {
 	if s.Account != nil {
 		return nil
 	}
 
 	//connect to Swift account (but re-use connection if cached)
-	key := s.cacheKey()
+	key := s.cacheKey(name)
 	s.Account = accountCache[key]
 	if s.Account == nil {
 		authInfo := &clientconfig.AuthInfo{
@@ -160,7 +175,21 @@ func (s *SwiftLocation) Connect() error {
 		}
 		authOptions.AllowReauth = true
 
-		provider, err := openstack.AuthenticatedClient(*authOptions)
+		provider, err := openstack.NewClient(authOptions.IdentityEndpoint)
+		if err != nil {
+			return fmt.Errorf("cannot create OpenStack client: %s", err.Error())
+		}
+
+		if logg.ShowDebug {
+			provider.HTTPClient = http.Client{
+				Transport: &client.RoundTripper{
+					Rt:     &http.Transport{},
+					Logger: &logger{Prefix: name},
+				},
+			}
+		}
+
+		err = openstack.Authenticate(provider, *authOptions)
 		if err != nil {
 			if authOptions.ApplicationCredentialSecret != "" {
 				return fmt.Errorf("cannot authenticate to %s using application credential: %s",

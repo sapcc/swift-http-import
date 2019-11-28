@@ -46,7 +46,7 @@ type Source interface {
 	//Validate reports errors if this source is malspecified.
 	Validate(name string) []error
 	//Connect performs source-specific one-time setup.
-	Connect() error
+	Connect(name string) error
 	//ListAllFiles returns all files in the source (as paths relative to the
 	//source's root). If this returns ErrListAllFilesNotSupported, ListEntries
 	//must be used instead.
@@ -174,7 +174,7 @@ func (u *URLSource) Validate(name string) (result []error) {
 }
 
 //Connect implements the Source interface.
-func (u *URLSource) Connect() error {
+func (u *URLSource) Connect(name string) error {
 	tlsConfig := &tls.Config{}
 
 	if u.ClientCertificatePath != "" {
