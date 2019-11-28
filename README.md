@@ -110,6 +110,7 @@ environment variable:
 
 ```yaml
 password: { fromEnv: ENVIRONMENT_VARIABLE }
+application_credential_secret: { fromEnv: ENVIRONMENT_VARIABLE }
 ```
 
 Each sync job contains the source URL as `from.url`, and `to.container` has the target container name, optionally paired with an

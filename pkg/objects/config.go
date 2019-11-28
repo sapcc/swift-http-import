@@ -212,6 +212,9 @@ func (cfg JobConfiguration) Compile(name string, swift SwiftLocation) (job *Job,
 		cfg.Target.ProjectName = swift.ProjectName
 		cfg.Target.ProjectDomainName = swift.ProjectDomainName
 		cfg.Target.Password = swift.Password
+		cfg.Target.ApplicationCredentialID = swift.ApplicationCredentialID
+		cfg.Target.ApplicationCredentialName = swift.ApplicationCredentialName
+		cfg.Target.ApplicationCredentialSecret = swift.ApplicationCredentialSecret
 		cfg.Target.RegionName = swift.RegionName
 		errors = append(errors, cfg.Target.Validate(name+".to")...)
 	}

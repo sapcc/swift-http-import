@@ -39,15 +39,18 @@ import (
 //SwiftLocation contains all parameters required to establish a Swift connection.
 //It implements the Source interface, but is also used on the target side.
 type SwiftLocation struct {
-	AuthURL           string       `yaml:"auth_url"`
-	UserName          string       `yaml:"user_name"`
-	UserDomainName    string       `yaml:"user_domain_name"`
-	ProjectName       string       `yaml:"project_name"`
-	ProjectDomainName string       `yaml:"project_domain_name"`
-	Password          AuthPassword `yaml:"password"`
-	RegionName        string       `yaml:"region_name"`
-	ContainerName     string       `yaml:"container"`
-	ObjectNamePrefix  string       `yaml:"object_prefix"`
+	AuthURL                     string       `yaml:"auth_url"`
+	UserName                    string       `yaml:"user_name"`
+	UserDomainName              string       `yaml:"user_domain_name"`
+	ProjectName                 string       `yaml:"project_name"`
+	ProjectDomainName           string       `yaml:"project_domain_name"`
+	Password                    AuthPassword `yaml:"password"`
+	ApplicationCredentialID     string       `yaml:"application_credential_id"`
+	ApplicationCredentialName   string       `yaml:"application_credential_name"`
+	ApplicationCredentialSecret AuthPassword `yaml:"application_credential_secret"`
+	RegionName                  string       `yaml:"region_name"`
+	ContainerName               string       `yaml:"container"`
+	ObjectNamePrefix            string       `yaml:"object_prefix"`
 	//configuration for Validate()
 	ValidateIgnoreEmptyContainer bool `yaml:"-"`
 	//Account and Container is filled by Connect(). Container will be nil if ContainerName is empty.
@@ -66,6 +69,9 @@ func (s SwiftLocation) cacheKey() string {
 		s.ProjectName,
 		s.ProjectDomainName,
 		string(s.Password),
+		s.ApplicationCredentialID,
+		s.ApplicationCredentialName,
+		string(s.ApplicationCredentialSecret),
 		s.RegionName,
 	}, "\000")
 }
@@ -77,21 +83,39 @@ func (s SwiftLocation) Validate(name string) []error {
 	if s.AuthURL == "" {
 		result = append(result, fmt.Errorf("missing value for %s.auth_url", name))
 	}
-	if s.UserName == "" {
-		result = append(result, fmt.Errorf("missing value for %s.user_name", name))
+
+	if s.ApplicationCredentialID != "" || s.ApplicationCredentialName != "" {
+		//checking application credential requirements
+		if s.ApplicationCredentialID == "" {
+			//if application_credential_id is not set, then we need to know user_name and user_domain_name
+			if s.UserName == "" {
+				result = append(result, fmt.Errorf("missing value for %s.user_name", name))
+			}
+			if s.UserDomainName == "" {
+				result = append(result, fmt.Errorf("missing value for %s.user_domain_name", name))
+			}
+		}
+		if string(s.ApplicationCredentialSecret) == "" {
+			result = append(result, fmt.Errorf("missing value for %s.application_credential_secret", name))
+		}
+	} else {
+		if s.UserName == "" {
+			result = append(result, fmt.Errorf("missing value for %s.user_name", name))
+		}
+		if s.UserDomainName == "" {
+			result = append(result, fmt.Errorf("missing value for %s.user_domain_name", name))
+		}
+		if s.ProjectName == "" {
+			result = append(result, fmt.Errorf("missing value for %s.project_name", name))
+		}
+		if s.ProjectDomainName == "" {
+			result = append(result, fmt.Errorf("missing value for %s.project_domain_name", name))
+		}
+		if s.Password == "" {
+			result = append(result, fmt.Errorf("missing value for %s.password", name))
+		}
 	}
-	if s.UserDomainName == "" {
-		result = append(result, fmt.Errorf("missing value for %s.user_domain_name", name))
-	}
-	if s.ProjectName == "" {
-		result = append(result, fmt.Errorf("missing value for %s.project_name", name))
-	}
-	if s.ProjectDomainName == "" {
-		result = append(result, fmt.Errorf("missing value for %s.project_domain_name", name))
-	}
-	if s.Password == "" {
-		result = append(result, fmt.Errorf("missing value for %s.password", name))
-	}
+
 	if !s.ValidateIgnoreEmptyContainer && s.ContainerName == "" {
 		result = append(result, fmt.Errorf("missing value for %s.container", name))
 	}
@@ -116,12 +140,15 @@ func (s *SwiftLocation) Connect() error {
 	s.Account = accountCache[key]
 	if s.Account == nil {
 		authInfo := &clientconfig.AuthInfo{
-			AuthURL:           s.AuthURL,
-			Username:          s.UserName,
-			UserDomainName:    s.UserDomainName,
-			Password:          string(s.Password),
-			ProjectName:       s.ProjectName,
-			ProjectDomainName: s.ProjectDomainName,
+			AuthURL:                     s.AuthURL,
+			Username:                    s.UserName,
+			UserDomainName:              s.UserDomainName,
+			Password:                    string(s.Password),
+			ProjectName:                 s.ProjectName,
+			ProjectDomainName:           s.ProjectDomainName,
+			ApplicationCredentialID:     s.ApplicationCredentialID,
+			ApplicationCredentialName:   s.ApplicationCredentialName,
+			ApplicationCredentialSecret: string(s.ApplicationCredentialSecret),
 		}
 		authOptions, err := clientconfig.AuthOptions(&clientconfig.ClientOpts{
 			//this is needed to disable the clientconfig.AuthOptions func env detection
@@ -135,6 +162,12 @@ func (s *SwiftLocation) Connect() error {
 
 		provider, err := openstack.AuthenticatedClient(*authOptions)
 		if err != nil {
+			if authOptions.ApplicationCredentialSecret != "" {
+				return fmt.Errorf("cannot authenticate to %s using application credential: %s",
+					s.AuthURL,
+					err.Error(),
+				)
+			}
 			return fmt.Errorf("cannot authenticate to %s in %s@%s as %s@%s: %s",
 				s.AuthURL,
 				s.ProjectName,
