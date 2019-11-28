@@ -76,8 +76,8 @@ func (s *DebianSource) Validate(name string) []error {
 }
 
 //Connect implements the Source interface.
-func (s *DebianSource) Connect() error {
-	return s.urlSource.Connect()
+func (s *DebianSource) Connect(name string) error {
+	return s.urlSource.Connect(name)
 }
 
 //ListEntries implements the Source interface.
