@@ -29,6 +29,7 @@ import (
 
 	"github.com/gophercloud/gophercloud"
 	"github.com/gophercloud/gophercloud/openstack"
+	"github.com/gophercloud/utils/openstack/clientconfig"
 	"github.com/majewsky/schwift"
 	"github.com/majewsky/schwift/gopherschwift"
 	"github.com/sapcc/go-bits/logg"
@@ -114,29 +115,25 @@ func (s *SwiftLocation) Connect() error {
 	key := s.cacheKey()
 	s.Account = accountCache[key]
 	if s.Account == nil {
-		authOptions := gophercloud.AuthOptions{
-			IdentityEndpoint: s.AuthURL,
-			Username:         s.UserName,
-			DomainName:       s.UserDomainName,
-			Password:         string(s.Password),
-			Scope: &gophercloud.AuthScope{
-				ProjectName: s.ProjectName,
-				DomainName:  s.ProjectDomainName,
-			},
-			AllowReauth: true,
+		authInfo := &clientconfig.AuthInfo{
+			AuthURL:           s.AuthURL,
+			Username:          s.UserName,
+			UserDomainName:    s.UserDomainName,
+			Password:          string(s.Password),
+			ProjectName:       s.ProjectName,
+			ProjectDomainName: s.ProjectDomainName,
 		}
-		provider, err := openstack.AuthenticatedClient(authOptions)
-		if err == nil {
-			var client *gophercloud.ServiceClient
-			client, err = openstack.NewObjectStorageV1(provider, gophercloud.EndpointOpts{
-				Region: s.RegionName,
-			})
-			if err == nil {
-				s.Account, err = gopherschwift.Wrap(client, &gopherschwift.Options{
-					UserAgent: "swift-http-import/" + util.Version,
-				})
-			}
+		authOptions, err := clientconfig.AuthOptions(&clientconfig.ClientOpts{
+			//this is needed to disable the clientconfig.AuthOptions func env detection
+			EnvPrefix: "_NO_ENV_DETECTION",
+			AuthInfo:  authInfo,
+		})
+		if err != nil {
+			return fmt.Errorf("cannot build auth parameters: %s", err.Error())
 		}
+		authOptions.AllowReauth = true
+
+		provider, err := openstack.AuthenticatedClient(*authOptions)
 		if err != nil {
 			return fmt.Errorf("cannot authenticate to %s in %s@%s as %s@%s: %s",
 				s.AuthURL,
@@ -147,6 +144,20 @@ func (s *SwiftLocation) Connect() error {
 				err.Error(),
 			)
 		}
+
+		client, err := openstack.NewObjectStorageV1(provider, gophercloud.EndpointOpts{
+			Region: s.RegionName,
+		})
+		if err != nil {
+			return fmt.Errorf("cannot create Swift client: %s", err.Error())
+		}
+		s.Account, err = gopherschwift.Wrap(client, &gopherschwift.Options{
+			UserAgent: "swift-http-import/" + util.Version,
+		})
+		if err != nil {
+			return fmt.Errorf("cannot wrap Swift client: %s", err.Error())
+		}
+
 		accountCache[key] = s.Account
 	}
 
