@@ -110,8 +110,9 @@ environment variable:
 
 ```yaml
 password: { fromEnv: ENVIRONMENT_VARIABLE }
-application_credential_secret: { fromEnv: ENVIRONMENT_VARIABLE }
 ```
+
+In case if you want to authenticate using [application credentials](https://docs.openstack.org/python-openstackclient/latest/cli/command-objects/application-credentials.html), please refer to [this example](./examples/application-credential-auth.yaml) config file.
 
 Each sync job contains the source URL as `from.url`, and `to.container` has the target container name, optionally paired with an
 object name prefix in the target container. For example, in the case above, the file
