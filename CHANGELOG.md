@@ -1,3 +1,8 @@
+# TBD
+
+New features:
+- OpenStack Application Credential authentication method
+
 # v2.6.0 (2019-11-27)
 
 New features:
