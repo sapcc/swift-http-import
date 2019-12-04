@@ -5,6 +5,7 @@ go 1.13
 require (
 	github.com/cactus/go-statsd-client/statsd v0.0.0-20191106001114-12b4e2b38748
 	github.com/gophercloud/gophercloud v0.7.0
+	github.com/gophercloud/utils v0.0.0-20191129022341-463e26ffa30d
 	github.com/jpillora/longestcommon v0.0.0-20161227235612-adb9d91ee629 // indirect
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/majewsky/schwift v0.0.0-20180906125654-e1b3d5e2efc9
