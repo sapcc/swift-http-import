@@ -3,7 +3,9 @@ PREFIX := /usr
 
 all: build/swift-http-import
 
-# force people to use golangvend
+# NOTE: This repo uses Go modules, and uses a synthetic GOPATH at
+# $(CURDIR)/.gopath that is only used for the build cache. $GOPATH/src/ is
+# empty.
 GO            := GOPATH=$(CURDIR)/.gopath GOBIN=$(CURDIR)/build go
 GO_BUILDFLAGS :=
 GO_LDFLAGS    := -s -w
@@ -44,7 +46,7 @@ clean: FORCE
 	rm -rf -- build
 
 vendor: FORCE
-	# vendoring by https://github.com/holocm/golangvend
-	@golangvend
+	@go mod tidy
+	@go mod vendor
 
 .PHONY: FORCE
