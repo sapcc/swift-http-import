@@ -5,6 +5,7 @@
 * [Implicit assumptions](#implicit-assumptions)
 * [Installation](#installation)
 * [Usage](#usage)
+  * [Alternative authentication options](#alternative-authentication-options)
   * [Source specification](#source-specification)
   * [File selection](#file-selection)
     * [By name](#by-name)
