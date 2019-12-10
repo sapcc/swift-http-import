@@ -212,6 +212,9 @@ func (cfg JobConfiguration) Compile(name string, swift SwiftLocation) (job *Job,
 		cfg.Target.ProjectName = swift.ProjectName
 		cfg.Target.ProjectDomainName = swift.ProjectDomainName
 		cfg.Target.Password = swift.Password
+		cfg.Target.ApplicationCredentialID = swift.ApplicationCredentialID
+		cfg.Target.ApplicationCredentialName = swift.ApplicationCredentialName
+		cfg.Target.ApplicationCredentialSecret = swift.ApplicationCredentialSecret
 		cfg.Target.RegionName = swift.RegionName
 		errors = append(errors, cfg.Target.Validate(name+".to")...)
 	}
@@ -298,11 +301,11 @@ func (cfg JobConfiguration) Compile(name string, swift SwiftLocation) (job *Job,
 	}
 
 	//ensure that connection to Swift exists and that target container(s) is/are available
-	err := job.Source.Connect()
+	err := job.Source.Connect(name + ".from")
 	if err != nil {
 		errors = append(errors, err)
 	}
-	err = job.Target.Connect()
+	err = job.Target.Connect(name + ".to")
 	if err != nil {
 		errors = append(errors, err)
 	}

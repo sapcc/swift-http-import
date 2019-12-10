@@ -65,8 +65,8 @@ func (s *YumSource) Validate(name string) []error {
 }
 
 //Connect implements the Source interface.
-func (s *YumSource) Connect() error {
-	return s.urlSource.Connect()
+func (s *YumSource) Connect(name string) error {
+	return s.urlSource.Connect(name)
 }
 
 //ListEntries implements the Source interface.

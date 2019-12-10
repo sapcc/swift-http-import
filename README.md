@@ -103,15 +103,6 @@ jobs:
 The first paragraph contains the authentication parameters for OpenStack's Identity v3 API. Optionally a `region_name`
 can be specified, but this is only required if there are multiple regions to choose from.
 
-Instead of providing the Swift credential's password as plain text in the
-config file, you can use the special syntax for the `password` field which will
-tell `swift-http-import` to read the respective password from an exported
-environment variable:
-
-```yaml
-password: { fromEnv: ENVIRONMENT_VARIABLE }
-```
-
 Each sync job contains the source URL as `from.url`, and `to.container` has the target container name, optionally paired with an
 object name prefix in the target container. For example, in the case above, the file
 
@@ -126,6 +117,29 @@ ubuntu-repos/pool/main/p/pam/pam_1.1.8.orig.tar.gz
 ```
 
 The order of jobs is significant: Source trees will be scraped in the order indicated by the `jobs` list.
+
+### Alternative authentication options
+
+Instead of password-based authentication, [application credentials][app-cred] can also be used, for example:
+[(Link to full example config file)](./examples/application-credential-auth.yaml)
+```yaml
+swift:
+  auth_url: https://my.keystone.local:5000/v3
+  application_credential_id: 80e810bf385949ae8f0e251f90269515
+  application_credential_secret: eixohMoo1on5ohng
+
+jobs: ...
+```
+
+[app-cred]: https://docs.openstack.org/python-openstackclient/latest/cli/command-objects/application-credentials.html
+
+Instead of providing your secret credentials as plain text in the config file, you can use a special syntax for the
+`password` field or the `application_credential_secret` field to read the respective password from an exported
+environment variable:
+
+```yaml
+password: { fromEnv: ENVIRONMENT_VARIABLE }
+```
 
 ### Source specification
 

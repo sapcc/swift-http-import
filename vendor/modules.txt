@@ -8,6 +8,8 @@ github.com/gophercloud/gophercloud/openstack/identity/v2/tokens
 github.com/gophercloud/gophercloud/openstack/identity/v3/tokens
 github.com/gophercloud/gophercloud/openstack/utils
 github.com/gophercloud/gophercloud/pagination
+# github.com/gophercloud/utils v0.0.0-20191129022341-463e26ffa30d
+github.com/gophercloud/utils/client
 # github.com/jpillora/longestcommon v0.0.0-20161227235612-adb9d91ee629
 github.com/jpillora/longestcommon
 # github.com/majewsky/schwift v0.0.0-20180906125654-e1b3d5e2efc9
