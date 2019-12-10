@@ -176,8 +176,12 @@ func (s *SwiftLocation) Connect(name string) error {
 		//use DefaultClient, esp. to pick up correct behavior with HTTP proxies
 		provider.HTTPClient = *http.DefaultClient
 		if logg.ShowDebug {
+			transport := http.DefaultClient.Transport
+			if transport == nil {
+				transport = http.DefaultTransport
+			}
 			provider.HTTPClient.Transport = &client.RoundTripper{
-				Rt:     http.DefaultClient.Transport,
+				Rt:     transport,
 				Logger: &logger{Prefix: name},
 			}
 		}
