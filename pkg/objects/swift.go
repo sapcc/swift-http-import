@@ -30,7 +30,6 @@ import (
 	"github.com/gophercloud/gophercloud"
 	"github.com/gophercloud/gophercloud/openstack"
 	"github.com/gophercloud/utils/client"
-	"github.com/gophercloud/utils/openstack/clientconfig"
 	"github.com/majewsky/schwift"
 	"github.com/majewsky/schwift/gopherschwift"
 	"github.com/sapcc/go-bits/logg"
@@ -154,26 +153,20 @@ func (s *SwiftLocation) Connect(name string) error {
 	key := s.cacheKey(name)
 	s.Account = accountCache[key]
 	if s.Account == nil {
-		authInfo := &clientconfig.AuthInfo{
-			AuthURL:                     s.AuthURL,
+		authOptions := gophercloud.AuthOptions{
+			IdentityEndpoint:            s.AuthURL,
 			Username:                    s.UserName,
-			UserDomainName:              s.UserDomainName,
+			DomainName:                  s.UserDomainName,
 			Password:                    string(s.Password),
-			ProjectName:                 s.ProjectName,
-			ProjectDomainName:           s.ProjectDomainName,
 			ApplicationCredentialID:     s.ApplicationCredentialID,
 			ApplicationCredentialName:   s.ApplicationCredentialName,
 			ApplicationCredentialSecret: string(s.ApplicationCredentialSecret),
+			Scope: &gophercloud.AuthScope{
+				ProjectName: s.ProjectName,
+				DomainName:  s.ProjectDomainName,
+			},
+			AllowReauth: true,
 		}
-		authOptions, err := clientconfig.AuthOptions(&clientconfig.ClientOpts{
-			//this is needed to disable the clientconfig.AuthOptions func env detection
-			EnvPrefix: "_NO_ENV_DETECTION",
-			AuthInfo:  authInfo,
-		})
-		if err != nil {
-			return fmt.Errorf("cannot build auth parameters: %s", err.Error())
-		}
-		authOptions.AllowReauth = true
 
 		provider, err := openstack.NewClient(authOptions.IdentityEndpoint)
 		if err != nil {
@@ -189,7 +182,7 @@ func (s *SwiftLocation) Connect(name string) error {
 			}
 		}
 
-		err = openstack.Authenticate(provider, *authOptions)
+		err = openstack.Authenticate(provider, authOptions)
 		if err != nil {
 			if authOptions.ApplicationCredentialSecret != "" {
 				return fmt.Errorf("cannot authenticate to %s using application credential: %s",
