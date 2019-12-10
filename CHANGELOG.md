@@ -1,7 +1,20 @@
-# TBD
+# v2.7.0 (TBD)
 
 New features:
-- OpenStack Application Credential authentication method
+- If specifying the user password in the config file is not desired,
+  [application credentials][app-cred] can now be used instead, both for the
+  `swift` section and in the `jobs[].from` sections.
+
+  ```yaml
+  swift:
+    auth_url: https://my.keystone.local:5000/v3
+    application_credential_id: 80e810bf385949ae8f0e251f90269515
+    application_credential_secret: eixohMoo1on5ohng
+
+  jobs: ...
+  ```
+
+[app-cred]: https://docs.openstack.org/python-openstackclient/latest/cli/command-objects/application-credentials.html
 
 # v2.6.0 (2019-11-27)
 
