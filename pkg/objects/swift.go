@@ -173,12 +173,12 @@ func (s *SwiftLocation) Connect(name string) error {
 			return fmt.Errorf("cannot create OpenStack client: %s", err.Error())
 		}
 
+		//use DefaultClient, esp. to pick up correct behavior with HTTP proxies
+		provider.HTTPClient = *http.DefaultClient
 		if logg.ShowDebug {
-			provider.HTTPClient = http.Client{
-				Transport: &client.RoundTripper{
-					Rt:     &http.Transport{},
-					Logger: &logger{Prefix: name},
-				},
+			provider.HTTPClient.Transport = &client.RoundTripper{
+				Rt:     http.DefaultClient.Transport,
+				Logger: &logger{Prefix: name},
 			}
 		}
 
