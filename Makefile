@@ -14,9 +14,9 @@ build/swift-http-import: FORCE
 	$(GO) install $(GO_BUILDFLAGS) -ldflags '$(GO_LDFLAGS) -X github.com/sapcc/swift-http-import/pkg/util.Version=$(shell util/find_version.sh)' '$(PKG)'
 
 # which packages to test with static checkers?
-GO_ALLPKGS := $(PKG) $(shell go list $(PKG)/pkg/...)
+GO_ALLPKGS := $(PKG) $(shell $(GO) list $(GO_BUILDFLAGS) $(PKG)/pkg/...)
 # which packages to test with `go test`?
-GO_TESTPKGS := $(shell go list -f '{{if .TestGoFiles}}{{.ImportPath}}{{end}}' $(PKG) $(PKG)/pkg/...)
+GO_TESTPKGS := $(shell $(GO) list $(GO_BUILDFLAGS) -f '{{if .TestGoFiles}}{{.ImportPath}}{{end}}' $(PKG) $(PKG)/pkg/...)
 
 # detailed test run
 check: all quick-check FORCE
@@ -46,7 +46,7 @@ clean: FORCE
 	rm -rf -- build
 
 vendor: FORCE
-	@go mod tidy
-	@go mod vendor
+	@$(GO) mod tidy
+	@$(GO) mod vendor
 
 .PHONY: FORCE

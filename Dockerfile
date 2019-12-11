@@ -1,9 +1,8 @@
-FROM golang:1.12-alpine as builder
-WORKDIR /x/src/github.com/sapcc/swift-http-import/
+FROM golang:1.13-alpine as builder
 RUN apk add --no-cache make
 
-COPY . .
-RUN make install PREFIX=/pkg
+COPY . /src
+RUN make -C /src install PREFIX=/pkg GO_BUILDFLAGS='-mod vendor'
 
 ################################################################################
 
