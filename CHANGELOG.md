@@ -16,6 +16,9 @@ New features:
 
 [app-cred]: https://docs.openstack.org/python-openstackclient/latest/cli/command-objects/application-credentials.html
 
+Changes:
+- All dependencies have been upgraded to their latest versions.
+
 # v2.6.0 (2019-11-27)
 
 New features:
