@@ -152,7 +152,7 @@ type CleanupConfiguration struct {
 
 //SourceUnmarshaler provides a yaml.Unmarshaler implementation for the Source interface.
 type SourceUnmarshaler struct {
-	src Source
+	Src Source
 }
 
 //UnmarshalYAML implements the yaml.Unmarshaler interface.
@@ -169,20 +169,20 @@ func (u *SourceUnmarshaler) UnmarshalYAML(unmarshal func(interface{}) error) err
 
 	//look at keys to determine whether this is a URLSource or a SwiftSource
 	if probe.URL == "" {
-		u.src = &SwiftLocation{}
+		u.Src = &SwiftLocation{}
 	} else {
 		switch probe.Type {
 		case "":
-			u.src = &URLSource{}
+			u.Src = &URLSource{}
 		case "yum":
-			u.src = &YumSource{}
+			u.Src = &YumSource{}
 		case "debian":
-			u.src = &DebianSource{}
+			u.Src = &DebianSource{}
 		default:
 			return fmt.Errorf("unexpected value: type = %q", probe.Type)
 		}
 	}
-	return unmarshal(u.src)
+	return unmarshal(u.Src)
 }
 
 //Job describes a transfer job at runtime.
@@ -197,10 +197,10 @@ type Job struct {
 
 //Compile validates the given JobConfiguration, then creates and prepares a Job from it.
 func (cfg JobConfiguration) Compile(name string, swift SwiftLocation) (job *Job, errors []error) {
-	if cfg.Source.src == nil {
+	if cfg.Source.Src == nil {
 		errors = append(errors, fmt.Errorf("missing value for %s.from", name))
 	} else {
-		errors = append(errors, cfg.Source.src.Validate(name+".from")...)
+		errors = append(errors, cfg.Source.Src.Validate(name+".from")...)
 	}
 	if cfg.Target == nil {
 		errors = append(errors, fmt.Errorf("missing value for %s.to", name))
@@ -220,27 +220,27 @@ func (cfg JobConfiguration) Compile(name string, swift SwiftLocation) (job *Job,
 	}
 
 	if cfg.Match.NotOlderThan != nil {
-		_, isSwiftSource := cfg.Source.src.(*SwiftLocation)
+		_, isSwiftSource := cfg.Source.Src.(*SwiftLocation)
 		if !isSwiftSource {
-			errors = append(errors, fmt.Errorf("invalid value for %s.match.not_older_than: this option is not supported for source type %T", name, cfg.Source.src))
+			errors = append(errors, fmt.Errorf("invalid value for %s.match.not_older_than: this option is not supported for source type %T", name, cfg.Source.Src))
 		}
 	}
 
 	if cfg.Match.SimplisticComparison != nil {
-		_, isURLSource := cfg.Source.src.(*URLSource)
-		_, isSwiftSource := cfg.Source.src.(*SwiftLocation)
+		_, isURLSource := cfg.Source.Src.(*URLSource)
+		_, isSwiftSource := cfg.Source.Src.(*SwiftLocation)
 		if !isURLSource && !isSwiftSource {
-			errors = append(errors, fmt.Errorf("invalid value for %s.match.simplistic_comparsion: this option is not supported for source type %T", name, cfg.Source.src))
+			errors = append(errors, fmt.Errorf("invalid value for %s.match.simplistic_comparsion: this option is not supported for source type %T", name, cfg.Source.Src))
 		}
 	}
 
-	_, isYumSource := cfg.Source.src.(*YumSource)
+	_, isYumSource := cfg.Source.Src.(*YumSource)
 	if isYumSource {
-		cfg.Source.src.(*YumSource).gpgKeyRing = cfg.gpgKeyRing
+		cfg.Source.Src.(*YumSource).gpgKeyRing = cfg.gpgKeyRing
 	}
-	_, isDebianSource := cfg.Source.src.(*DebianSource)
+	_, isDebianSource := cfg.Source.Src.(*DebianSource)
 	if isDebianSource {
-		cfg.Source.src.(*DebianSource).gpgKeyRing = cfg.gpgKeyRing
+		cfg.Source.Src.(*DebianSource).gpgKeyRing = cfg.gpgKeyRing
 	}
 
 	if cfg.Segmenting != nil {
@@ -267,7 +267,7 @@ func (cfg JobConfiguration) Compile(name string, swift SwiftLocation) (job *Job,
 	}
 
 	job = &Job{
-		Source:     cfg.Source.src,
+		Source:     cfg.Source.Src,
 		Target:     cfg.Target,
 		Segmenting: cfg.Segmenting,
 		Expiration: cfg.Expiration,
