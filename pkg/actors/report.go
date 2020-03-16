@@ -58,9 +58,8 @@ type Report struct {
 	Input     <-chan ReportEvent
 	Statsd    objects.StatsdConfiguration
 	StartTime time.Time
-	Stats     Stats
-
-	ExitCode int
+	ExitCode  int
+	stats     Stats
 }
 
 //Stats contains the report statistics
@@ -74,6 +73,11 @@ type Stats struct {
 	BytesTransferred   int64
 	JobsSkipped        int64
 	Duration           time.Duration
+}
+
+//Stats returns a copy of stats member.
+func (r *Report) Stats() Stats {
+	return r.stats
 }
 
 //Run implements the Actor interface.
@@ -97,24 +101,24 @@ func (r *Report) Run() {
 	for mark := range r.Input {
 		switch {
 		case mark.IsDirectory:
-			r.Stats.DirectoriesScanned++
+			r.stats.DirectoriesScanned++
 			if mark.DirectoryFailed {
-				r.Stats.DirectoriesFailed++
+				r.stats.DirectoriesFailed++
 			}
 		case mark.IsFile:
-			r.Stats.FilesFound++
+			r.stats.FilesFound++
 			switch mark.FileTransferResult {
 			case objects.TransferSuccess:
-				r.Stats.FilesTransferred++
-				r.Stats.BytesTransferred += mark.FileTransferBytes
+				r.stats.FilesTransferred++
+				r.stats.BytesTransferred += mark.FileTransferBytes
 			case objects.TransferFailed:
-				r.Stats.FilesFailed++
+				r.stats.FilesFailed++
 			}
 		case mark.IsCleanup:
-			r.Stats.FilesCleanedUp += mark.CleanedUpObjectCount
+			r.stats.FilesCleanedUp += mark.CleanedUpObjectCount
 		case mark.IsJob:
 			if mark.JobSkipped {
-				r.Stats.JobsSkipped++
+				r.stats.JobsSkipped++
 			}
 		}
 	}
@@ -126,14 +130,14 @@ func (r *Report) Run() {
 	} else {
 		gauge = func(bucket string, value int64, rate float32) error { return nil }
 	}
-	gauge("last_run.jobs_skipped", r.Stats.JobsSkipped, 1.0)
-	gauge("last_run.dirs_scanned", r.Stats.DirectoriesScanned, 1.0)
-	gauge("last_run.files_found", r.Stats.FilesFound, 1.0)
-	gauge("last_run.files_transfered", r.Stats.FilesTransferred, 1.0)
-	gauge("last_run.files_failed", r.Stats.FilesFailed, 1.0)
-	gauge("last_run.files_cleaned_up", r.Stats.FilesCleanedUp, 1.0)
-	gauge("last_run.bytes_transfered", r.Stats.BytesTransferred, 1.0)
-	if r.Stats.FilesFailed > 0 || r.Stats.DirectoriesFailed > 0 {
+	gauge("last_run.jobs_skipped", r.stats.JobsSkipped, 1.0)
+	gauge("last_run.dirs_scanned", r.stats.DirectoriesScanned, 1.0)
+	gauge("last_run.files_found", r.stats.FilesFound, 1.0)
+	gauge("last_run.files_transfered", r.stats.FilesTransferred, 1.0)
+	gauge("last_run.files_failed", r.stats.FilesFailed, 1.0)
+	gauge("last_run.files_cleaned_up", r.stats.FilesCleanedUp, 1.0)
+	gauge("last_run.bytes_transfered", r.stats.BytesTransferred, 1.0)
+	if r.stats.FilesFailed > 0 || r.stats.DirectoriesFailed > 0 {
 		gauge("last_run.success", 0, 1.0)
 		r.ExitCode = 1
 	} else {
@@ -143,19 +147,19 @@ func (r *Report) Run() {
 	}
 
 	//report results
-	logg.Info("%d jobs skipped", r.Stats.JobsSkipped)
+	logg.Info("%d jobs skipped", r.stats.JobsSkipped)
 	logg.Info("%d dirs scanned, %d failed",
-		r.Stats.DirectoriesScanned, r.Stats.DirectoriesFailed,
+		r.stats.DirectoriesScanned, r.stats.DirectoriesFailed,
 	)
 	logg.Info("%d files found, %d transferred, %d failed",
-		r.Stats.FilesFound, r.Stats.FilesTransferred, r.Stats.FilesFailed,
+		r.stats.FilesFound, r.stats.FilesTransferred, r.stats.FilesFailed,
 	)
-	if r.Stats.FilesCleanedUp > 0 {
-		logg.Info("%d old files cleaned up", r.Stats.FilesCleanedUp)
+	if r.stats.FilesCleanedUp > 0 {
+		logg.Info("%d old files cleaned up", r.stats.FilesCleanedUp)
 	}
-	logg.Info("%d bytes transferred", r.Stats.BytesTransferred)
+	logg.Info("%d bytes transferred", r.stats.BytesTransferred)
 
-	stats.Duration = time.Since(r.StartTime)
-	gauge("last_run.duration_seconds", int64(stats.Duration.Seconds()), 1.0)
-	logg.Info("finished in %s", stats.Duration.String())
+	r.stats.Duration = time.Since(r.StartTime)
+	gauge("last_run.duration_seconds", int64(r.stats.Duration.Seconds()), 1.0)
+	logg.Info("finished in %s", r.stats.Duration.String())
 }
