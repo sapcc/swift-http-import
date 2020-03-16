@@ -73,6 +73,7 @@ type Stats struct {
 	FilesCleanedUp     int64
 	BytesTransferred   int64
 	JobsSkipped        int64
+	Duration           time.Duration
 }
 
 //Run implements the Actor interface.
@@ -154,7 +155,7 @@ func (r *Report) Run() {
 	}
 	logg.Info("%d bytes transferred", r.Stats.BytesTransferred)
 
-	duration := time.Since(r.StartTime)
-	gauge("last_run.duration_seconds", int64(duration.Seconds()), 1.0)
-	logg.Info("finished in %s", duration.String())
+	stats.Duration = time.Since(r.StartTime)
+	gauge("last_run.duration_seconds", int64(stats.Duration.Seconds()), 1.0)
+	logg.Info("finished in %s", stats.Duration.String())
 }
