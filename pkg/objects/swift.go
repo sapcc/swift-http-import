@@ -235,7 +235,14 @@ func (s *SwiftLocation) Connect(name string) error {
 func (s *SwiftLocation) ObjectAtPath(path string) *schwift.Object {
 	objectName := strings.TrimPrefix(path, "/")
 	if s.ObjectNamePrefix != "" {
-		isPseudoDir := strings.HasSuffix(objectName, "/")
+		var isPseudoDir bool
+		if objectName == "" {
+			//this means that the object refers to a pseudo-directory
+			//with the same name as the specified ObjectNamePrefix
+			isPseudoDir = true
+		} else {
+			isPseudoDir = strings.HasSuffix(objectName, "/")
+		}
 		objectName = filepath.Join(s.ObjectNamePrefix, objectName)
 		if isPseudoDir {
 			objectName += "/"
