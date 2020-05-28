@@ -1,16 +1,18 @@
-# github.com/cactus/go-statsd-client/statsd v0.0.0-20200322202804-24fc78943200
+# github.com/cactus/go-statsd-client/statsd v0.0.0-20200423205355-cb0885a1018c
 ## explicit
 github.com/cactus/go-statsd-client/statsd
-# github.com/gophercloud/gophercloud v0.9.0
+# github.com/gophercloud/gophercloud v0.11.0
 ## explicit
 github.com/gophercloud/gophercloud
 github.com/gophercloud/gophercloud/openstack
 github.com/gophercloud/gophercloud/openstack/identity/v2/tenants
 github.com/gophercloud/gophercloud/openstack/identity/v2/tokens
+github.com/gophercloud/gophercloud/openstack/identity/v3/extensions/ec2tokens
+github.com/gophercloud/gophercloud/openstack/identity/v3/extensions/oauth1
 github.com/gophercloud/gophercloud/openstack/identity/v3/tokens
 github.com/gophercloud/gophercloud/openstack/utils
 github.com/gophercloud/gophercloud/pagination
-# github.com/gophercloud/utils v0.0.0-20200331031917-67709f524c24
+# github.com/gophercloud/utils v0.0.0-20200508015959-b0167b94122c
 ## explicit
 github.com/gophercloud/utils/client
 # github.com/jpillora/longestcommon v0.0.0-20161227235612-adb9d91ee629
@@ -18,7 +20,7 @@ github.com/gophercloud/utils/client
 github.com/jpillora/longestcommon
 # github.com/kr/pretty v0.2.0
 ## explicit
-# github.com/majewsky/schwift v0.0.0-20200224150542-3857990bb9f7
+# github.com/majewsky/schwift v0.0.0-20200416120220-80c09ef2a88d
 ## explicit
 github.com/majewsky/schwift
 github.com/majewsky/schwift/capabilities
@@ -32,7 +34,7 @@ github.com/ulikunitz/xz
 github.com/ulikunitz/xz/internal/hash
 github.com/ulikunitz/xz/internal/xlog
 github.com/ulikunitz/xz/lzma
-# golang.org/x/crypto v0.0.0-20200406173513-056763e48d71
+# golang.org/x/crypto v0.0.0-20200510223506-06a226fb4e37
 ## explicit
 golang.org/x/crypto/cast5
 golang.org/x/crypto/openpgp
@@ -42,11 +44,11 @@ golang.org/x/crypto/openpgp/elgamal
 golang.org/x/crypto/openpgp/errors
 golang.org/x/crypto/openpgp/packet
 golang.org/x/crypto/openpgp/s2k
-# golang.org/x/net v0.0.0-20200324143707-d3edc9973b7e
+# golang.org/x/net v0.0.0-20200520182314-0ba52f642ac2
 ## explicit
 golang.org/x/net/html
 golang.org/x/net/html/atom
-# gopkg.in/yaml.v2 v2.2.8
+# gopkg.in/yaml.v2 v2.3.0
 ## explicit
 gopkg.in/yaml.v2
 # pault.ag/go/debian v0.0.0-20190530135403-b831f604d664
