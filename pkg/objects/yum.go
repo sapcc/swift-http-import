@@ -248,6 +248,15 @@ func (s *YumSource) downloadAndParseXML(path string, data interface{}, cache map
 		}
 	}
 
+	//if `buf` has the magic number for XZ, decompress before parsing as XML
+	if bytes.HasPrefix(buf, xzMagicNumber) {
+		var err error
+		buf, err = decompressXZArchive(buf)
+		if err != nil {
+			return nil, uri, &ListEntriesError{Location: uri, Message: "cannot decompress xz stream", Inner: err}
+		}
+	}
+
 	err := xml.Unmarshal(buf, data)
 	if err != nil {
 		return nil, uri, &ListEntriesError{
