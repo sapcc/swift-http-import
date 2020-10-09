@@ -1,9 +1,5 @@
 # build artifacts
 build/
-.gopath/pkg/
-
-# vendoring artifacts
-.golangvend-cache/
 
 # config examples
 examples/

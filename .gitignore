@@ -1,7 +1,6 @@
 # build artifacts
 /build
-/.gopath/pkg/
-/.golangvend-cache/
 
 # for my own testing
 /*.yaml
+!/Makefile.maker.yaml
