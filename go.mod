@@ -8,7 +8,7 @@ require (
 	github.com/gophercloud/utils v0.0.0-20200918191848-da0e919a012a
 	github.com/jpillora/longestcommon v0.0.0-20161227235612-adb9d91ee629 // indirect
 	github.com/majewsky/schwift v0.0.0-20200416120220-80c09ef2a88d
-	github.com/sapcc/go-bits v0.0.0-20200827121435-b1150353c544
+	github.com/sapcc/go-bits v0.0.0-20201126124612-fcd600685fdb
 	github.com/ulikunitz/xz v0.5.8
 	golang.org/x/crypto v0.0.0-20201002170205-7f63de1d35b0
 	golang.org/x/net v0.0.0-20201006153459-a7d1128ccaa0
