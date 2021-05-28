@@ -519,7 +519,7 @@ EOF
 
 # check that the "only-symlink" job transfers symlink.txt as a regular file (it cannot
 # transfer as a symlink because the link target is missing on the target side)
-if curl -si -H "X-Auth-Token: ${OS_AUTH_TOKEN}" "${OS_STORAGE_URL}/${CONTAINER_BASE}-test9/only-symlink/just/a/symlink.txt?symlink=get" | grep -q '^X-Symlink-Target'; then
+if curl -si -H "X-Auth-Token: ${OS_AUTH_TOKEN}" "${OS_STORAGE_URL}/${CONTAINER_BASE}-test9/only-symlink/just/a/symlink.txt?symlink=get" | grep -qi '^X-Symlink-Target'; then
   printf "\e[1;31m>>\e[0;31m Expected only-symlink/just/a/symlink.txt not to be a symlink, but it is one:\e[0m\n"
   curl -si -H "X-Auth-Token: ${OS_AUTH_TOKEN}" "${OS_STORAGE_URL}/${CONTAINER_BASE}-test9/only-symlink/just/a/symlink.txt?symlink=get"
   exit 1
@@ -527,7 +527,7 @@ fi
 
 # check that the "symlink-and-target" job transfers symlink.txt as a symlink
 # (since its link target is also included in the job)
-if ! curl -si -H "X-Auth-Token: ${OS_AUTH_TOKEN}" "${OS_STORAGE_URL}/${CONTAINER_BASE}-test9/symlink-and-target/just/a/symlink.txt?symlink=get" | grep -q '^X-Symlink-Target'; then
+if ! curl -si -H "X-Auth-Token: ${OS_AUTH_TOKEN}" "${OS_STORAGE_URL}/${CONTAINER_BASE}-test9/symlink-and-target/just/a/symlink.txt?symlink=get" | grep -qi '^X-Symlink-Target'; then
   printf "\e[1;31m>>\e[0;31m Expected symlink-and-target/just/a/symlink.txt to be a symlink, but it is not:\e[0m\n"
   curl -si -H "X-Auth-Token: ${OS_AUTH_TOKEN}" "${OS_STORAGE_URL}/${CONTAINER_BASE}-test9/symlink-and-target/just/a/symlink.txt?symlink=get"
   exit 1
