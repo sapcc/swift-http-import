@@ -1,4 +1,4 @@
-# v2.7.0 (TBD)
+# v2.7.0 (2021-05-31)
 
 New features:
 - If specifying the user password in the config file is not desired, [application credentials][app-cred] can now be used
