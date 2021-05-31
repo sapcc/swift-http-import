@@ -1,9 +1,8 @@
 # v2.7.0 (TBD)
 
 New features:
-- If specifying the user password in the config file is not desired,
-  [application credentials][app-cred] can now be used instead, both for the
-  `swift` section and in the `jobs[].from` sections.
+- If specifying the user password in the config file is not desired, [application credentials][app-cred] can now be used
+  instead, both for the `swift` section and in the `jobs[].from` sections.
 
   ```yaml
   swift:
@@ -18,6 +17,11 @@ New features:
 
 Changes:
 - All dependencies have been upgraded to their latest versions.
+- For source type `yum`, add support for XZ-compressed repositories (previous versions only supported GZip).
+
+Bugfixes:
+- For source type `swift`, fix detection of pseudo-directories that are located at the root of a job's search space
+  (i.e.  having the same name as the `object_prefix`).
 
 # v2.6.0 (2019-11-27)
 
