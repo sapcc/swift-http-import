@@ -1,3 +1,11 @@
+# v2.8.0 (TBD)
+
+New features:
+- Add support for selecting GPG keyservers using the `SHI_KEYSERVER_URLS` environment variable.
+
+Changes:
+- Since `pool.sks-keyservers.net` has been discontinued, GPG keys are now retrieved from `pgp.mit.edu` by default.
+
 # v2.7.0 (2021-05-31)
 
 New features:

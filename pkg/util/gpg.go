@@ -2,13 +2,16 @@ package util
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"strings"
 	"sync"
 
+	"github.com/sapcc/go-bits/logg"
 	"golang.org/x/crypto/openpgp"
 	"golang.org/x/crypto/openpgp/armor"
 	"golang.org/x/crypto/openpgp/clearsign"
@@ -108,19 +111,34 @@ func verifyGPGSignature(keyring *GPGKeyRing, message []byte, signature *armor.Bl
 }
 
 func getPublicKey(id string) ([]byte, error) {
-	uri := fmt.Sprintf("pool.sks-keyservers.net/pks/lookup?search=0x%s&options=mr&op=get", id)
+	logg.Info("retrieving public key for ID %q", id)
 
-	// try different mirrors in case of failure
-	resp, err := http.Get("http://" + "hkps." + uri)
-	if err != nil {
-		resp, err = http.Get("http://" + "eu." + uri)
-		if err != nil {
-			resp, err = http.Get("http://" + "na." + uri)
-			if err != nil {
-				resp, err = http.Get("http://" + uri)
-			}
+	keyserverURLPatterns := strings.Split(os.Getenv("SHI_KEYSERVER_URLS"), " ")
+	if len(keyserverURLPatterns) == 1 && keyserverURLPatterns[0] == "" {
+		keyserverURLPatterns = []string{"https://pgp.mit.edu/pks/lookup?search=0x{keyid}&options=mr&op=get"}
+	}
+
+	for idx, keyserverURLPattern := range keyserverURLPatterns {
+		url := strings.Replace(keyserverURLPattern, "{keyid}", id, -1)
+		buf, err := getPublicKeyFromServer(id, url)
+		if err == nil {
+			return buf, nil
+		}
+
+		if idx == len(keyserverURLPatterns)-1 {
+			logg.Error("could not retrieve public key for ID %q from %s: %s (no more servers to try)", id, url, err.Error())
+		} else {
+			logg.Error("could not retrieve public key for ID %q from %s: %s (will try next server)", id, url, err.Error())
 		}
 	}
+
+	return nil, errNoSuchPublicKey
+}
+
+var errNoSuchPublicKey = errors.New("no such public key")
+
+func getPublicKeyFromServer(id string, uri string) ([]byte, error) {
+	resp, err := http.Get(uri)
 	if err != nil {
 		return nil, err
 	}
@@ -131,7 +149,7 @@ func getPublicKey(id string) ([]byte, error) {
 		return nil, err
 	}
 	if strings.Contains(strings.ToLower(string(b)), "no results found") {
-		return nil, fmt.Errorf("no public key found for %q", id)
+		return nil, errNoSuchPublicKey
 	}
 
 	return b, nil

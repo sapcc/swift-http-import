@@ -19,6 +19,7 @@
   * [Performance](#performance)
 * [Log output](#log-output)
 * [StatsD metrics](#statsd-metrics)
+* [GPG keyserver selection](#gpg-keyserver-selection)
 
 This tool imports files from an HTTP server into a Swift container. Given an input URL, it recurses through the directory
 listings on that URL, and mirrors all files that it finds into Swift. It will take advantage of `Last-Modified` and
@@ -177,7 +178,8 @@ packages.
 
 The GPG signature for the repository's metadata file is verified by default and
 the job will be skipped if the verification is unsuccessful. This behavior can be disabled by
-specifying the `jobs[].from.verify_signature` option.
+specifying the `jobs[].from.verify_signature` option. See ["GPG keyserver selection"](#gpg-keyserver-selection) for how
+to control how `swift-http-import` retrieves the required public keys for signature verification.
 
 [Link to full example config file](./examples/source-yum.yaml)
 
@@ -214,7 +216,8 @@ errors.
 
 The GPG signature for the repository's metadata file is verified by default and
 the job will be skipped if the verification is unsuccessful. This behavior can be disabled by
-specifying the `jobs[].from.verify_signature` option.
+specifying the `jobs[].from.verify_signature` option. See ["GPG keyserver selection"](#gpg-keyserver-selection) for how
+to control how `swift-http-import` retrieves the required public keys for signature verification.
 
  [Link to full example config file](./examples/source-debian.yaml)
 
@@ -541,7 +544,7 @@ statsd:
   prefix:   swift_http_import
 ```
 
-The following metric are sent:
+The following metrics are sent:
 
 | Kind    | Name                         | Description
 | ------- | ---------------------------- | --------------------------------------------
@@ -554,3 +557,16 @@ The following metric are sent:
 | Gauge   | `last_run.files_transfered`  | Number of files actually transferred
 | Gauge   | `last_run.files_failed`      | Number of files failed (download or upload)
 | Gauge   | `last_run.bytes_transfered`  | Number of bytes transferred
+
+## GPG keyserver selection
+
+When verifying GPG signatures on repos, the respective public keys are downloaded from <https://pgp.mit.edu> by default.
+Alternative keyservers can be specified by setting the `SHI_KEYSERVER_URLS` environment variable. The value must be a
+space-separated list of URL patterns, in which the string `{keyid}` will be replaced with the 16-hexdigit ID of the
+key that shall be retrieved. The default value for this environment variable is:
+
+```sh
+SHI_KEYSERVER_URLS=https://pgp.mit.edu/pks/lookup?search=0x{keyid}&options=mr&op=get
+```
+
+If multiple URLs are given (separated by spaces), they will be tried in order until one returns a public key.
