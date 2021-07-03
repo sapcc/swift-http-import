@@ -102,9 +102,9 @@ func (s *YumSource) ListAllFiles() ([]FileSpec, *ListEntriesError) {
 		return nil, lerr
 	}
 
-	signaturePath := repomdPath + ".asc"
 	//verify repomd's GPG signature
 	if s.gpgVerification {
+		signaturePath := repomdPath + ".asc"
 		signatureBytes, signatureURI, lerr := s.urlSource.getFileContents(signaturePath, cache)
 		if lerr == nil {
 			err := util.VerifyDetachedGPGSignature(s.gpgKeyRing, repomdBytes, signatureBytes)
@@ -123,8 +123,6 @@ func (s *YumSource) ListAllFiles() ([]FileSpec, *ListEntriesError) {
 			}
 		}
 		logg.Debug("successfully verified GPG signature at %s for file %s", signatureURI, "-"+filepath.Base(repomdPath))
-	} else {
-		allFiles = append(allFiles, signaturePath)
 	}
 
 	//note metadata files for transfer
