@@ -50,7 +50,7 @@ type Source interface {
 	//ListAllFiles returns all files in the source (as paths relative to the
 	//source's root). If this returns ErrListAllFilesNotSupported, ListEntries
 	//must be used instead.
-	ListAllFiles() ([]FileSpec, *ListEntriesError)
+	ListAllFiles(out chan<- FileSpec) *ListEntriesError
 	//ListEntries returns all files and subdirectories at this path in the
 	//source. Each result value must have a "/" prefix for subdirectories, or
 	//none for files.
@@ -219,8 +219,8 @@ func (u *URLSource) Connect(name string) error {
 var dotdotRx = regexp.MustCompile(`(?:^|/)\.\.(?:$|/)`)
 
 //ListAllFiles implements the Source interface.
-func (u URLSource) ListAllFiles() ([]FileSpec, *ListEntriesError) {
-	return nil, ErrListAllFilesNotSupported
+func (u URLSource) ListAllFiles(out chan<- FileSpec) *ListEntriesError {
+	return ErrListAllFilesNotSupported
 }
 
 //ListEntries implements the Source interface.

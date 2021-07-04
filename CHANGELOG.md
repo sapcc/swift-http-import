@@ -5,6 +5,8 @@ New features:
 
 Changes:
 - Since `pool.sks-keyservers.net` has been discontinued, GPG keys are now retrieved from `pgp.mit.edu` by default.
+- Files for large Swift containers are now transferred in a streaming manner. This results in a performance increase as
+  `swift-http-import` doesn't have to wait for a full list of files before any transfer jobs can be enqueued.
 
 # v2.7.0 (2021-05-31)
 
@@ -77,13 +79,13 @@ Changes:
 Bugfixes:
 - When using a Swift source, pseudo-directories are now recognized and transferred correctly.
 - When uploading a segmented object to the target, expiration dates are now also applied to the segments.
-  If you used an older version of swift-http-import to transfer files with expiration dates using segmented uploading,
+  If you used an older version of `swift-http-import` to transfer files with expiration dates using segmented uploading,
   you will have to clean up those segments manually once the objects themselves have expired.
 
 # v2.4.0 (2018-06-14)
 
 New features:
-- swift-http-import can now clean up objects on the target side that have been deleted on the source side. To enable
+- `swift-http-import` can now clean up objects on the target side that have been deleted on the source side. To enable
   this behavior, set the new `jobs[].cleanup.strategy` configuration option to `delete`. Or set it to `report` to report
   such objects without deleting them.
 - Initial support for Swift symlinks has been added. When a Swift source contains a object that is a symlink to another
@@ -98,7 +100,7 @@ Changes:
   returns 404 (Not Found).
 
 Bugfixes:
-- When an SLO on the target side is being overwritten with a regular non-segmented object, swift-http-import now
+- When an SLO on the target side is being overwritten with a regular non-segmented object, `swift-http-import` now
   correctly deletes the SLO's segments.
 
 # v2.3.0 (2018-01-29)
@@ -107,12 +109,12 @@ New features:
 - When `--version` is given, the release version is reported on standard output.
 - When `jobs[].from` refers to a URL source, and the server for that URL supports HTTP Range Requests, files are now
   downloaded in segments of 500 MiB to avoid overly long connections. Furthermore, if a segmented download fails,
-  swift-http-import is now able to restart the download without having to download the entire file again. Segmented
+  `swift-http-import` is now able to restart the download without having to download the entire file again. Segmented
   downloading can be disabled and the segment size can be changed in the new `jobs[].from.segmenting` configuration
   section.
 
 Changes:
-- When making HTTP requests, the correct User-Agent "swift-http-import/x.y.z" is now reported.
+- When making HTTP requests, the correct User-Agent `swift-http-import/x.y.z` is now reported.
 
 # v2.2.1 (2018-01-15)
 
@@ -157,9 +159,9 @@ Bugfixes:
   - `jobs[].{ca,cert,key}` move into `jobs[].from`.
 
 New features:
-- swift-http-import can now transfer large objects by using the Static Large Object method of Swift. The
+- `swift-http-import` can now transfer large objects by using the Static Large Object method of Swift. The
   `jobs[].segmenting` configuration section must be specified to enable segmenting.
-- When transfering files from a Swift source, swift-http-import will now recognize objects with an expiry timestamp, and
+- When transfering files from a Swift source, `swift-http-import` will now recognize objects with an expiry timestamp, and
   mirror the expiry timestamp to the target side. The `jobs[].expiration` configuration section can be used to control
   this behavior.
 

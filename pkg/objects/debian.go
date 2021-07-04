@@ -94,9 +94,9 @@ func (s *DebianSource) GetFile(directoryPath string, requestHeaders schwift.Obje
 }
 
 //ListAllFiles implements the Source interface.
-func (s *DebianSource) ListAllFiles() ([]FileSpec, *ListEntriesError) {
+func (s *DebianSource) ListAllFiles(out chan<- FileSpec) *ListEntriesError {
 	if len(s.Distributions) == 0 {
-		return nil, &ListEntriesError{
+		return &ListEntriesError{
 			Location: s.URLString,
 			Message:  "no distributions specified in the config file",
 		}
@@ -105,39 +105,27 @@ func (s *DebianSource) ListAllFiles() ([]FileSpec, *ListEntriesError) {
 	cache := make(map[string]FileSpec)
 
 	//since package and source files for different distributions are kept in
-	//the common '$REPO_ROOT/pool' directory therefore a record is kept of
-	//unique files in order to avoid duplicates in the allFiles slice
-	var allFiles []string
-	isDuplicate := make(map[string]bool)
+	//the common '$REPO_ROOT/pool' directory therefore a record of unique files
+	//is kept in order to avoid duplicates.
+	transferred := make(map[string]bool)
 
 	//index files for different distributions as specified in the config file
 	for _, distName := range s.Distributions {
 		distRootPath := filepath.Join("dists", distName)
 		distFiles, lerr := s.listDistFiles(distRootPath, cache)
 		if lerr != nil {
-			return nil, lerr
+			return lerr
 		}
 
 		for _, file := range distFiles {
-			if !isDuplicate[file] {
-				allFiles = append(allFiles, file)
-				isDuplicate[file] = true
+			if !transferred[file] {
+				out <- getFileSpec(file, cache)
+				transferred[file] = true
 			}
 		}
 	}
 
-	//for files that were already downloaded, pass the contents and HTTP headers
-	//into the transfer phase to avoid double download
-	result := make([]FileSpec, len(allFiles))
-	for idx, path := range allFiles {
-		var exists bool
-		result[idx], exists = cache[path]
-		if !exists {
-			result[idx] = FileSpec{Path: path}
-		}
-	}
-
-	return result, nil
+	return nil
 }
 
 //Helper function for DebianSource.ListAllFiles().
