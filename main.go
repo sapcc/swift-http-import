@@ -77,9 +77,7 @@ func main() {
 
 func runPipeline(config *objects.Configuration, report chan<- actors.ReportEvent) {
 	//setup a context that shuts down all pipeline actors when an interrupt signal is received
-	ctx, cancelFunc := context.WithCancel(context.Background())
-	defer cancelFunc()
-	ctx = httpee.ContextWithSIGINT(ctx, 1*time.Second)
+	ctx := httpee.ContextWithSIGINT(context.Background(), 1*time.Second)
 
 	//start the pipeline actors
 	var wg sync.WaitGroup
