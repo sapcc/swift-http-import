@@ -262,7 +262,6 @@ func (s *SwiftLocation) ListAllFiles(out chan<- FileSpec) *ListEntriesError {
 
 	iter := s.Container.Objects()
 	iter.Prefix = objectPath
-	iter.Delimiter = "/"
 	err := iter.ForeachDetailed(func(info schwift.ObjectInfo) error {
 		out <- s.getFileSpec(info)
 		return nil
