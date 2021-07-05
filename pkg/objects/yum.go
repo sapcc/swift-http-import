@@ -101,24 +101,25 @@ func (s *YumSource) ListAllFiles(out chan<- FileSpec) *ListEntriesError {
 		return lerr
 	}
 
+	//we transfer the signature and it's key file (down below) regardless of
+	//whether GPG verification is enabled because some packages need it
+	signaturePath := repomdPath + ".asc"
+	signatureBytes, signatureURI, lerr := s.urlSource.getFileContents(signaturePath, cache)
+	if lerr == nil {
+		out <- getFileSpec(signaturePath, cache)
+	} else if !strings.Contains(lerr.Message, "GET returned status 404") {
+		return lerr
+	}
+
 	//verify repomd's GPG signature
 	if s.gpgVerification {
-		signaturePath := repomdPath + ".asc"
-		signatureBytes, signatureURI, lerr := s.urlSource.getFileContents(signaturePath, cache)
-		if lerr == nil {
-			err := util.VerifyDetachedGPGSignature(s.gpgKeyRing, repomdBytes, signatureBytes)
-			if err != nil {
-				logg.Debug("could not verify GPG signature at %s for file %s", signatureURI, "-"+filepath.Base(repomdPath))
-				return &ListEntriesError{
-					Location: s.urlSource.getURLForPath("/").String(),
-					Message:  ErrMessageGPGVerificationFailed,
-					Inner:    err,
-				}
-			}
-			out <- getFileSpec(signaturePath, cache)
-		} else {
-			if !strings.Contains(lerr.Message, "GET returned status 404") {
-				return lerr
+		err := util.VerifyDetachedGPGSignature(s.gpgKeyRing, repomdBytes, signatureBytes)
+		if err != nil {
+			logg.Debug("could not verify GPG signature at %s for file %s", signatureURI, "-"+filepath.Base(repomdPath))
+			return &ListEntriesError{
+				Location: s.urlSource.getURLForPath("/").String(),
+				Message:  ErrMessageGPGVerificationFailed,
+				Inner:    err,
 			}
 		}
 		logg.Debug("successfully verified GPG signature at %s for file %s", signatureURI, "-"+filepath.Base(repomdPath))
@@ -192,10 +193,8 @@ func (s *YumSource) ListAllFiles(out chan<- FileSpec) *ListEntriesError {
 	_, _, lerr = s.urlSource.getFileContents(repomdKeyPath, cache)
 	if lerr == nil {
 		out <- getFileSpec(repomdKeyPath, cache)
-	} else {
-		if !strings.Contains(lerr.Message, "GET returned status 404") {
-			return lerr
-		}
+	} else if !strings.Contains(lerr.Message, "GET returned status 404") {
+		return lerr
 	}
 	out <- getFileSpec(repomdPath, cache)
 
