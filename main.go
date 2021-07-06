@@ -23,11 +23,10 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"os/signal"
 	"sync"
-	"syscall"
 	"time"
 
+	"github.com/sapcc/go-bits/httpee"
 	"github.com/sapcc/go-bits/logg"
 	"github.com/sapcc/swift-http-import/pkg/actors"
 	"github.com/sapcc/swift-http-import/pkg/objects"
@@ -77,18 +76,8 @@ func main() {
 }
 
 func runPipeline(config *objects.Configuration, report chan<- actors.ReportEvent) {
-	//receive SIGINT/SIGTERM signals
-	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, os.Interrupt, syscall.SIGTERM)
-
-	//setup a context that shuts down all pipeline actors when one of the signals above is received
-	ctx, cancelFunc := context.WithCancel(context.Background())
-	defer cancelFunc()
-	go func() {
-		<-sigs
-		logg.Error("Interrupt received! Shutting down...")
-		cancelFunc()
-	}()
+	//setup a context that shuts down all pipeline actors when an interrupt signal is received
+	ctx := httpee.ContextWithSIGINT(context.Background(), 1*time.Second)
 
 	//start the pipeline actors
 	var wg sync.WaitGroup
@@ -124,6 +113,4 @@ func runPipeline(config *objects.Configuration, report chan<- actors.ReportEvent
 	close(queue2)
 	//wait for remaining workers to finish
 	wg.Wait()
-
-	// signal.Reset(os.Interrupt, syscall.SIGTERM)
 }

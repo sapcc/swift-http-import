@@ -253,32 +253,41 @@ func (s *SwiftLocation) ObjectAtPath(path string) *schwift.Object {
 }
 
 //ListAllFiles implements the Source interface.
-func (s *SwiftLocation) ListAllFiles() ([]FileSpec, *ListEntriesError) {
-	return s.listFiles("", true)
+func (s *SwiftLocation) ListAllFiles(out chan<- FileSpec) *ListEntriesError {
+	objectPath := s.ObjectNamePrefix
+	if objectPath != "" && !strings.HasSuffix(objectPath, "/") {
+		objectPath += "/"
+	}
+	logg.Debug("listing objects at %s/%s recursively", s.ContainerName, objectPath)
+
+	iter := s.Container.Objects()
+	iter.Prefix = objectPath
+	err := iter.ForeachDetailed(func(info schwift.ObjectInfo) error {
+		out <- s.getFileSpec(info)
+		return nil
+	})
+	if err != nil {
+		return &ListEntriesError{
+			Location: s.ContainerName + "/" + objectPath,
+			Message:  "GET failed",
+			Inner:    err,
+		}
+	}
+
+	return nil
 }
 
 //ListEntries implements the Source interface.
 func (s *SwiftLocation) ListEntries(path string) ([]FileSpec, *ListEntriesError) {
-	return s.listFiles(path, false)
-}
-
-func (s *SwiftLocation) listFiles(path string, recursively bool) ([]FileSpec, *ListEntriesError) {
 	objectPath := filepath.Join(s.ObjectNamePrefix, strings.TrimPrefix(path, "/"))
 	if objectPath != "" && !strings.HasSuffix(objectPath, "/") {
 		objectPath += "/"
 	}
-
-	if recursively {
-		logg.Debug("listing objects at %s/%s recursively", s.ContainerName, objectPath)
-	} else {
-		logg.Debug("listing objects at %s/%s", s.ContainerName, objectPath)
-	}
+	logg.Debug("listing objects at %s/%s", s.ContainerName, objectPath)
 
 	iter := s.Container.Objects()
 	iter.Prefix = objectPath
-	if !recursively {
-		iter.Delimiter = "/"
-	}
+	iter.Delimiter = "/"
 	objectInfos, err := iter.CollectDetailed()
 	if err != nil {
 		return nil, &ListEntriesError{
@@ -288,26 +297,32 @@ func (s *SwiftLocation) listFiles(path string, recursively bool) ([]FileSpec, *L
 		}
 	}
 
-	//strip ObjectNamePrefix from the resulting objects
 	result := make([]FileSpec, len(objectInfos))
 	for idx, info := range objectInfos {
-		if info.SubDirectory != "" {
-			result[idx].Path = strings.TrimPrefix(info.SubDirectory, s.ObjectNamePrefix)
-			result[idx].IsDirectory = true
-		} else {
-			result[idx].Path = strings.TrimPrefix(info.Object.Name(), s.ObjectNamePrefix)
-			lm := info.LastModified
-			result[idx].LastModified = &lm
+		result[idx] = s.getFileSpec(info)
+	}
+	return result, nil
+}
 
-			if info.SymlinkTarget != nil && info.SymlinkTarget.Container().IsEqualTo(s.Container) {
-				targetPath := info.SymlinkTarget.Name()
-				if strings.HasPrefix(targetPath, s.ObjectNamePrefix) {
-					result[idx].SymlinkTargetPath = strings.TrimPrefix(targetPath, s.ObjectNamePrefix)
-				}
+func (s *SwiftLocation) getFileSpec(info schwift.ObjectInfo) FileSpec {
+	var f FileSpec
+	//strip ObjectNamePrefix from the resulting objects
+	if info.SubDirectory != "" {
+		f.Path = strings.TrimPrefix(info.SubDirectory, s.ObjectNamePrefix)
+		f.IsDirectory = true
+	} else {
+		f.Path = strings.TrimPrefix(info.Object.Name(), s.ObjectNamePrefix)
+		lm := info.LastModified
+		f.LastModified = &lm
+
+		if info.SymlinkTarget != nil && info.SymlinkTarget.Container().IsEqualTo(s.Container) {
+			targetPath := info.SymlinkTarget.Name()
+			if strings.HasPrefix(targetPath, s.ObjectNamePrefix) {
+				f.SymlinkTargetPath = strings.TrimPrefix(targetPath, s.ObjectNamePrefix)
 			}
 		}
 	}
-	return result, nil
+	return f
 }
 
 //GetFile implements the Source interface.

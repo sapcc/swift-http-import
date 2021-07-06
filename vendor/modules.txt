@@ -24,6 +24,7 @@ github.com/majewsky/schwift/capabilities
 github.com/majewsky/schwift/gopherschwift
 # github.com/sapcc/go-bits v0.0.0-20210518135053-8a9465bb1339
 ## explicit
+github.com/sapcc/go-bits/httpee
 github.com/sapcc/go-bits/httpext
 github.com/sapcc/go-bits/logg
 github.com/sapcc/go-bits/secrets
