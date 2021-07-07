@@ -107,22 +107,21 @@ func (s *YumSource) ListAllFiles(out chan<- FileSpec) *ListEntriesError {
 	signatureBytes, signatureURI, lerr := s.urlSource.getFileContents(signaturePath, cache)
 	if lerr == nil {
 		out <- getFileSpec(signaturePath, cache)
+		//verify repomd's GPG signature
+		if s.gpgVerification {
+			err := util.VerifyDetachedGPGSignature(s.gpgKeyRing, repomdBytes, signatureBytes)
+			if err != nil {
+				logg.Debug("could not verify GPG signature at %s for file %s", signatureURI, "-"+filepath.Base(repomdPath))
+				return &ListEntriesError{
+					Location: s.urlSource.getURLForPath("/").String(),
+					Message:  ErrMessageGPGVerificationFailed,
+					Inner:    err,
+				}
+			}
+			logg.Debug("successfully verified GPG signature at %s for file %s", signatureURI, "-"+filepath.Base(repomdPath))
+		}
 	} else if !strings.Contains(lerr.Message, "GET returned status 404") {
 		return lerr
-	}
-
-	//verify repomd's GPG signature
-	if s.gpgVerification {
-		err := util.VerifyDetachedGPGSignature(s.gpgKeyRing, repomdBytes, signatureBytes)
-		if err != nil {
-			logg.Debug("could not verify GPG signature at %s for file %s", signatureURI, "-"+filepath.Base(repomdPath))
-			return &ListEntriesError{
-				Location: s.urlSource.getURLForPath("/").String(),
-				Message:  ErrMessageGPGVerificationFailed,
-				Inner:    err,
-			}
-		}
-		logg.Debug("successfully verified GPG signature at %s for file %s", signatureURI, "-"+filepath.Base(repomdPath))
 	}
 
 	//note metadata files for transfer
