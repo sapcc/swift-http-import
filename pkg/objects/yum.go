@@ -121,6 +121,8 @@ func (s *YumSource) ListAllFiles(out chan<- FileSpec) *ListEntriesError {
 			logg.Debug("successfully verified GPG signature at %s for file %s", signatureURI, "-"+filepath.Base(repomdPath))
 		}
 	} else if !strings.Contains(lerr.Message, "GET returned status 404") {
+		//not all repos have signature files therefore we only return an err if
+		//not 404.
 		return lerr
 	}
 

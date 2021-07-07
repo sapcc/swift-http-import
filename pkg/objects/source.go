@@ -394,6 +394,7 @@ func (u URLSource) getFileContents(path string, cache map[string]FileSpec) (cont
 		return nil, uri, &ListEntriesError{uri, "GET failed", err}
 	}
 	if resp.StatusCode >= 400 {
+		//NOTE: do not change the error string as YumSource.ListAllFiles() has behavior that depends on it.
 		return nil, uri, &ListEntriesError{uri, fmt.Sprintf("GET returned status %d", resp.StatusCode), nil}
 	}
 
