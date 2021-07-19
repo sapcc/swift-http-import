@@ -162,7 +162,7 @@ Bugfixes:
 New features:
 - `swift-http-import` can now transfer large objects by using the Static Large Object method of Swift. The
   `jobs[].segmenting` configuration section must be specified to enable segmenting.
-- When transfering files from a Swift source, `swift-http-import` will now recognize objects with an expiry timestamp, and
+- When transferring files from a Swift source, `swift-http-import` will now recognize objects with an expiry timestamp, and
   mirror the expiry timestamp to the target side. The `jobs[].expiration` configuration section can be used to control
   this behavior.
 
