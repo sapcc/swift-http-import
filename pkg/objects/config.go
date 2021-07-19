@@ -27,7 +27,6 @@ import (
 
 	"github.com/majewsky/schwift"
 	"github.com/sapcc/swift-http-import/pkg/util"
-	"golang.org/x/crypto/openpgp"
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -38,6 +37,7 @@ type Configuration struct {
 		Transfer uint
 	} `yaml:"workers"`
 	Statsd     StatsdConfiguration `yaml:"statsd"`
+	GPG        GPGConfiguration    `yaml:"gpg"`
 	JobConfigs []JobConfiguration  `yaml:"jobs"`
 	Jobs       []*Job              `yaml:"-"`
 }
@@ -66,9 +66,23 @@ func ReadConfiguration(path string) (*Configuration, []error) {
 		cfg.Statsd.Prefix = "swift_http_import"
 	}
 
-	//gpgKeyRing is used to cache GPG public keys that are used by custom source
-	//types (e.g. YumSource), and is passed on to the different Job(s)
-	gpgKeyRing := &util.GPGKeyRing{EntityList: make(openpgp.EntityList, 0)}
+	//gpgKeyRing is used to cache GPG public keys. It is passed on and shared
+	//across all Debian/Yum jobs.
+	var gpgCacheContainer *schwift.Container
+	if cfg.GPG.CacheContainer != nil && *cfg.GPG.CacheContainer != "" {
+		sl := cfg.Swift
+		sl.ContainerName = *cfg.GPG.CacheContainer
+		sl.ObjectNamePrefix = ""
+		err := sl.Connect(sl.ContainerName)
+		if err != nil {
+			return nil, []error{err}
+		}
+		gpgCacheContainer = sl.Container
+	}
+	gpgKeyRing, err := util.NewGPGKeyRing(gpgCacheContainer, cfg.GPG.KeyserverURLPatterns)
+	if err != nil {
+		return nil, []error{err}
+	}
 
 	cfg.Swift.ValidateIgnoreEmptyContainer = true
 	errors := cfg.Swift.Validate("swift")
@@ -91,6 +105,13 @@ type StatsdConfiguration struct {
 	HostName string `yaml:"hostname"`
 	Port     int    `yaml:"port"`
 	Prefix   string `yaml:"prefix"`
+}
+
+//GPGConfiguration contains the configuration options relating to GPG signature
+//verification for Debian/Yum repos.
+type GPGConfiguration struct {
+	CacheContainer       *string  `yaml:"cache_container"`
+	KeyserverURLPatterns []string `yaml:"keyserver_urls"`
 }
 
 //JobConfiguration describes a transfer job in the configuration file.

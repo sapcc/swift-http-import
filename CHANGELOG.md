@@ -1,10 +1,11 @@
 # v2.8.0 (TBD)
 
 New features:
-- Add support for selecting GPG keyservers using the `SHI_KEYSERVER_URLS` environment variable.
+- Add support for selecting GPG keyservers using the `gpg.keyserver_urls` config option.
 
 Changes:
-- Since `pool.sks-keyservers.net` has been discontinued, GPG keys are now retrieved from `pgp.mit.edu` by default.
+- Since `pool.sks-keyservers.net` has been discontinued, GPG keys are now retrieved from `keyserver.ubuntu.com` and
+  `pgp.mit.edu` by default.
 - Files for large Swift containers are now transferred in a streaming manner. This results in a performance increase as
   `swift-http-import` doesn't have to wait for a full list of files before any transfer jobs can be enqueued.
 

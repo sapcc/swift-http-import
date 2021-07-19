@@ -21,66 +21,114 @@ package util
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
-	"os"
+	"regexp"
 	"strings"
 	"sync"
+	"time"
 
+	"github.com/ProtonMail/go-crypto/openpgp"
+	"github.com/ProtonMail/go-crypto/openpgp/armor"
+	"github.com/ProtonMail/go-crypto/openpgp/clearsign"
+	"github.com/ProtonMail/go-crypto/openpgp/packet"
+	"github.com/majewsky/schwift"
 	"github.com/sapcc/go-bits/logg"
-	"golang.org/x/crypto/openpgp"
-	"golang.org/x/crypto/openpgp/armor"
-	"golang.org/x/crypto/openpgp/clearsign"
-	"golang.org/x/crypto/openpgp/packet"
 )
 
 //GPGKeyRing contains a list of openpgp Entities. It is used to verify different
 //types of GPG signatures.
+//If a new key is discovered/downloaded, it is uploaded to the SwiftContainer.
 type GPGKeyRing struct {
 	EntityList openpgp.EntityList
 	Mux        sync.RWMutex
+
+	KeyserverURLPatterns []string
+	SwiftContainer       *schwift.Container
 }
 
-//VerifyClearSignedGPGSignature takes a clear signed message and a GPGKeyRing to check
-//if the signature is valid.
+func NewGPGKeyRing(cntr *schwift.Container, keyserverURLPatterns []string) (*GPGKeyRing, error) {
+	ksURLPatterns := keyserverURLPatterns
+	if len(ksURLPatterns) == 0 {
+		ksURLPatterns = append(ksURLPatterns,
+			"https://keyserver.ubuntu.com/pks/lookup?search=0x{keyid}&options=mr&op=get",
+			"https://pgp.mit.edu/pks/lookup?search=0x{keyid}&options=mr&op=get")
+	}
+
+	//Get cached public keys from Swift container.
+	var entityList openpgp.EntityList
+	if cntr != nil {
+		logg.Info("restoring GPG public keys from %s", cntr.Name())
+		cntr.Objects().Foreach(func(obj *schwift.Object) error {
+			r, err := obj.Download(nil).AsReadCloser()
+			if err != nil {
+				return err
+			}
+			el, err := openpgp.ReadArmoredKeyRing(r)
+			if err != nil {
+				return err
+			}
+			for _, e := range el {
+				//Don't import expired keys.
+				if !e.PrimaryKey.KeyExpired(e.PrimaryIdentity().SelfSignature, time.Now().UTC()) {
+					entityList = append(entityList, e)
+					if LogIndividualTransfers {
+						logg.Info("restored %s", obj.FullName())
+					}
+				}
+			}
+			return nil
+		})
+	}
+
+	return &GPGKeyRing{
+		EntityList:           entityList,
+		KeyserverURLPatterns: ksURLPatterns,
+		SwiftContainer:       cntr,
+	}, nil
+}
+
+//VerifyClearSignedGPGSignature takes a clear signed message and checks if the
+//signature is valid.
 //If the key ring does not contain the concerning public key then the key is downloaded
 //from a pool server and added to the existing key ring.
 //A non-nil error is returned, if signature verification was unsuccessful.
-func VerifyClearSignedGPGSignature(keyring *GPGKeyRing, messageWithSignature []byte) error {
+func (k *GPGKeyRing) VerifyClearSignedGPGSignature(messageWithSignature []byte) error {
 	block, _ := clearsign.Decode(messageWithSignature)
-	return verifyGPGSignature(keyring, block.Bytes, block.ArmoredSignature)
+	return k.verifyGPGSignature(block.Bytes, block.ArmoredSignature)
 }
 
-//VerifyDetachedGPGSignature takes a message, a detached signature, and a GPGKeyRing to check
-//if the signature is valid. The detached signature is expected to be armored.
+//VerifyDetachedGPGSignature takes a message along with its detached signature
+//and checks if the signature is valid. The detached signature is expected to
+//be armored.
 //If the key ring does not contain the concerning public key then the key is downloaded
 //from a pool server and added to the existing key ring.
 //A non-nil error is returned, if signature verification was unsuccessful.
-func VerifyDetachedGPGSignature(keyring *GPGKeyRing, message, armoredSignature []byte) error {
+func (k *GPGKeyRing) VerifyDetachedGPGSignature(message, armoredSignature []byte) error {
 	block, err := armor.Decode(bytes.NewReader(armoredSignature))
 	if err != nil {
 		return err
 	}
-	return verifyGPGSignature(keyring, message, block)
+	return k.verifyGPGSignature(message, block)
 }
 
-func verifyGPGSignature(keyring *GPGKeyRing, message []byte, signature *armor.Block) error {
+func (k *GPGKeyRing) verifyGPGSignature(message []byte, signature *armor.Block) error {
 	if signature.Type != openpgp.SignatureType {
 		return fmt.Errorf("invalid OpenPGP armored structure: expected %q, got %q", openpgp.SignatureType, signature.Type)
 	}
 
 	var publicKeyBytes []byte
-
 	signatureBytes, err := ioutil.ReadAll(signature.Body)
 	if err != nil {
 		return err
 	}
 	r := packet.NewReader(bytes.NewReader(signatureBytes))
 	for {
-		pkt, err := r.Next()
+		p, err := r.Next()
 		if err != nil {
 			if err == io.EOF {
 				break
@@ -88,22 +136,17 @@ func verifyGPGSignature(keyring *GPGKeyRing, message []byte, signature *armor.Bl
 			return err
 		}
 
-		var issuerKeyID uint64
-		switch t := pkt.(type) {
-		default:
-			return fmt.Errorf("invalid OpenPGP packet type: expected either %q or %q, got %T", "*packet.Signature", "*packet.SignatureV3", t)
-		case *packet.Signature:
-			issuerKeyID = *pkt.(*packet.Signature).IssuerKeyId
-		case *packet.SignatureV3:
-			issuerKeyID = pkt.(*packet.SignatureV3).IssuerKeyId
+		sig, ok := p.(*packet.Signature)
+		if !ok {
+			return fmt.Errorf("invalid OpenPGP packet type: expected %q, got %T", "*packet.Signature", p)
 		}
-
+		issuerKeyID := *sig.IssuerKeyId
 		//only download the public key if not found in the existing key ring
-		keyring.Mux.RLock()
-		foundKeys := keyring.EntityList.KeysById(issuerKeyID)
-		keyring.Mux.RUnlock()
+		k.Mux.RLock()
+		foundKeys := k.EntityList.KeysById(issuerKeyID)
+		k.Mux.RUnlock()
 		if len(foundKeys) == 0 {
-			b, err := getPublicKey(fmt.Sprintf("%X", issuerKeyID))
+			b, err := k.getPublicKey(fmt.Sprintf("%X", issuerKeyID))
 			if err != nil {
 				return err
 			}
@@ -117,34 +160,29 @@ func verifyGPGSignature(keyring *GPGKeyRing, message []byte, signature *armor.Bl
 		if err != nil {
 			return err
 		}
-		keyring.Mux.Lock()
-		keyring.EntityList = append(keyring.EntityList, el...)
-		keyring.Mux.Unlock()
+		k.Mux.Lock()
+		k.EntityList = append(k.EntityList, el...)
+		k.Mux.Unlock()
 	}
 
-	keyring.Mux.RLock()
-	_, err = openpgp.CheckDetachedSignature(keyring.EntityList, bytes.NewReader(message), bytes.NewReader(signatureBytes))
-	keyring.Mux.RUnlock()
+	k.Mux.RLock()
+	_, err = openpgp.CheckDetachedSignature(k.EntityList, bytes.NewReader(message), bytes.NewReader(signatureBytes), nil)
+	k.Mux.RUnlock()
 
 	return err
 }
 
-func getPublicKey(id string) ([]byte, error) {
+func (k *GPGKeyRing) getPublicKey(id string) ([]byte, error) {
 	logg.Info("retrieving public key for ID %q", id)
 
-	keyserverURLPatterns := strings.Split(os.Getenv("SHI_KEYSERVER_URLS"), " ")
-	if len(keyserverURLPatterns) == 1 && keyserverURLPatterns[0] == "" {
-		keyserverURLPatterns = []string{"https://pgp.mit.edu/pks/lookup?search=0x{keyid}&options=mr&op=get"}
-	}
-
-	for idx, keyserverURLPattern := range keyserverURLPatterns {
-		url := strings.Replace(keyserverURLPattern, "{keyid}", id, -1)
+	for i, v := range k.KeyserverURLPatterns {
+		url := strings.Replace(v, "{keyid}", id, -1)
 		buf, err := getPublicKeyFromServer(id, url)
 		if err == nil {
-			return buf, nil
+			return uploadPublicKey(k.SwiftContainer, buf)
 		}
 
-		if idx == len(keyserverURLPatterns)-1 {
+		if i == len(k.KeyserverURLPatterns)-1 {
 			logg.Error("could not retrieve public key for ID %q from %s: %s (no more servers to try)", id, url, err.Error())
 		} else {
 			logg.Error("could not retrieve public key for ID %q from %s: %s (will try next server)", id, url, err.Error())
@@ -154,7 +192,10 @@ func getPublicKey(id string) ([]byte, error) {
 	return nil, errNoSuchPublicKey
 }
 
-var errNoSuchPublicKey = errors.New("no such public key")
+var (
+	noPublicKeyFoundRx = regexp.MustCompile(`no(t)?.*found`)
+	errNoSuchPublicKey = errors.New("no such public key")
+)
 
 func getPublicKeyFromServer(id string, uri string) ([]byte, error) {
 	resp, err := http.Get(uri)
@@ -167,9 +208,22 @@ func getPublicKeyFromServer(id string, uri string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	if strings.Contains(strings.ToLower(string(b)), "no results found") {
+	if noPublicKeyFoundRx.MatchString(strings.ToLower(string(b))) {
 		return nil, errNoSuchPublicKey
 	}
 
 	return b, nil
+}
+
+func uploadPublicKey(cntr *schwift.Container, b []byte) ([]byte, error) {
+	if cntr == nil {
+		return b, nil
+	}
+	n := fmt.Sprintf("%x.asc", sha256.Sum256(b))
+	obj := cntr.Object(n)
+	err := obj.Upload(bytes.NewReader(b), nil, nil)
+	if err == nil && LogIndividualTransfers {
+		logg.Info("transferring to %s", obj.FullName())
+	}
+	return b, err
 }

@@ -109,7 +109,7 @@ func (s *YumSource) ListAllFiles(out chan<- FileSpec) *ListEntriesError {
 		out <- getFileSpec(signaturePath, cache)
 		//verify repomd's GPG signature
 		if s.gpgVerification {
-			err := util.VerifyDetachedGPGSignature(s.gpgKeyRing, repomdBytes, signatureBytes)
+			err := s.gpgKeyRing.VerifyDetachedGPGSignature(repomdBytes, signatureBytes)
 			if err != nil {
 				logg.Debug("could not verify GPG signature at %s for file %s", signatureURI, "-"+filepath.Base(repomdPath))
 				return &ListEntriesError{
