@@ -193,7 +193,7 @@ func (k *GPGKeyRing) getPublicKey(id string) ([]byte, error) {
 }
 
 var (
-	noPublicKeyFoundRx = regexp.MustCompile(`no(t)?.*found`)
+	noPublicKeyFoundRx = regexp.MustCompile(`not?\b.*found`)
 	errNoSuchPublicKey = errors.New("no such public key")
 )
 
