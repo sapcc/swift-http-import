@@ -2,6 +2,8 @@
 
 New features:
 - Add support for selecting GPG keyservers using the `gpg.keyserver_urls` config option.
+- Add support for caching GPG public keys to a Swift container (`gpg.cache_container_name`). The keys will be loaded
+  into memory on startup in order to avoid downloading the same keys every time.
 
 Changes:
 - Since `pool.sks-keyservers.net` has been discontinued, GPG keys are now retrieved from `keyserver.ubuntu.com` and

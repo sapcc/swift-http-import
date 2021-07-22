@@ -575,5 +575,5 @@ gpg:
 
 The keyservers will be tried in order until one returns a public key.
 
-Additionally, you can also specify a Swift container name with `gpg.cache_container` to cache the downloaded keys. The
-cache will be restored on startup in order to avoid downloading the same keys every time.
+Additionally, you can also specify a Swift container name with `gpg.cache_container_name` to cache the downloaded keys. The
+cache will be loaded into memory on startup in order to avoid downloading the same keys every time.

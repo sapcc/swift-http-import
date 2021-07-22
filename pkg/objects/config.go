@@ -69,9 +69,9 @@ func ReadConfiguration(path string) (*Configuration, []error) {
 	//gpgKeyRing is used to cache GPG public keys. It is passed on and shared
 	//across all Debian/Yum jobs.
 	var gpgCacheContainer *schwift.Container
-	if cfg.GPG.CacheContainer != nil && *cfg.GPG.CacheContainer != "" {
+	if cfg.GPG.CacheContainerName != nil && *cfg.GPG.CacheContainerName != "" {
 		sl := cfg.Swift
-		sl.ContainerName = *cfg.GPG.CacheContainer
+		sl.ContainerName = *cfg.GPG.CacheContainerName
 		sl.ObjectNamePrefix = ""
 		err := sl.Connect(sl.ContainerName)
 		if err != nil {
@@ -107,7 +107,7 @@ type StatsdConfiguration struct {
 //GPGConfiguration contains the configuration options relating to GPG signature
 //verification for Debian/Yum repos.
 type GPGConfiguration struct {
-	CacheContainer       *string  `yaml:"cache_container"`
+	CacheContainerName   *string  `yaml:"cache_container_name"`
 	KeyserverURLPatterns []string `yaml:"keyserver_urls"`
 }
 
