@@ -77,7 +77,7 @@ func NewGPGKeyRing(cntr *schwift.Container, keyserverURLPatterns []string) (*GPG
 				if !e.PrimaryKey.KeyExpired(e.PrimaryIdentity().SelfSignature, time.Now().UTC()) {
 					entityList = append(entityList, e)
 					if LogIndividualTransfers {
-						logg.Info("restored %s", obj.FullName())
+						logg.Info("reusing cached GPG key: %s", obj.FullName())
 					}
 				}
 			}
@@ -223,7 +223,7 @@ func uploadPublicKey(cntr *schwift.Container, b []byte) ([]byte, error) {
 	obj := cntr.Object(n)
 	err := obj.Upload(bytes.NewReader(b), nil, nil)
 	if err == nil && LogIndividualTransfers {
-		logg.Info("transferring to %s", obj.FullName())
+		logg.Info("transferring GPG key to cache at %s", obj.FullName())
 	}
 	return b, err
 }
