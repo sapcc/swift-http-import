@@ -66,6 +66,9 @@ func ReadConfiguration(path string) (*Configuration, []error) {
 		cfg.Statsd.Prefix = "swift_http_import"
 	}
 
+	cfg.Swift.ValidateIgnoreEmptyContainer = true
+	errors := cfg.Swift.Validate("swift")
+
 	//gpgKeyRing is used to cache GPG public keys. It is passed on and shared
 	//across all Debian/Yum jobs.
 	var gpgCacheContainer *schwift.Container
@@ -81,8 +84,6 @@ func ReadConfiguration(path string) (*Configuration, []error) {
 	}
 	gpgKeyRing := util.NewGPGKeyRing(gpgCacheContainer, cfg.GPG.KeyserverURLPatterns)
 
-	cfg.Swift.ValidateIgnoreEmptyContainer = true
-	errors := cfg.Swift.Validate("swift")
 	for idx, jobConfig := range cfg.JobConfigs {
 		jobConfig.gpgKeyRing = gpgKeyRing
 		job, jobErrors := jobConfig.Compile(
