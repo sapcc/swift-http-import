@@ -51,7 +51,7 @@ type GPGKeyRing struct {
 	SwiftContainer       *schwift.Container
 }
 
-func NewGPGKeyRing(cntr *schwift.Container, keyserverURLPatterns []string) (*GPGKeyRing, error) {
+func NewGPGKeyRing(cntr *schwift.Container, keyserverURLPatterns []string) *GPGKeyRing {
 	ksURLPatterns := keyserverURLPatterns
 	if len(ksURLPatterns) == 0 {
 		ksURLPatterns = append(ksURLPatterns,
@@ -63,7 +63,7 @@ func NewGPGKeyRing(cntr *schwift.Container, keyserverURLPatterns []string) (*GPG
 	var entityList openpgp.EntityList
 	if cntr != nil {
 		logg.Info("restoring GPG public keys from %s", cntr.Name())
-		cntr.Objects().Foreach(func(obj *schwift.Object) error {
+		err := cntr.Objects().Foreach(func(obj *schwift.Object) error {
 			r, err := obj.Download(nil).AsReadCloser()
 			if err != nil {
 				return err
@@ -83,13 +83,16 @@ func NewGPGKeyRing(cntr *schwift.Container, keyserverURLPatterns []string) (*GPG
 			}
 			return nil
 		})
+		if err != nil {
+			logg.Info("could not restore GPG public keys from container: %s: %s", cntr.Name(), err.Error())
+		}
 	}
 
 	return &GPGKeyRing{
 		EntityList:           entityList,
 		KeyserverURLPatterns: ksURLPatterns,
 		SwiftContainer:       cntr,
-	}, nil
+	}
 }
 
 //VerifyClearSignedGPGSignature takes a clear signed message and checks if the

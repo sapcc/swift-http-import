@@ -79,10 +79,7 @@ func ReadConfiguration(path string) (*Configuration, []error) {
 		}
 		gpgCacheContainer = sl.Container
 	}
-	gpgKeyRing, err := util.NewGPGKeyRing(gpgCacheContainer, cfg.GPG.KeyserverURLPatterns)
-	if err != nil {
-		return nil, []error{err}
-	}
+	gpgKeyRing := util.NewGPGKeyRing(gpgCacheContainer, cfg.GPG.KeyserverURLPatterns)
 
 	cfg.Swift.ValidateIgnoreEmptyContainer = true
 	errors := cfg.Swift.Validate("swift")
