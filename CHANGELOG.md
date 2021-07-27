@@ -1,10 +1,13 @@
 # v2.8.0 (TBD)
 
 New features:
-- Add support for selecting GPG keyservers using the `SHI_KEYSERVER_URLS` environment variable.
+- Add support for selecting GPG keyservers using the `gpg.keyserver_urls` config option.
+- Add support for caching GPG public keys to a Swift container (`gpg.cache_container_name`). The keys will be loaded
+  into memory on startup in order to avoid downloading the same keys every time.
 
 Changes:
-- Since `pool.sks-keyservers.net` has been discontinued, GPG keys are now retrieved from `pgp.mit.edu` by default.
+- Since `pool.sks-keyservers.net` has been discontinued, GPG keys are now retrieved from `keyserver.ubuntu.com` and
+  `pgp.mit.edu` by default.
 - Files for large Swift containers are now transferred in a streaming manner. This results in a performance increase as
   `swift-http-import` doesn't have to wait for a full list of files before any transfer jobs can be enqueued.
 
@@ -161,7 +164,7 @@ Bugfixes:
 New features:
 - `swift-http-import` can now transfer large objects by using the Static Large Object method of Swift. The
   `jobs[].segmenting` configuration section must be specified to enable segmenting.
-- When transfering files from a Swift source, `swift-http-import` will now recognize objects with an expiry timestamp, and
+- When transferring files from a Swift source, `swift-http-import` will now recognize objects with an expiry timestamp, and
   mirror the expiry timestamp to the target side. The `jobs[].expiration` configuration section can be used to control
   this behavior.
 

@@ -154,6 +154,7 @@ func (s *DebianSource) listDistFiles(distRootPath string, cache map[string]FileS
 	if s.gpgVerification {
 		var signatureURI string
 		var err error
+		//InRelease files are signed in-line while Release files have an accompanying Release.gpg file.
 		if filepath.Base(releasePath) == "Release" {
 			var signatureBytes []byte
 			signaturePath := filepath.Join(distRootPath, "Release.gpg")
@@ -161,10 +162,10 @@ func (s *DebianSource) listDistFiles(distRootPath string, cache map[string]FileS
 			if lerr != nil {
 				return nil, lerr
 			}
-			err = util.VerifyDetachedGPGSignature(s.gpgKeyRing, releaseBytes, signatureBytes)
+			err = s.gpgKeyRing.VerifyDetachedGPGSignature(releaseBytes, signatureBytes)
 		} else {
 			signatureURI = releaseURI
-			err = util.VerifyClearSignedGPGSignature(s.gpgKeyRing, releaseBytes)
+			err = s.gpgKeyRing.VerifyClearSignedGPGSignature(releaseBytes)
 		}
 		if err != nil {
 			logg.Debug("could not verify GPG signature at %s for file %s", signatureURI, "-"+filepath.Base(releasePath))

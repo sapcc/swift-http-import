@@ -19,4 +19,4 @@ jobs:
       container: off-site-backup
     match:
       # only use last modified time for comparison
-      simplisitic_comparison: true
+      simplistic_comparison: true

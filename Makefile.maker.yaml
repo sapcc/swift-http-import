@@ -11,6 +11,16 @@ variables:
 vendoring:
   enabled: true
 
+githubWorkflows:
+  global:
+    ignorePaths: ["**.md"] # all Markdown files
+  license:
+    enabled: true
+  spellCheck:
+    enabled: true
+    ignoreWords: ["transfered"] # excluding because some metrics have it in their name
+    ignorePaths: [] # override global setting so that nothing is ignored
+
 verbatim: |
   functional-test:
     bash tests.sh http

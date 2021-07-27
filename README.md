@@ -560,13 +560,20 @@ The following metrics are sent:
 
 ## GPG keyserver selection
 
-When verifying GPG signatures on repos, the respective public keys are downloaded from <https://pgp.mit.edu> by default.
-Alternative keyservers can be specified by setting the `SHI_KEYSERVER_URLS` environment variable. The value must be a
-space-separated list of URL patterns, in which the string `{keyid}` will be replaced with the 16-hexdigit ID of the
-key that shall be retrieved. The default value for this environment variable is:
+When verifying GPG signatures on repos, the respective public keys are downloaded from a key server.
+[keyserver.ubuntu.com](https://keyserver.ubuntu.com) and [pgp.mit.edu](https://pgp.mit.edu) are used by default.
 
-```sh
-SHI_KEYSERVER_URLS=https://pgp.mit.edu/pks/lookup?search=0x{keyid}&options=mr&op=get
+You can manually specify which keyserver to use by providing a list of keyserver URL patterns, in which the string
+`{keyid}` will be replaced with the 16-hexdigit ID of the key that shall be retrieved. The default value for this is:
+
+```yaml
+gpg:
+  keyserver_urls:
+    - "https://keyserver.ubuntu.com/pks/lookup?search=0x{keyid}&options=mr&op=get"
+    - "https://pgp.mit.edu/pks/lookup?search=0x{keyid}&options=mr&op=get"
 ```
 
-If multiple URLs are given (separated by spaces), they will be tried in order until one returns a public key.
+The keyservers will be tried in order until one returns a public key.
+
+Additionally, you can also specify a Swift container name with `gpg.cache_container_name` to cache the downloaded keys. The
+cache will be loaded into memory on startup in order to avoid downloading the same keys every time.

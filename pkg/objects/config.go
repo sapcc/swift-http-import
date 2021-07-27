@@ -27,7 +27,6 @@ import (
 
 	"github.com/majewsky/schwift"
 	"github.com/sapcc/swift-http-import/pkg/util"
-	"golang.org/x/crypto/openpgp"
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -38,6 +37,7 @@ type Configuration struct {
 		Transfer uint
 	} `yaml:"workers"`
 	Statsd     StatsdConfiguration `yaml:"statsd"`
+	GPG        GPGConfiguration    `yaml:"gpg"`
 	JobConfigs []JobConfiguration  `yaml:"jobs"`
 	Jobs       []*Job              `yaml:"-"`
 }
@@ -66,12 +66,25 @@ func ReadConfiguration(path string) (*Configuration, []error) {
 		cfg.Statsd.Prefix = "swift_http_import"
 	}
 
-	//gpgKeyRing is used to cache GPG public keys that are used by custom source
-	//types (e.g. YumSource), and is passed on to the different Job(s)
-	gpgKeyRing := &util.GPGKeyRing{EntityList: make(openpgp.EntityList, 0)}
-
 	cfg.Swift.ValidateIgnoreEmptyContainer = true
 	errors := cfg.Swift.Validate("swift")
+
+	//gpgKeyRing is used to cache GPG public keys. It is passed on and shared
+	//across all Debian/Yum jobs.
+	var gpgCacheContainer *schwift.Container
+	if cfg.GPG.CacheContainerName != nil && *cfg.GPG.CacheContainerName != "" {
+		sl := cfg.Swift
+		sl.ContainerName = *cfg.GPG.CacheContainerName
+		sl.ObjectNamePrefix = ""
+		err := sl.Connect(sl.ContainerName)
+		if err == nil {
+			gpgCacheContainer = sl.Container
+		} else {
+			errors = append(errors, err)
+		}
+	}
+	gpgKeyRing := util.NewGPGKeyRing(gpgCacheContainer, cfg.GPG.KeyserverURLPatterns)
+
 	for idx, jobConfig := range cfg.JobConfigs {
 		jobConfig.gpgKeyRing = gpgKeyRing
 		job, jobErrors := jobConfig.Compile(
@@ -91,6 +104,13 @@ type StatsdConfiguration struct {
 	HostName string `yaml:"hostname"`
 	Port     int    `yaml:"port"`
 	Prefix   string `yaml:"prefix"`
+}
+
+//GPGConfiguration contains the configuration options relating to GPG signature
+//verification for Debian/Yum repos.
+type GPGConfiguration struct {
+	CacheContainerName   *string  `yaml:"cache_container_name"`
+	KeyserverURLPatterns []string `yaml:"keyserver_urls"`
 }
 
 //JobConfiguration describes a transfer job in the configuration file.
@@ -230,7 +250,7 @@ func (cfg JobConfiguration) Compile(name string, swift SwiftLocation) (job *Job,
 		_, isURLSource := cfg.Source.Source.(*URLSource)
 		_, isSwiftSource := cfg.Source.Source.(*SwiftLocation)
 		if !isURLSource && !isSwiftSource {
-			errors = append(errors, fmt.Errorf("invalid value for %s.match.simplistic_comparsion: this option is not supported for source type %T", name, cfg.Source.Source))
+			errors = append(errors, fmt.Errorf("invalid value for %s.match.simplistic_comparison: this option is not supported for source type %T", name, cfg.Source.Source))
 		}
 	}
 
