@@ -51,6 +51,7 @@ type GPGKeyRing struct {
 	SwiftContainer       *schwift.Container
 }
 
+//NewGPGKeyRing creates a new GPGKeyRing instance.
 func NewGPGKeyRing(cntr *schwift.Container, keyserverURLPatterns []string) *GPGKeyRing {
 	ksURLPatterns := keyserverURLPatterns
 	if len(ksURLPatterns) == 0 {
