@@ -77,10 +77,11 @@ func ReadConfiguration(path string) (*Configuration, []error) {
 		sl.ContainerName = *cfg.GPG.CacheContainerName
 		sl.ObjectNamePrefix = ""
 		err := sl.Connect(sl.ContainerName)
-		if err != nil {
-			return nil, []error{err}
+		if err == nil {
+			gpgCacheContainer = sl.Container
+		} else {
+			errors = append(errors, err)
 		}
-		gpgCacheContainer = sl.Container
 	}
 	gpgKeyRing := util.NewGPGKeyRing(gpgCacheContainer, cfg.GPG.KeyserverURLPatterns)
 
