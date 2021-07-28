@@ -10,6 +10,7 @@ Changes:
   `pgp.mit.edu` by default.
 - Files for large Swift containers are now transferred in a streaming manner. This results in a performance increase as
   `swift-http-import` doesn't have to wait for a full list of files before any transfer jobs can be enqueued.
+- When scraping fails, the cleanup phase is now skipped for the respective job to avoid cleaning up too much by mistake.
 
 # v2.7.0 (2021-05-31)
 

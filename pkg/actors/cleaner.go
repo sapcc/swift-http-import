@@ -72,6 +72,17 @@ func (c *Cleaner) Run() {
 		logg.Info("skipping cleanup phase: interrupt was received")
 		return
 	}
+
+	//collect information about incomplete scrapes (this is not safe to do in the
+	//above loop because the scraper job might be writing the
+	//Job.IsScrapingIncomplete attribute concurrently; at this point the scraper
+	//is definitely done, so these attributes are safe to read without risking a
+	//data race)
+	for job := range isFileTransferred {
+		if job.IsScrapingIncomplete {
+			isJobFailed[job] = true
+		}
+	}
 	if len(isJobFailed) > 0 {
 		logg.Info(
 			"skipping cleanup phase for %d job(s) because of failed file transfers",

@@ -207,12 +207,13 @@ func (u *SourceUnmarshaler) UnmarshalYAML(unmarshal func(interface{}) error) err
 
 //Job describes a transfer job at runtime.
 type Job struct {
-	Source     Source
-	Target     *SwiftLocation
-	Matcher    Matcher
-	Segmenting *SegmentingConfiguration
-	Expiration ExpirationConfiguration
-	Cleanup    CleanupConfiguration
+	Source               Source
+	Target               *SwiftLocation
+	Matcher              Matcher
+	Segmenting           *SegmentingConfiguration
+	Expiration           ExpirationConfiguration
+	Cleanup              CleanupConfiguration
+	IsScrapingIncomplete bool
 }
 
 //Compile validates the given JobConfiguration, then creates and prepares a Job from it.
