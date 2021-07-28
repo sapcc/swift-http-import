@@ -30,14 +30,13 @@ import (
 	"regexp"
 	"strings"
 	"sync"
-	"time"
 
-	"github.com/ProtonMail/go-crypto/openpgp"
-	"github.com/ProtonMail/go-crypto/openpgp/armor"
-	"github.com/ProtonMail/go-crypto/openpgp/clearsign"
-	"github.com/ProtonMail/go-crypto/openpgp/packet"
 	"github.com/majewsky/schwift"
 	"github.com/sapcc/go-bits/logg"
+	"golang.org/x/crypto/openpgp"
+	"golang.org/x/crypto/openpgp/armor"
+	"golang.org/x/crypto/openpgp/clearsign"
+	"golang.org/x/crypto/openpgp/packet"
 )
 
 //GPGKeyRing contains a list of openpgp Entities. It is used to verify different
@@ -74,12 +73,9 @@ func NewGPGKeyRing(cntr *schwift.Container, keyserverURLPatterns []string) *GPGK
 				return err
 			}
 			for _, e := range el {
-				//Don't import expired keys.
-				if !e.PrimaryKey.KeyExpired(e.PrimaryIdentity().SelfSignature, time.Now().UTC()) {
-					entityList = append(entityList, e)
-					if LogIndividualTransfers {
-						logg.Info("reusing cached GPG key: %s", obj.FullName())
-					}
+				entityList = append(entityList, e)
+				if LogIndividualTransfers {
+					logg.Info("reusing cached GPG key: %s", obj.FullName())
 				}
 			}
 			return nil
@@ -140,11 +136,16 @@ func (k *GPGKeyRing) verifyGPGSignature(message []byte, signature *armor.Block) 
 			return err
 		}
 
-		sig, ok := p.(*packet.Signature)
-		if !ok {
+		var issuerKeyID uint64
+		switch sig := p.(type) {
+		case *packet.Signature:
+			issuerKeyID = *sig.IssuerKeyId
+		case *packet.SignatureV3:
+			issuerKeyID = sig.IssuerKeyId
+		default:
 			return fmt.Errorf("invalid OpenPGP packet type: expected %q, got %T", "*packet.Signature", p)
 		}
-		issuerKeyID := *sig.IssuerKeyId
+
 		//only download the public key if not found in the existing key ring
 		k.Mux.RLock()
 		foundKeys := k.EntityList.KeysById(issuerKeyID)
@@ -170,7 +171,7 @@ func (k *GPGKeyRing) verifyGPGSignature(message []byte, signature *armor.Block) 
 	}
 
 	k.Mux.RLock()
-	_, err = openpgp.CheckDetachedSignature(k.EntityList, bytes.NewReader(message), bytes.NewReader(signatureBytes), nil)
+	_, err = openpgp.CheckDetachedSignature(k.EntityList, bytes.NewReader(message), bytes.NewReader(signatureBytes))
 	k.Mux.RUnlock()
 
 	return err
