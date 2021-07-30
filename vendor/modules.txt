@@ -1,7 +1,7 @@
 # github.com/cactus/go-statsd-client/v4 v4.0.0
 ## explicit
 github.com/cactus/go-statsd-client/v4/statsd
-# github.com/gophercloud/gophercloud v0.17.0
+# github.com/gophercloud/gophercloud v0.19.0
 ## explicit
 github.com/gophercloud/gophercloud
 github.com/gophercloud/gophercloud/openstack
@@ -12,7 +12,7 @@ github.com/gophercloud/gophercloud/openstack/identity/v3/extensions/oauth1
 github.com/gophercloud/gophercloud/openstack/identity/v3/tokens
 github.com/gophercloud/gophercloud/openstack/utils
 github.com/gophercloud/gophercloud/pagination
-# github.com/gophercloud/utils v0.0.0-20210323225332-7b186010c04f
+# github.com/gophercloud/utils v0.0.0-20210720165645-8a3ad2ad9e70
 ## explicit
 github.com/gophercloud/utils/client
 # github.com/jpillora/longestcommon v0.0.0-20161227235612-adb9d91ee629
@@ -44,7 +44,7 @@ golang.org/x/crypto/openpgp/elgamal
 golang.org/x/crypto/openpgp/errors
 golang.org/x/crypto/openpgp/packet
 golang.org/x/crypto/openpgp/s2k
-# golang.org/x/net v0.0.0-20210525063256-abc453219eb5
+# golang.org/x/net v0.0.0-20210726213435-c6fcb2dbf985
 ## explicit
 golang.org/x/net/html
 golang.org/x/net/html/atom
