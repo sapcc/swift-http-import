@@ -1,4 +1,4 @@
-# v2.8.0 (TBD)
+# v2.8.0 (2021-08-11)
 
 New features:
 - Add support for selecting GPG keyservers using the `gpg.keyserver_urls` config option.
