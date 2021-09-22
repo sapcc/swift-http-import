@@ -1,16 +1,16 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -euo pipefail
 cd "$(readlink -f "$(dirname "$0")")"
 
-if [ $# -ne 1 ]; then
+if [[ $# -ne 1 ]]; then
   echo "usage: ./tests.sh (http|swift)" >&2
   exit 1
 fi
-if [ "$1" != swift -a "$1" != http ]; then
+if [[ "$1" != swift && "$1" != http ]]; then
   echo "usage: ./tests.sh (http|swift)" >&2
   exit 1
 fi
-if [ -z "${OS_AUTH_URL:-}" ]; then
+if [[ ! -v OS_AUTH_URL ]]; then
   echo "!! This testcase needs OpenStack credentials in the usual OS_* variables." >&2
   exit 1
 fi
@@ -21,7 +21,7 @@ CONTAINER_PUBLIC="swift-http-import-source"
 CONTAINER_BASE="swift-http-import-${DISAMBIGUATOR}"
 # a temporary file that is used for various purposes
 TEST_DIR="$(mktemp -d)"
-TEST_FILENAME="$(mktemp ${TEST_DIR}/tmp.XXXXXX)"
+TEST_FILENAME="$(mktemp "${TEST_DIR}/tmp.XXXXXX")"
 # YAML object (except for {}) with the auth parameters from the environment
 AUTH_PARAMS="
   auth_url:            \"${OS_AUTH_URL}\",
@@ -40,7 +40,7 @@ eval "$(swift auth)"
 # cleanup from previous test runs
 
 step() {
-  printf "\e[1;36m>>\e[0;36m $@...\e[0m\n"
+  printf "\e[1;36m>>\e[0;36m %s...\e[0m\n" "$@"
 }
 
 cleanup_containers() {
@@ -48,8 +48,8 @@ cleanup_containers() {
     step "Cleaning up container ${CONTAINER_NAME}"
     if [ "${CONTAINER_NAME}" = "${CONTAINER_PUBLIC}" ]; then
       # macOS's xargs does not support -r
-      if [ "$(uname -s)" != "Darwin" ]; then
-        alias xargs='xargs -r'
+      if [[ "$(uname -s)" != "Darwin" ]]; then
+        xargs() { command xargs -r; }
       fi
       # do not delete the public container itself; want to keep the metadata
       swift list "${CONTAINER_NAME}" | xargs swift delete "${CONTAINER_NAME}"
@@ -114,17 +114,19 @@ mirror() {
 dump() {
   local CONTAINER="${CONTAINER_BASE}-$1"
   local FILENAME
-  swift list "${CONTAINER}" | while read FILENAME; do
+  swift list "${CONTAINER}" | while read -r FILENAME; do
     echo ">> ${FILENAME}"
     swift download -o - "${CONTAINER}" "${FILENAME}"
   done || true
 }
 
 expect() {
-  local ACTUAL="$(dump "$1")"
-  local EXPECTED="$(cat)"
+  local ACTUAL EXPECTED
+
+  ACTUAL="$(dump "$1")"
+  EXPECTED="$(cat)"
   if ! diff -q <(echo "${EXPECTED}") <(echo "${ACTUAL}") >/dev/null; then
-    printf "\e[1;31m>>\e[0;31m Contents of target container ${CONTAINER_BASE}-$1 do not match expectation. Diff follows:\e[0m\n"
+    printf "\e[1;31m>>\e[0;31m Contents of target container %s-%s do not match expectation. Diff follows:\e[0m\n" "$CONTAINER_BASE" "$1"
     diff -u <(echo "${EXPECTED}") <(echo "${ACTUAL}")
   fi
 }
@@ -320,10 +322,10 @@ Line number 4
 Line number 5
 EOF
 
-SEGMENT_COUNT="$(swift list ${CONTAINER_BASE}-test6-segments | wc -l)"
+SEGMENT_COUNT="$(swift list "${CONTAINER_BASE}-test6-segments" | wc -l)"
 if [ "${SEGMENT_COUNT}" -ne 5 ]; then
-  printf "\e[1;31m>>\e[0;31m Expected SLO to have 5 segments, but got ${SEGMENT_COUNT} instead:\e[0m\n"
-  swift list ${CONTAINER_BASE}-test6-segments | sed 's/^/    /'
+  printf "\e[1;31m>>\e[0;31m Expected SLO to have 5 segments, but got %s instead:\e[0m\n" "$SEGMENT_COUNT"
+  swift list "${CONTAINER_BASE}-test6-segments" | sed 's/^/    /'
   exit 1
 fi
 # NOTE: This also ensures that the small files are not uploaded in segments,
@@ -404,18 +406,18 @@ This will expire soon.
 EOF
 
   for OBJECT_NAME in expires.txt expires-with-segments.txt; do
-    EXPIRY_TIMESTAMP="$(swift stat ${CONTAINER_BASE}-test7 ${OBJECT_NAME} | awk '/X-Delete-At:/ { print $2 }')"
+    EXPIRY_TIMESTAMP="$(swift stat "${CONTAINER_BASE}-test7" "${OBJECT_NAME}" | awk '/X-Delete-At:/ { print $2 }')"
     if [ "${EXPIRY_TIMESTAMP}" != 2000000042 ]; then
-      printf "\e[1;31m>>\e[0;31m Expected file \"${OBJECT_NAME}\" to expire at timestamp 2000000042, but expires at timestamp '${EXPIRY_TIMESTAMP}' instead.\e[0m\n"
+      printf "\e[1;31m>>\e[0;31m Expected file \"%s\" to expire at timestamp 2000000042, but expires at timestamp '%s' instead.\e[0m\n" "$OBJECT_NAME" "$EXPIRY_TIMESTAMP"
       exit 1
     fi
   done
 
   # also check that expiration dates are applied to the segments as well
-  swift list ${CONTAINER_BASE}-test7-segments | while read OBJECT_NAME; do
-    EXPIRY_TIMESTAMP="$(swift stat ${CONTAINER_BASE}-test7-segments ${OBJECT_NAME} | awk '/X-Delete-At:/ { print $2 }')"
+  swift list "${CONTAINER_BASE}-test7-segments" | while read -r OBJECT_NAME; do
+    EXPIRY_TIMESTAMP="$(swift stat "${CONTAINER_BASE}-test7-segments" "${OBJECT_NAME}" | awk '/X-Delete-At:/ { print $2 }')"
     if [ "${EXPIRY_TIMESTAMP}" != 2000000042 ]; then
-      printf "\e[1;31m>>\e[0;31m Expected segment '${OBJECT_NAME}' to expire at timestamp 2000000042, but expires at timestamp '${EXPIRY_TIMESTAMP}' instead.\e[0m\n"
+      printf "\e[1;31m>>\e[0;31m Expected segment '%s' to expire at timestamp 2000000042, but expires at timestamp '%s' instead.\e[0m\n" "$OBJECT_NAME" "$EXPIRY_TIMESTAMP"
       exit 1
     fi
   done || (
@@ -471,9 +473,9 @@ Line number 4
 CHANGED
 EOF
 
-  SEGMENT_COUNT="$(swift list ${CONTAINER_BASE}-test8-segments | wc -l)"
+  SEGMENT_COUNT="$(swift list "${CONTAINER_BASE}-test8-segments" | wc -l)"
   if [ "${SEGMENT_COUNT}" -ne 5 ]; then
-    printf "\e[1;31m>>\e[0;31m Expected SLO to have 5 segments, but got ${SEGMENT_COUNT} instead:\e[0m\n"
+    printf "\e[1;31m>>\e[0;31m Expected SLO to have 5 segments, but got %s instead:\e[0m\n" "$SEGMENT_COUNT"
     dump test8-segments
     exit 1
   fi
@@ -675,9 +677,9 @@ else
   fi
 
   get_swift_object_mtime() {
-    date -d "$(swift stat ${CONTAINER_BASE} $1 |
-      grep 'Last Modified:' |
-      sed -E 's/Last Modified:\s*(.*)/\1/')" '+%s'
+    date -d "$(swift stat "${CONTAINER_BASE}" "$1" \
+      | grep 'Last Modified:' \
+      | sed -E 's/Last Modified:\s*(.*)/\1/')" '+%s'
   }
 
   # upload test files using rclone and get their mtime
@@ -703,8 +705,8 @@ EOF
   after_mtime_1="$(get_swift_object_mtime to/rclone-test-file-1)"
   after_mtime_2="$(get_swift_object_mtime to/rclone-test-file-2)"
 
-  if ! [ "$before_mtime_1" == "$after_mtime_1" ] || ! [ "$before_mtime_2" == "$after_mtime_2" ]; then
-    printf "\e[1;31m>>\e[0;31m Files in ${CONTAINER_BASE} have been modified by swift-http-import. They were expected not to be modified.\e[0m\n"
+  if ! [[ "$before_mtime_1" == "$after_mtime_1" || ! "$before_mtime_2" == "$after_mtime_2" ]]; then
+    printf "\e[1;31m>>\e[0;31m Files in %s have been modified by swift-http-import. They were expected not to be modified.\e[0m\n" "$CONTAINER_BASE"
     exit 1
   fi
 
