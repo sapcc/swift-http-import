@@ -61,6 +61,9 @@ cleanup_containers() {
 
 cleanup_containers
 
+# cleanup when exiting the script early
+trap 'cleanup_containers; rm -rf $TEST_DIR' EXIT
+
 ################################################################################
 step 'Preparing source container'
 
@@ -711,12 +714,3 @@ EOF
   fi
 
 fi # end of: if ! hash rclone &>/dev/null
-
-################################################################################
-# cleanup before exiting
-
-# do not make an error during cleanup_containers fail the test
-set +e
-
-cleanup_containers
-rm -rf "${TEST_DIR}"
