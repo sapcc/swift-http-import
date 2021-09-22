@@ -87,7 +87,10 @@ func (r *Report) Run() {
 	//initialize statsd client
 	if r.Statsd.HostName != "" {
 		var err error
-		statter, err = statsd.NewClient(r.Statsd.HostName+":"+strconv.Itoa(r.Statsd.Port), r.Statsd.Prefix)
+		statter, err = statsd.NewClientWithConfig(&statsd.ClientConfig{
+			Address: r.Statsd.HostName + ":" + strconv.Itoa(r.Statsd.Port),
+			Prefix:  r.Statsd.Prefix,
+		})
 		// handle any errors
 		if err != nil {
 			logg.Fatal(err.Error())

@@ -203,7 +203,6 @@ func (u *URLSource) Connect(name string) error {
 	}
 
 	if u.ClientCertificatePath != "" || u.ServerCAPath != "" {
-		tlsConfig.BuildNameToCertificate()
 		// Overriding the transport for TLS, requires also Proxy to be set from ENV,
 		// otherwise a set proxy will get lost
 		transport := &http.Transport{TLSClientConfig: tlsConfig, Proxy: http.ProxyFromEnvironment}
@@ -340,7 +339,7 @@ func (u URLSource) GetFile(directoryPath string, requestHeaders schwift.ObjectHe
 		response, err = util.EnhancedGet(u.HTTPClient, uri, requestHeaders.ToHTTP(), u.SegmentSize)
 	} else {
 		var req *http.Request
-		req, err := http.NewRequest("GET", uri, nil)
+		req, err = http.NewRequest("GET", uri, nil)
 		if err == nil {
 			for key, val := range requestHeaders.Headers {
 				req.Header.Set(key, val)

@@ -160,7 +160,7 @@ func (d *downloader) getNextChunk() (*http.Response, *parsedResponseHeaders, err
 		d.Etag = etag
 	} else if d.Etag != etag {
 		resp.Body.Close()
-		return nil, nil, fmt.Errorf("Etag has changed mid-transfer: %q -> %q", d.Etag, etag)
+		return nil, nil, fmt.Errorf("value of Etag has changed mid-transfer: %q -> %q", d.Etag, etag)
 	}
 
 	//parse Content-Range header

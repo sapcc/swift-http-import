@@ -82,7 +82,7 @@ func (s SwiftLocation) cacheKey(name string) string {
 }
 
 //Validate returns an empty list only if all required credentials are present.
-func (s SwiftLocation) Validate(name string) []error {
+func (s *SwiftLocation) Validate(name string) []error {
 	var result []error
 
 	if s.AuthURL == "" {
