@@ -15,6 +15,7 @@ if [[ ! -v OS_AUTH_URL ]]; then
   exit 1
 fi
 
+SLEEP=${SLEEP:-1}
 # container names
 DISAMBIGUATOR="$(date +%s)"
 CONTAINER_PUBLIC="swift-http-import-source"
@@ -84,7 +85,7 @@ upload_file_from_stdin just/some/files/2.txt <<-EOF
 EOF
 
 swift post "${CONTAINER_PUBLIC}" -r '.r:*,.rlistings' -m 'web-listings: true'
-sleep 10 # wait for container listing to get updated
+sleep "$SLEEP" # wait for container listing to get updated
 
 # get public HTTP URL for container
 SOURCE_URL="$(swift stat -v "${CONTAINER_PUBLIC}" | awk '$1=="URL:"{print$2}')/${DISAMBIGUATOR}"
@@ -111,7 +112,7 @@ mirror() {
   # config file comes from stdin
   ./build/swift-http-import /dev/fd/0
   # wait for container listing to get updated
-  sleep 10
+  sleep "$SLEEP"
 }
 
 dump() {
@@ -157,7 +158,7 @@ step 'Test 1 (cont.): Add another file and sync again'
 upload_file_from_stdin just/another/file.txt <<-EOF
   Hello Another World.
 EOF
-sleep 10 # wait for container listing to get updated
+sleep "$SLEEP" # wait for container listing to get updated
 
 mirror <<-EOF
   swift: { $AUTH_PARAMS }
@@ -494,7 +495,7 @@ else
 
   # Uploading a symlink requires curl because python-swiftclient has not catched up with Swift yet.
   curl -H "X-Auth-Token: ${OS_AUTH_TOKEN}" -X PUT -d '' -H "Content-Type: application/symlink" -H "X-Symlink-Target: swift-http-import-source/${DISAMBIGUATOR}/just/some/files/1.txt" "${SOURCE_URL}/just/a/symlink.txt"
-  sleep 10 # wait for container listing to get updated
+  sleep "$SLEEP" # wait for container listing to get updated
 
   mirror <<-EOF
   swift: { $AUTH_PARAMS }
@@ -554,7 +555,7 @@ EOF
 upload_target_file_from_stdin test10 target/just/some/files/2.txt <<-EOF
   Hello Second World.
 EOF
-sleep 10 # wait for container listing to get updated
+sleep "$SLEEP" # wait for container listing to get updated
 
 mirror <<-EOF
   swift: { $AUTH_PARAMS }
@@ -688,7 +689,7 @@ else
   # upload test files using rclone and get their mtime
   upload_test_file_using_rclone "${TEST_DIR}/rclone-test-file-1"
   upload_test_file_using_rclone "${TEST_DIR}/rclone-test-file-2"
-  sleep 10 # wait for container listing to get updated
+  sleep "$SLEEP" # wait for container listing to get updated
 
   before_mtime_1="$(get_swift_object_mtime to/rclone-test-file-1)"
   before_mtime_2="$(get_swift_object_mtime to/rclone-test-file-2)"
