@@ -1,6 +1,20 @@
 #!/usr/bin/env bash
+set -euo pipefail
+
+if [[ ! -v LIB_SOURCED ]]; then
+  cd "$(readlink -f "$(dirname "$0")")/.."
+  # shellcheck disable=SC1090,SC1091
+  source lib.sh
+fi
 
 step 'Test 02-exclusion-regex'
+
+upload_file_from_stdin just/another/file.txt <<-EOF
+  Hello Another World.
+EOF
+upload_file_from_stdin just/some/files/1.txt <<-EOF
+  Hello World.
+EOF
 
 mirror <<-EOF
   swift: { $AUTH_PARAMS }

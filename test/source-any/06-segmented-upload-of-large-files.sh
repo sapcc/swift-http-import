@@ -1,4 +1,11 @@
 #!/usr/bin/env bash
+set -euo pipefail
+
+if [[ ! -v LIB_SOURCED ]]; then
+  cd "$(readlink -f "$(dirname "$0")")/.."
+  # shellcheck disable=SC1090,SC1091
+  source lib.sh
+fi
 
 step 'Test 06-segmented-upload-of-large-files'
 
@@ -24,12 +31,6 @@ EOF
 # segment, i.e. 5 segments.
 
 expect test6 <<-EOF
->> just/another/file.txt
-This is the new file!
->> just/some/files/1.txt
-Hello World.
->> just/some/files/2.txt
-Hello Second World.
 >> largefile.txt
 Line number 1
 Line number 2
@@ -68,12 +69,6 @@ mirror <<-EOF
 EOF
 
 expect test6 <<-EOF
->> just/another/file.txt
-This is the new file!
->> just/some/files/1.txt
-Hello World.
->> just/some/files/2.txt
-Hello Second World.
 >> largefile.txt
 Line number 1
 Line number 2

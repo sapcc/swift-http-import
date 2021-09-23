@@ -1,6 +1,20 @@
 #!/usr/bin/env bash
+set -euo pipefail
+
+if [[ ! -v LIB_SOURCED ]]; then
+  cd "$(readlink -f "$(dirname "$0")")/.."
+  # shellcheck disable=SC1090,SC1091
+  source lib.sh
+fi
 
 step 'Test 01-mirror-from-http'
+
+upload_file_from_stdin just/some/files/1.txt <<-EOF
+  Hello World.
+EOF
+upload_file_from_stdin just/some/files/2.txt <<-EOF
+  Hello Second World.
+EOF
 
 mirror <<-EOF
   swift: { $AUTH_PARAMS }

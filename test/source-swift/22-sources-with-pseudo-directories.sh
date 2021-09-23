@@ -1,4 +1,12 @@
 #!/usr/bin/env bash
+set -euo pipefail
+
+if [[ ! -v LIB_SOURCED ]]; then
+  export SOURCE_TYPE=swift
+  cd "$(readlink -f "$(dirname "$0")")/.."
+  # shellcheck disable=SC1090,SC1091
+  source lib.sh
+fi
 
 step 'Test 22-sources-with-pseudo-directories'
 
@@ -12,11 +20,11 @@ mirror <<-EOF
   jobs:
     - from: ${SOURCE_SPEC}
       to:
-        container: ${CONTAINER_BASE}-test11
+        container: ${CONTAINER_BASE}-test22
       only: pseudo/
 EOF
 
-expect test11 <<-EOF
+expect test22 <<-EOF
 >> pseudo/directory/
 >> pseudo/regularfile.txt
 Hello File.

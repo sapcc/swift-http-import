@@ -1,4 +1,12 @@
 #!/usr/bin/env bash
+set -euo pipefail
+
+if [[ ! -v LIB_SOURCED ]]; then
+  export SOURCE_TYPE=swift
+  cd "$(readlink -f "$(dirname "$0")")/.."
+  # shellcheck disable=SC1090,SC1091
+  source lib.sh
+fi
 
 step 'Test 23-not-older-than-exclusion-rule'
 
@@ -12,13 +20,13 @@ mirror <<-EOF
   jobs:
     - from: ${SOURCE_SPEC}
       to:
-        container: ${CONTAINER_BASE}-test12
+        container: ${CONTAINER_BASE}-test23
       only: '^just/$|some/'
       match:
         not_older_than: 30 seconds
 EOF
 
-expect test12 <<-EOF
+expect test23 <<-EOF
 >> just/some/files/2.txt
 Hello Second World.
 EOF

@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# shellcheck disable=SC1090,SC1091
 set -euo pipefail
 
 cd "$(readlink -f "$(dirname "$0")")"
@@ -14,21 +13,27 @@ if [[ ! -v OS_AUTH_URL ]]; then
   exit 1
 fi
 
+export SOURCE_TYPE="$1"
+
+# shellcheck source=lib.sh
 source lib.sh
 
 case "$1" in
 all)
   for file in source-*/*.sh; do
+    # shellcheck disable=SC1090
     source "$file"
   done
   ;;
 http)
   for file in source-{any,http}/*.sh; do
+    # shellcheck disable=SC1090
     source "$file"
   done
   ;;
 swift)
   for file in source-{any,http}/*.sh; do
+    # shellcheck disable=SC1090
     source "$file"
   done
   ;;

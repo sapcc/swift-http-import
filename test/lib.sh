@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 
+# exit early if we already sourced the lib
+if [[ ${LIB_SOURCED:-} == 1 ]]; then
+  return
+fi
+
 SLEEP=${SLEEP:-1}
 # container names
 DISAMBIGUATOR="$(date +%s)"
@@ -62,19 +67,12 @@ upload_file_from_stdin() {
   swift upload "${CONTAINER_PUBLIC}" "${TEST_FILENAME}" --object-name "${DISAMBIGUATOR}/${OBJECT_NAME}" "$@"
 }
 
-upload_file_from_stdin just/some/files/1.txt <<-EOF
-  Hello World.
-EOF
-upload_file_from_stdin just/some/files/2.txt <<-EOF
-  Hello Second World.
-EOF
-
 swift post "${CONTAINER_PUBLIC}" -r '.r:*,.rlistings' -m 'web-listings: true'
 sleep "$SLEEP" # wait for container listing to get updated
 
 # get public HTTP URL for container
 SOURCE_URL="$(swift stat -v "${CONTAINER_PUBLIC}" | awk '$1=="URL:"{print$2}')/${DISAMBIGUATOR}"
-if [[ "${1:-}" == swift ]]; then
+if [[ "${SOURCE_TYPE:-}" == swift ]]; then
   SOURCE_SPEC="{ container: \"${CONTAINER_PUBLIC}\", object_prefix: \"${DISAMBIGUATOR}\", ${AUTH_PARAMS} }"
 else
   SOURCE_SPEC="{ url: \"${SOURCE_URL}/\" }"
@@ -119,3 +117,6 @@ expect() {
     diff -u <(echo "${EXPECTED}") <(echo "${ACTUAL}")
   fi
 }
+
+# this should needs to be last
+LIB_SOURCED=1
