@@ -7,7 +7,7 @@ if [[ ! -v LIB_SOURCED ]]; then
   source lib.sh
 fi
 
-step 'Test 08-simplistic_comparison-config-option'
+step 'Test 08: "simplistic_comparison" config option'
 
 if ! hash rclone &>/dev/null; then
   echo ">> Test skipped (rclone is not installed, instructions: https://rclone.org/install/)."

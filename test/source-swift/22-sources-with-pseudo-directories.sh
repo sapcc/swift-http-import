@@ -8,7 +8,7 @@ if [[ ! -v LIB_SOURCED ]]; then
   source lib.sh
 fi
 
-step 'Test 22-sources-with-pseudo-directories'
+step 'Test 22: Swift sources with pseudo-directories'
 
 upload_file_from_stdin pseudo/directory/ </dev/null
 upload_file_from_stdin pseudo/regularfile.txt <<-EOF

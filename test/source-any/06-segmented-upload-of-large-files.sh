@@ -7,7 +7,7 @@ if [[ ! -v LIB_SOURCED ]]; then
   source lib.sh
 fi
 
-step 'Test 06-segmented-upload-of-large-files'
+step 'Test 06: Segmented upload of large files'
 
 upload_file_from_stdin largefile.txt <<-EOF
   Line number 1
@@ -50,7 +50,7 @@ fi
 
 ################################################################################
 
-step 'Test 6 (cont.): Overwrite SLO on target with non-segmented object'
+step 'Test 06 (cont.): Overwrite SLO on target with non-segmented object'
 
 upload_file_from_stdin largefile.txt <<-EOF
   Line number 1

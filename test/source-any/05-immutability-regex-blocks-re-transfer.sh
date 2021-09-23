@@ -7,7 +7,7 @@ if [[ ! -v LIB_SOURCED ]]; then
   source lib.sh
 fi
 
-step 'Test 05-immutability-regex-blocks-re-transfer'
+step 'Test 05: Immutability regex blocks re-transfer'
 
 upload_file_from_stdin just/another/file.txt <<-EOF
   Hello Another World.

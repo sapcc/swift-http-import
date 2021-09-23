@@ -7,7 +7,7 @@ if [[ ! -v LIB_SOURCED ]]; then
   source lib.sh
 fi
 
-step 'Test 01-mirror-from-http'
+step 'Test 01: Mirror from HTTP'
 
 upload_file_from_stdin just/some/files/1.txt <<-EOF
   Hello World.
@@ -32,7 +32,7 @@ EOF
 
 ################################################################################
 
-step 'Test 01-mirror-from-http'
+step 'Test 01 (cont.): Add another file and sync again'
 
 upload_file_from_stdin just/another/file.txt <<-EOF
   Hello Another World.

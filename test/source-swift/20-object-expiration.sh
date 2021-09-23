@@ -8,7 +8,7 @@ if [[ ! -v LIB_SOURCED ]]; then
   source lib.sh
 fi
 
-step 'Test 20-object-expiration'
+step 'Test 20: Object expiration'
 
 upload_file_from_stdin expires.txt -H 'X-Delete-At: 2000000000' <<-EOF
   This will expire soon.

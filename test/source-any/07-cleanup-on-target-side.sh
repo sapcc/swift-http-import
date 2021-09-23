@@ -7,7 +7,7 @@ if [[ ! -v LIB_SOURCED ]]; then
   source lib.sh
 fi
 
-step 'Test 07-cleanup-on-target-side'
+step 'Test 07: Cleanup on target side'
 
 upload_file_from_stdin just/some/files/1.txt <<-EOF
   Hello World.

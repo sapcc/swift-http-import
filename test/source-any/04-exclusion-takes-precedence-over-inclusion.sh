@@ -7,7 +7,7 @@ if [[ ! -v LIB_SOURCED ]]; then
   source lib.sh
 fi
 
-step 'Test 04-exclusion-takes-precedence-over-inclusion'
+step 'Test 04: Exclusion takes precedence over inclusion'
 
 upload_file_from_stdin just/some/files/1.txt <<-EOF
   Hello World.

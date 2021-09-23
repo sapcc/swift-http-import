@@ -7,7 +7,7 @@ if [[ ! -v LIB_SOURCED ]]; then
   source lib.sh
 fi
 
-step 'Test 02-exclusion-regex'
+step 'Test 02: Exclusion regex'
 
 upload_file_from_stdin just/another/file.txt <<-EOF
   Hello Another World.

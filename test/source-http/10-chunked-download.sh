@@ -8,7 +8,7 @@ if [[ ! -v LIB_SOURCED ]]; then
   source lib.sh
 fi
 
-step 'Test 10-chunked-download'
+step 'Test 10: Chunked download'
 
 # This test specifically checks that segmented upload works correctly when a file is
 # downloaded segmentedly. There was a bug where EnhancedGet() reported the

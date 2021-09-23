@@ -8,7 +8,7 @@ if [[ ! -v LIB_SOURCED ]]; then
   source lib.sh
 fi
 
-step 'Test 23-not-older-than-exclusion-rule'
+step 'Test 23: "Not older than" exclusion rule'
 
 # reset Last-Modified timestamp on this one file
 upload_file_from_stdin just/some/files/2.txt <<-EOF
