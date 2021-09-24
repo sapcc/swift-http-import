@@ -125,7 +125,7 @@ func (s *SwiftLocation) Validate(name string) []error {
 		result = append(result, fmt.Errorf("missing value for %s.container", name))
 	}
 
-	if s.ObjectNamePrefix != "" && !strings.HasPrefix(s.ObjectNamePrefix, "/") {
+	if s.ObjectNamePrefix != "" && !strings.HasSuffix(s.ObjectNamePrefix, "/") {
 		s.ObjectNamePrefix += "/"
 	}
 
