@@ -9,6 +9,15 @@ fi
 
 step 'Test 06: Segmented upload of large files'
 
+upload_file_from_stdin just/some/files/1.txt <<-EOF
+  Hello World.
+EOF
+upload_file_from_stdin just/some/files/2.txt <<-EOF
+  Hello Second World.
+EOF
+upload_file_from_stdin just/another/file.txt <<-EOF
+  This is the new file!
+EOF
 upload_file_from_stdin largefile.txt <<-EOF
   Line number 1
   Line number 2
@@ -31,6 +40,12 @@ EOF
 # segment, i.e. 5 segments.
 
 expect test6 <<-EOF
+>> just/another/file.txt
+This is the new file!
+>> just/some/files/1.txt
+Hello World.
+>> just/some/files/2.txt
+Hello Second World.
 >> largefile.txt
 Line number 1
 Line number 2
@@ -69,6 +84,12 @@ mirror <<-EOF
 EOF
 
 expect test6 <<-EOF
+>> just/another/file.txt
+This is the new file!
+>> just/some/files/1.txt
+Hello World.
+>> just/some/files/2.txt
+Hello Second World.
 >> largefile.txt
 Line number 1
 Line number 2

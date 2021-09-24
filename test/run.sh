@@ -20,10 +20,8 @@ source lib.sh
 
 case "$1" in
 all)
-  for file in source-*/*.sh; do
-    # shellcheck disable=SC1090
-    source "$file"
-  done
+  ./run.sh http
+  ./run.sh swift
   ;;
 http)
   for file in source-{any,http}/*.sh; do
