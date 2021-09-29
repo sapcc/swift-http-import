@@ -10,6 +10,9 @@ fi
 
 step 'Test 23: "Not older than" exclusion rule'
 
+upload_file_from_stdin just/some/files/1.txt <<-EOF
+  Hello World.
+EOF
 # reset Last-Modified timestamp on this one file
 upload_file_from_stdin just/some/files/2.txt <<-EOF
   Hello Second World.
@@ -27,6 +30,8 @@ mirror <<-EOF
 EOF
 
 expect test23 <<-EOF
+>> just/some/files/1.txt
+Hello World.
 >> just/some/files/2.txt
 Hello Second World.
 EOF
