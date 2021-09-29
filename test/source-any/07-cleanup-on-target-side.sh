@@ -12,6 +12,9 @@ step 'Test 07: Cleanup on target side'
 upload_file_from_stdin just/some/files/1.txt <<-EOF
   Hello World.
 EOF
+upload_file_from_stdin just/some/files/2.txt <<-EOF
+  Hello Second World.
+EOF
 
 upload_target_file_from_stdin test07 ignored.txt <<-EOF
   This file does not get cleaned up because it's not below object_prefix.
