@@ -30,7 +30,7 @@ http)
   done
   ;;
 swift)
-  for file in source-{any,http}/*.sh; do
+  for file in source-{any,swift}/*.sh; do
     # shellcheck disable=SC1090
     source "$file"
   done
