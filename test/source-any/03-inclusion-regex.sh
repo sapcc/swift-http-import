@@ -15,6 +15,9 @@ EOF
 upload_file_from_stdin just/some/files/2.txt <<-EOF
   Hello Second World.
 EOF
+upload_file_from_stdin just/another/file.txt <<-EOF
+  Hello Another World.
+EOF
 
 mirror <<-EOF
   swift: { $AUTH_PARAMS }

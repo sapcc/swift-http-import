@@ -13,6 +13,9 @@ step 'Test 23: "Not older than" exclusion rule'
 upload_file_from_stdin just/some/files/1.txt <<-EOF
   Hello World.
 EOF
+
+sleep 15 # I know it is ugly
+
 # reset Last-Modified timestamp on this one file
 upload_file_from_stdin just/some/files/2.txt <<-EOF
   Hello Second World.
@@ -26,12 +29,10 @@ mirror <<-EOF
         container: ${CONTAINER_BASE}-test23
       only: '^just/$|some/'
       match:
-        not_older_than: 30 seconds
+        not_older_than: 15 seconds
 EOF
 
 expect test23 <<-EOF
->> just/some/files/1.txt
-Hello World.
 >> just/some/files/2.txt
 Hello Second World.
 EOF
