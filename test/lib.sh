@@ -40,7 +40,7 @@ cleanup_containers() {
     if [ "${CONTAINER_NAME}" = "${CONTAINER_PUBLIC}" ]; then
       # macOS's xargs does not support -r
       if [[ "$(uname -s)" != "Darwin" ]]; then
-        xargs() { command xargs -r; }
+        xargs() { command xargs -r "$@"; }
       fi
       # do not delete the public container itself; want to keep the metadata
       swift list "${CONTAINER_NAME}" | xargs swift delete "${CONTAINER_NAME}"
