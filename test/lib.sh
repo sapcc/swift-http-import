@@ -1,14 +1,12 @@
 #!/usr/bin/env bash
 
 # exit early if we already sourced the lib
-if [[ ${LIB_SOURCED:-} == 1 ]]; then
-  return
-fi
+[[ ${LIB_SOURCED:-} == 1 ]] && return
 
 SLEEP=${SLEEP:-1}
 # container names
-DISAMBIGUATOR="$(date +%s)"
-CONTAINER_PUBLIC="swift-http-import-source"
+DISAMBIGUATOR="$(date +%s)-$RANDOM"
+CONTAINER_PUBLIC="swift-http-import-source-${DISAMBIGUATOR}"
 CONTAINER_BASE="swift-http-import-${DISAMBIGUATOR}"
 # a temporary file that is used for various purposes
 TEST_DIR="$(mktemp -d)"
@@ -37,7 +35,7 @@ step() {
 cleanup_containers() {
   for CONTAINER_NAME in $(swift list | grep "^swift-http-import"); do
     step "Cleaning up container ${CONTAINER_NAME}"
-    if [ "${CONTAINER_NAME}" = "${CONTAINER_PUBLIC}" ]; then
+    if [[ "${CONTAINER_NAME}" == "${CONTAINER_PUBLIC}" ]]; then
       # macOS's xargs does not support -r
       if [[ "$(uname -s)" != "Darwin" ]]; then
         xargs() { command xargs -r "$@"; }
@@ -50,13 +48,10 @@ cleanup_containers() {
   done
 }
 
-cleanup_containers
-
 # cleanup when exiting the script early
-trap 'cleanup_containers; rm -rf $TEST_DIR' EXIT
+trap 'rm -rf $TEST_DIR' EXIT INT TERM
 
 ################################################################################
-step 'Preparing source container'
 
 upload_file_from_stdin() {
   # `swift upload` is stupid; it will stubbornly refuse any pipes or FIFOs and
@@ -67,16 +62,23 @@ upload_file_from_stdin() {
   swift upload "${CONTAINER_PUBLIC}" "${TEST_FILENAME}" --object-name "${DISAMBIGUATOR}/${OBJECT_NAME}" "$@"
 }
 
-swift post "${CONTAINER_PUBLIC}" -r '.r:*,.rlistings' -m 'web-listings: true'
-sleep "$SLEEP" # wait for container listing to get updated
+setup() {
+  step 'Preparing source container'
 
-# get public HTTP URL for container
-SOURCE_URL="$(swift stat -v "${CONTAINER_PUBLIC}" | awk '$1=="URL:"{print$2}')/${DISAMBIGUATOR}"
-if [[ "${SOURCE_TYPE:-}" == swift ]]; then
-  SOURCE_SPEC="{ container: \"${CONTAINER_PUBLIC}\", object_prefix: \"${DISAMBIGUATOR}\", ${AUTH_PARAMS} }"
-else
-  SOURCE_SPEC="{ url: \"${SOURCE_URL}/\" }"
-fi
+  swift post "${CONTAINER_PUBLIC}" -r '.r:*,.rlistings' -m 'web-listings: true'
+  sleep "$SLEEP" # wait for container listing to get updated
+
+  # get public HTTP URL for container
+  SOURCE_URL="$(swift stat -v "${CONTAINER_PUBLIC}" | awk '$1 == "URL:"{ print $2 }')/${DISAMBIGUATOR}"
+  if [[ $SOURCE_TYPE == swift ]]; then
+    export SOURCE_SPEC="{ container: \"${CONTAINER_PUBLIC}\", object_prefix: \"${DISAMBIGUATOR}\", ${AUTH_PARAMS} }"
+  elif [[ $SOURCE_TYPE == http ]]; then
+    export SOURCE_SPEC="{ url: \"${SOURCE_URL}/\" }"
+  else
+    echo "\$SOURCE_TYPE needs to be set"
+    exit 1
+  fi
+}
 
 ################################################################################
 # functions for tests
