@@ -70,12 +70,15 @@ setup() {
 
   # get public HTTP URL for container
   SOURCE_URL="$(swift stat -v "${CONTAINER_PUBLIC}" | awk '$1 == "URL:"{ print $2 }')/${DISAMBIGUATOR}"
-  if [[ $SOURCE_TYPE == swift ]]; then
+
+  # if SOURCE_TYPE is unset try loading it from the $1
+  SOURCE_TYPE=${SOURCE_TYPE:-$1}
+  if [[ ${SOURCE_TYPE:-} == swift ]]; then
     export SOURCE_SPEC="{ container: \"${CONTAINER_PUBLIC}\", object_prefix: \"${DISAMBIGUATOR}\", ${AUTH_PARAMS} }"
-  elif [[ $SOURCE_TYPE == http ]]; then
+  elif [[ ${SOURCE_TYPE:-} == http ]]; then
     export SOURCE_SPEC="{ url: \"${SOURCE_URL}/\" }"
   else
-    echo "\$SOURCE_TYPE needs to be set"
+    echo "\$SOURCE_TYPE needs to be set to either \`http\` or \`swift\`. You can either export the variable or supply the value as the first argument."
     exit 1
   fi
 }
