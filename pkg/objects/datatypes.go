@@ -36,28 +36,30 @@ import (
 //"<value> <unit>", e.g. "4 days" or "2 weeks".
 type AgeSpec time.Duration
 
-var ageSpecRx = regexp.MustCompile(`^\s*([0-9]+)\s*(\w+)\s*$`)
-var ageSpecUnits = map[string]time.Duration{
-	"seconds": time.Second,
-	"second":  time.Second,
-	"s":       time.Second,
+var (
+	ageSpecRx    = regexp.MustCompile(`^\s*([0-9]+)\s*(\w+)\s*$`)
+	ageSpecUnits = map[string]time.Duration{
+		"seconds": time.Second,
+		"second":  time.Second,
+		"s":       time.Second,
 
-	"minutes": time.Minute,
-	"minute":  time.Minute,
-	"m":       time.Minute,
+		"minutes": time.Minute,
+		"minute":  time.Minute,
+		"m":       time.Minute,
 
-	"hours": time.Hour,
-	"hour":  time.Hour,
-	"h":     time.Hour,
+		"hours": time.Hour,
+		"hour":  time.Hour,
+		"h":     time.Hour,
 
-	"days": 24 * time.Hour,
-	"day":  24 * time.Hour,
-	"d":    24 * time.Hour,
+		"days": 24 * time.Hour,
+		"day":  24 * time.Hour,
+		"d":    24 * time.Hour,
 
-	"weeks": 24 * 7 * time.Hour,
-	"week":  24 * 7 * time.Hour,
-	"w":     24 * 7 * time.Hour,
-}
+		"weeks": 24 * 7 * time.Hour,
+		"week":  24 * 7 * time.Hour,
+		"w":     24 * 7 * time.Hour,
+	}
+)
 
 //UnmarshalYAML implements the yaml.Unmarshaler interface.
 func (a *AgeSpec) UnmarshalYAML(unmarshal func(interface{}) error) error {

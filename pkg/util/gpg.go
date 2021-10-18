@@ -207,7 +207,7 @@ var (
 	errNoSuchPublicKey = errors.New("no such public key")
 )
 
-func getPublicKeyFromServer(id string, uri string) ([]byte, error) {
+func getPublicKeyFromServer(id, uri string) ([]byte, error) {
 	resp, err := http.Get(uri)
 	if err != nil {
 		return nil, err
