@@ -16,34 +16,35 @@ fi
 # shellcheck source=lib.sh disable=SC1091
 source lib.sh
 
-cleanup_containers
-
 # cleanup when exiting the script early
 trap 'for pid in "${pids[@]}"; do kill "$pid" &>/dev/null || true; done; cleanup_containers' EXIT
 
 start_test() {
-  bash -c "export SOURCE_TYPE=$SOURCE_TYPE && source lib.sh && setup && source $1" &
-  pids+=($!)
+  # NOTE: running tests in parallel appears to be unstable, so do not do it by default
+  if [ "${PARALLEL:-false}" = true ]; then
+    bash -c "export SOURCE_TYPE=$SOURCE_TYPE && source lib.sh && setup && source $1" &
+    pids+=($!)
+  else
+    bash -c "export SOURCE_TYPE=$SOURCE_TYPE && source lib.sh && setup && source $1"
+  fi
 }
 
 case "$1" in
 all)
   for source in http swift; do
-    ./run.sh "$source" &
-    pids+=($!)
+    if [ "${PARALLEL:-false}" = true ]; then
+      ./run.sh "$source" &
+      pids+=($!)
+    else
+      ./run.sh "$source"
+    fi
   done
   ;;
-http)
+http|swift)
   export SOURCE_TYPE=$1
+  cleanup_containers
   setup
-  for file in source-{any,http}/*.sh; do
-    start_test "$file"
-  done
-  ;;
-swift)
-  export SOURCE_TYPE=$1
-  setup
-  for file in source-{any,swift}/*.sh; do
+  for file in source-{any,$1}/*.sh; do
     start_test "$file"
   done
   ;;

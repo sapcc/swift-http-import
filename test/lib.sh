@@ -3,6 +3,9 @@
 # exit early if we already sourced the lib
 [[ ${LIB_SOURCED:-} == 1 ]] && return
 
+# if SOURCE_TYPE is unset try loading it from the $1
+SOURCE_TYPE=${SOURCE_TYPE:-${1:-unknown}}
+
 SLEEP=${SLEEP:-1}
 # container names
 DISAMBIGUATOR="$(date +%s)-$RANDOM"
@@ -29,7 +32,7 @@ eval "$(swift auth)"
 # cleanup from previous test runs
 
 step() {
-  printf "\e[1;36m>>\e[0;36m %s...\e[0m\n" "$@"
+  printf "\e[1;36m>>\e[0;36m [${SOURCE_TYPE} source] %s...\e[0m\n" "$@"
 }
 
 cleanup_containers() {
@@ -71,8 +74,6 @@ setup() {
   # get public HTTP URL for container
   SOURCE_URL="$(swift stat -v "${CONTAINER_PUBLIC}" | awk '$1 == "URL:"{ print $2 }')/${DISAMBIGUATOR}"
 
-  # if SOURCE_TYPE is unset try loading it from the $1
-  SOURCE_TYPE=${SOURCE_TYPE:-$1}
   if [[ ${SOURCE_TYPE:-} == swift ]]; then
     export SOURCE_SPEC="{ container: \"${CONTAINER_PUBLIC}\", object_prefix: \"${DISAMBIGUATOR}\", ${AUTH_PARAMS} }"
   elif [[ ${SOURCE_TYPE:-} == http ]]; then
