@@ -5,6 +5,7 @@ if [[ ! -v LIB_SOURCED ]]; then
   cd "$(readlink -f "$(dirname "$0")")/.."
   # shellcheck disable=SC1090,SC1091
   source lib.sh
+  setup "$@"
 fi
 
 step 'Test 08: "simplistic_comparison" config option'
