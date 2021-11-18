@@ -20,7 +20,7 @@ build-all: build/swift-http-import
 
 GO_BUILDFLAGS = -mod vendor
 GO_LDFLAGS = -X github.com/sapcc/swift-http-import/pkg/util.Version=$(shell util/find_version.sh)
-GO_TESTENV = 
+GO_TESTENV =
 
 build/swift-http-import: FORCE
 	go build $(GO_BUILDFLAGS) -ldflags '-s -w $(GO_LDFLAGS)' -o build/swift-http-import .
@@ -52,10 +52,22 @@ check: build-all static-check build/cover.html FORCE
 
 static-check: FORCE
 	@if ! hash staticcheck 2>/dev/null; then printf "\e[1;36m>> Installing staticcheck...\e[0m\n"; go install honnef.co/go/tools/cmd/staticcheck@latest; fi
+	@if ! hash exportloopref 2>/dev/null; then printf "\e[1;36m>> Installing exportloopref...\e[0m\n"; go install github.com/kyoh86/exportloopref/cmd/exportloopref@latest; fi
+	@if ! hash rowserrcheck 2>/dev/null; then printf "\e[1;36m>> Installing exportloopref...\e[0m\n"; go install github.com/jingyugao/rowserrcheck@latest; fi
+	@if ! hash unconvert 2>/dev/null; then printf "\e[1;36m>> Installing unparam...\e[0m\n"; go install github.com/mdempsky/unconvert@latest; fi
+	@if ! hash unparam 2>/dev/null; then printf "\e[1;36m>> Installing unparam...\e[0m\n"; go install mvdan.cc/unparam@latest; fi
 	@printf "\e[1;36m>> gofmt\e[0m\n"
 	@if s="$$(gofmt -s -d $(GO_ALLFILES) 2>/dev/null)" && test -n "$$s"; then echo "$$s"; false; fi
 	@printf "\e[1;36m>> staticcheck\e[0m\n"
 	@staticcheck -checks 'inherit,-ST1015' $(GO_ALLPKGS)
+	@printf "\e[1;36m>> exportloopref\e[0m\n"
+	@exportloopref $(GO_ALLPKGS)
+	@printf "\e[1;36m>> rowserrcheck\e[0m\n"
+	@rowserrcheck $(GO_ALLPKGS)
+	@printf "\e[1;36m>> unconvert\e[0m\n"
+	@unconvert $(GO_ALLPKGS)
+	@printf "\e[1;36m>> unparam\e[0m\n"
+	@unparam $(GO_ALLPKGS)
 	@printf "\e[1;36m>> go vet\e[0m\n"
 	@go vet $(GO_BUILDFLAGS) $(GO_ALLPKGS)
 
