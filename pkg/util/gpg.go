@@ -187,7 +187,7 @@ func (k *GPGKeyRing) getPublicKey(id string) ([]byte, error) {
 
 	for i, v := range k.KeyserverURLPatterns {
 		url := strings.Replace(v, "{keyid}", id, -1)
-		buf, err := getPublicKeyFromServer(id, url)
+		buf, err := getPublicKeyFromServer(url)
 		if err == nil {
 			return uploadPublicKey(k.SwiftContainer, buf)
 		}
@@ -207,7 +207,7 @@ var (
 	errNoSuchPublicKey = errors.New("no such public key")
 )
 
-func getPublicKeyFromServer(id, uri string) ([]byte, error) {
+func getPublicKeyFromServer(uri string) ([]byte, error) {
 	resp, err := http.Get(uri)
 	if err != nil {
 		return nil, err
