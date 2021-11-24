@@ -24,9 +24,9 @@ import (
 	"crypto/x509"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
 	"path"
 	"path/filepath"
 	"regexp"
@@ -190,7 +190,7 @@ func (u *URLSource) Connect(name string) error {
 
 	if u.ServerCAPath != "" {
 		// Load server CA cert
-		serverCA, err := ioutil.ReadFile(u.ServerCAPath)
+		serverCA, err := os.ReadFile(u.ServerCAPath)
 		if err != nil {
 			return fmt.Errorf("cannot load CA certificate from %s: %s", u.ServerCAPath, err.Error())
 		}
@@ -388,7 +388,7 @@ func (u URLSource) getFileContents(path string, cache map[string]FileSpec) (cont
 	}
 	defer resp.Body.Close()
 
-	result, err := ioutil.ReadAll(resp.Body)
+	result, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, uri, &ListEntriesError{uri, "GET failed", err}
 	}

@@ -25,7 +25,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"regexp"
 	"strings"
@@ -127,7 +126,7 @@ func (k *GPGKeyRing) verifyGPGSignature(message []byte, signature *armor.Block) 
 	}
 
 	var publicKeyBytes []byte
-	signatureBytes, err := ioutil.ReadAll(signature.Body)
+	signatureBytes, err := io.ReadAll(signature.Body)
 	if err != nil {
 		return err
 	}
@@ -214,7 +213,7 @@ func getPublicKeyFromServer(uri string) ([]byte, error) {
 	}
 	defer resp.Body.Close()
 
-	b, err := ioutil.ReadAll(resp.Body)
+	b, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}

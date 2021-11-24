@@ -21,7 +21,7 @@ package objects
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"regexp"
 	"time"
 
@@ -44,7 +44,7 @@ type Configuration struct {
 
 //ReadConfiguration reads the configuration file.
 func ReadConfiguration(path string) (*Configuration, []error) {
-	configBytes, err := ioutil.ReadFile(path)
+	configBytes, err := os.ReadFile(path)
 	if err != nil {
 		return nil, []error{err}
 	}

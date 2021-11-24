@@ -22,7 +22,6 @@ package objects
 import (
 	"bytes"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"time"
 
@@ -253,7 +252,7 @@ func (s FileSpec) toTransferFormat(requestHeaders schwift.ObjectHeaders) (io.Rea
 		sourceState.SkipTransfer = targetMtime.Equal(sourceMtime)
 	}
 
-	return ioutil.NopCloser(bytes.NewReader(s.Contents)), sourceState, nil
+	return io.NopCloser(bytes.NewReader(s.Contents)), sourceState, nil
 }
 
 //StatusSwiftRateLimit is the non-standard HTTP status code used by Swift to

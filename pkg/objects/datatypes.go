@@ -24,7 +24,7 @@ import (
 	"compress/gzip"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"regexp"
 	"strconv"
 	"time"
@@ -98,7 +98,7 @@ func decompressGZipArchive(buf []byte) ([]byte, error) {
 		return nil, errors.New("error while decompressing GZip archive: " + err.Error())
 	}
 
-	decompBuf, err := ioutil.ReadAll(reader)
+	decompBuf, err := io.ReadAll(reader)
 	if err != nil {
 		return nil, errors.New("error while decompressing GZip archive: " + err.Error())
 	}
@@ -116,7 +116,7 @@ func decompressXZArchive(buf []byte) ([]byte, error) {
 		return nil, errors.New("error while decompressing XZ archive: " + err.Error())
 	}
 
-	decompBuf, err := ioutil.ReadAll(reader)
+	decompBuf, err := io.ReadAll(reader)
 	if err != nil {
 		return nil, errors.New("error while decompressing XZ archive: " + err.Error())
 	}
