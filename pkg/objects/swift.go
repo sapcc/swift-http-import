@@ -244,7 +244,7 @@ func (s *SwiftLocation) ObjectAtPath(path string) *schwift.Object {
 		} else {
 			isPseudoDir = strings.HasSuffix(objectName, "/")
 		}
-		objectName = filepath.Join(s.ObjectNamePrefix, objectName)
+		objectName = s.ObjectNamePrefix + objectName
 		if isPseudoDir {
 			objectName += "/"
 		}
