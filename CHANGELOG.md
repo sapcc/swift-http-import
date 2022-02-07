@@ -1,3 +1,8 @@
+# v2.9.0 (TBD)
+
+Bugfixes:
+- Fixed transfer of objects from swift source when object name is not a well-formed path. For example, an object name like "a///b" is not wrongly normalized into "a/b" anymore.
+
 # v2.8.0 (2021-08-11)
 
 New features:

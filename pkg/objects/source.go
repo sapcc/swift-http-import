@@ -89,10 +89,16 @@ const (
 	ErrMessageGPGVerificationFailed = "error while verifying GPG signature"
 )
 
-//ErrListAllFilesNotSupported is returned by ListAllFiles() for sources that do
-//not support it.
+//ErrListAllFilesNotSupported is returned by ListAllFiles() for sources that
+//only support ListEntries().
 var ErrListAllFilesNotSupported = &ListEntriesError{
 	Message: "ListAllFiles not supported by this source",
+}
+
+//ErrListEntriesNotSupported is returned by ListEntries() for sources that only
+//support ListAllFiles().
+var ErrListEntriesNotSupported = &ListEntriesError{
+	Message: "ListEntries not supported by this source",
 }
 
 //FileState is used by Source.GetFile() to describe the state of a file.
