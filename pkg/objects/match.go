@@ -94,9 +94,9 @@ func (m Matcher) CheckFile(spec FileSpec) error {
 //For example, CheckRecursive("a/b/c") calls Check("a/"), "Check("a/b/") and
 //Check("a/b/c").
 func (m Matcher) CheckRecursive(path string, lastModified *time.Time) error {
-	steps := strings.Split(filepath.Clean(path), "/")
+	steps := strings.SplitAfter(path, "/")
 	for i := 1; i < len(steps); i++ {
-		err := m.Check(filepath.Join(steps[0:i]...)+"/", nil)
+		err := m.Check(strings.Join(steps[0:i], ""), nil)
 		if err != nil {
 			return err
 		}

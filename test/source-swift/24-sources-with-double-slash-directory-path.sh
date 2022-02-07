@@ -14,6 +14,9 @@ step 'Test 24: Swift sources with double slash directory path'
 upload_file_from_stdin pseudo//directory/file.txt <<-EOF
   Hello File.
 EOF
+upload_file_from_stdin pseudo//directory2/file.txt <<-EOF
+  Hello File.
+EOF
 
 mirror <<-EOF
   swift: { $AUTH_PARAMS }
@@ -21,10 +24,14 @@ mirror <<-EOF
     - from: ${SOURCE_SPEC}
       to:
         container: ${CONTAINER_BASE}-test24
-      only: pseudo/
+      except: pseudo//
+    - from: ${SOURCE_SPEC}
+      to:
+        container: ${CONTAINER_BASE}-test24
+      only: "/$|//directory2"
 EOF
 
 expect test24 <<-EOF
->> pseudo//directory/file.txt
+>> pseudo//directory2/file.txt
 Hello File.
 EOF
