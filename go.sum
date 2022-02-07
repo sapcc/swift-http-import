@@ -16,6 +16,8 @@ github.com/jpillora/longestcommon v0.0.0-20161227235612-adb9d91ee629/go.mod h1:m
 github.com/kjk/lzma v0.0.0-20161016003348-3fd93898850d/go.mod h1:phT/jsRPBAEqjAibu1BurrabCBNTYiVI+zbmyCZJY6Q=
 github.com/majewsky/schwift v1.0.0 h1:7QrjGoRwWApcERUwRIkZaTWbSwa+6SEdI+CTafUYpxg=
 github.com/majewsky/schwift v1.0.0/go.mod h1:U9hKxikTsGLp4m0lI3oOcz2GtsLvD7kbgW7go2fdumg=
+github.com/majewsky/schwift v1.1.0 h1:+d9nhlirFsWRi2PgDWumAjFjY+OsbrMJSwiPljHaJ8M=
+github.com/majewsky/schwift v1.1.0/go.mod h1:U9hKxikTsGLp4m0lI3oOcz2GtsLvD7kbgW7go2fdumg=
 github.com/mitchellh/go-homedir v1.1.0/go.mod h1:SfyaCUpYCn1Vlf4IUYiD9fPX4A5wJrkLzIz1N1q0pr0=
 github.com/sapcc/go-bits v0.0.0-20220204120448-40f0b29218db h1:yeuVT13U5thlzCdTj1/7CnUf//si3+5bPxQr5HjjTyI=
 github.com/sapcc/go-bits v0.0.0-20220204120448-40f0b29218db/go.mod h1:Q3azgrNnSmcGHuqrMmo8+M+WHlU9CEK8cSh2rBVe+8M=
