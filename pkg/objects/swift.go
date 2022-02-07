@@ -23,7 +23,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -279,29 +278,7 @@ func (s *SwiftLocation) ListAllFiles(out chan<- FileSpec) *ListEntriesError {
 
 //ListEntries implements the Source interface.
 func (s *SwiftLocation) ListEntries(path string) ([]FileSpec, *ListEntriesError) {
-	objectPath := filepath.Join(s.ObjectNamePrefix, strings.TrimPrefix(path, "/"))
-	if objectPath != "" && !strings.HasSuffix(objectPath, "/") {
-		objectPath += "/"
-	}
-	logg.Debug("listing objects at %s/%s", s.ContainerName, objectPath)
-
-	iter := s.Container.Objects()
-	iter.Prefix = objectPath
-	iter.Delimiter = "/"
-	objectInfos, err := iter.CollectDetailed()
-	if err != nil {
-		return nil, &ListEntriesError{
-			Location: s.ContainerName + "/" + objectPath,
-			Message:  "GET failed",
-			Inner:    err,
-		}
-	}
-
-	result := make([]FileSpec, len(objectInfos))
-	for idx, info := range objectInfos {
-		result[idx] = s.getFileSpec(info)
-	}
-	return result, nil
+	return nil, ErrListEntriesNotSupported
 }
 
 func (s *SwiftLocation) getFileSpec(info schwift.ObjectInfo) FileSpec {
