@@ -234,21 +234,7 @@ func (s *SwiftLocation) Connect(name string) error {
 //(below the ObjectNamePrefix, if any) in this container.
 func (s *SwiftLocation) ObjectAtPath(path string) *schwift.Object {
 	objectName := strings.TrimPrefix(path, "/")
-	if s.ObjectNamePrefix != "" {
-		var isPseudoDir bool
-		if objectName == "" {
-			//this means that the object refers to a pseudo-directory
-			//with the same name as the specified ObjectNamePrefix
-			isPseudoDir = true
-		} else {
-			isPseudoDir = strings.HasSuffix(objectName, "/")
-		}
-		objectName = s.ObjectNamePrefix + objectName
-		if isPseudoDir {
-			objectName += "/"
-		}
-	}
-	return s.Container.Object(objectName)
+	return s.Container.Object(s.ObjectNamePrefix + objectName)
 }
 
 //ListAllFiles implements the Source interface.
