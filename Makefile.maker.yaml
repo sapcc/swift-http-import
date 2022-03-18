@@ -11,14 +11,18 @@ variables:
 vendoring:
   enabled: true
 
+spellCheck:
+  ignoreWords: ["transfered"] # excluding because some metrics have it in their name
+
 githubWorkflow:
   global:
     ignorePaths: ["**.md"] # all Markdown files
+  codeQL:
+    enabled: true
   license:
     enabled: true
   spellCheck:
     enabled: true
-    ignoreWords: ["transfered"] # excluding because some metrics have it in their name
     ignorePaths: [] # override global setting so that nothing is ignored
 
 verbatim: |
