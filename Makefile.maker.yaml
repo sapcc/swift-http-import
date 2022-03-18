@@ -11,6 +11,9 @@ variables:
 vendoring:
   enabled: true
 
+golangciLint:
+  createConfig: true
+
 spellCheck:
   ignoreWords: ["transfered"] # excluding because some metrics have it in their name
 
