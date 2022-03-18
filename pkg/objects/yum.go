@@ -28,6 +28,7 @@ import (
 
 	"github.com/majewsky/schwift"
 	"github.com/sapcc/go-bits/logg"
+
 	"github.com/sapcc/swift-http-import/pkg/util"
 )
 

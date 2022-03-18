@@ -25,6 +25,7 @@ import (
 
 	"github.com/cactus/go-statsd-client/v4/statsd"
 	"github.com/sapcc/go-bits/logg"
+
 	"github.com/sapcc/swift-http-import/pkg/objects"
 )
 
