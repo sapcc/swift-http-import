@@ -23,6 +23,7 @@ import (
 	"context"
 
 	"github.com/sapcc/go-bits/logg"
+
 	"github.com/sapcc/swift-http-import/pkg/objects"
 )
 

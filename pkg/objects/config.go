@@ -26,8 +26,9 @@ import (
 	"time"
 
 	"github.com/majewsky/schwift"
-	"github.com/sapcc/swift-http-import/pkg/util"
 	yaml "gopkg.in/yaml.v2"
+
+	"github.com/sapcc/swift-http-import/pkg/util"
 )
 
 //Configuration contains the contents of the configuration file.

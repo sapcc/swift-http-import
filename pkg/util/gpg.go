@@ -33,13 +33,13 @@ import (
 	"github.com/majewsky/schwift"
 	"github.com/sapcc/go-bits/logg"
 
-	//lint:ignore SA1019 We cannot switch to the Protonmail fork because we need support for old v3 signatures as found in SLES12 packages.
+	//nolint:staticcheck // We cannot switch to the Protonmail fork because we need support for old v3 signatures as found in SLES12 packages.
 	"golang.org/x/crypto/openpgp"
-	//lint:ignore SA1019 see above
+	//nolint:staticcheck // see above
 	"golang.org/x/crypto/openpgp/armor"
-	//lint:ignore SA1019 see above
+	//nolint:staticcheck // see above
 	"golang.org/x/crypto/openpgp/clearsign"
-	//lint:ignore SA1019 see above
+	//nolint:staticcheck // see above
 	"golang.org/x/crypto/openpgp/packet"
 )
 

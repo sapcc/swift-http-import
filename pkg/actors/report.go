@@ -25,6 +25,7 @@ import (
 
 	"github.com/cactus/go-statsd-client/v4/statsd"
 	"github.com/sapcc/go-bits/logg"
+
 	"github.com/sapcc/swift-http-import/pkg/objects"
 )
 
@@ -133,19 +134,19 @@ func (r *Report) Run() {
 	} else {
 		gauge = func(bucket string, value int64, rate float32) error { return nil }
 	}
-	gauge("last_run.jobs_skipped", r.stats.JobsSkipped, 1.0)
-	gauge("last_run.dirs_scanned", r.stats.DirectoriesScanned, 1.0)
-	gauge("last_run.files_found", r.stats.FilesFound, 1.0)
-	gauge("last_run.files_transfered", r.stats.FilesTransferred, 1.0)
-	gauge("last_run.files_failed", r.stats.FilesFailed, 1.0)
-	gauge("last_run.files_cleaned_up", r.stats.FilesCleanedUp, 1.0)
-	gauge("last_run.bytes_transfered", r.stats.BytesTransferred, 1.0)
-	if r.stats.FilesFailed > 0 || r.stats.DirectoriesFailed > 0 {
-		gauge("last_run.success", 0, 1.0)
+	gauge("last_run.jobs_skipped", r.stats.JobsSkipped, 1.0)          //nolint:errcheck
+	gauge("last_run.dirs_scanned", r.stats.DirectoriesScanned, 1.0)   //nolint:errcheck
+	gauge("last_run.files_found", r.stats.FilesFound, 1.0)            //nolint:errcheck
+	gauge("last_run.files_transfered", r.stats.FilesTransferred, 1.0) //nolint:errcheck
+	gauge("last_run.files_failed", r.stats.FilesFailed, 1.0)          //nolint:errcheck
+	gauge("last_run.files_cleaned_up", r.stats.FilesCleanedUp, 1.0)   //nolint:errcheck
+	gauge("last_run.bytes_transfered", r.stats.BytesTransferred, 1.0) //nolint:errcheck
+	if r.stats.FilesFailed > 0 || r.stats.DirectoriesFailed > 0 {     //nolint:errcheck
+		gauge("last_run.success", 0, 1.0) //nolint:errcheck
 		r.ExitCode = 1
 	} else {
-		gauge("last_run.success", 1, 1.0)
-		gauge("last_run.success_timestamp", time.Now().Unix(), 1.0)
+		gauge("last_run.success", 1, 1.0)                           //nolint:errcheck
+		gauge("last_run.success_timestamp", time.Now().Unix(), 1.0) //nolint:errcheck
 		r.ExitCode = 0
 	}
 
@@ -163,6 +164,6 @@ func (r *Report) Run() {
 	logg.Info("%d bytes transferred", r.stats.BytesTransferred)
 
 	r.stats.Duration = time.Since(r.StartTime)
-	gauge("last_run.duration_seconds", int64(r.stats.Duration.Seconds()), 1.0)
+	gauge("last_run.duration_seconds", int64(r.stats.Duration.Seconds()), 1.0) //nolint:errcheck
 	logg.Info("finished in %s", r.stats.Duration.String())
 }

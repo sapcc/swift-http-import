@@ -28,8 +28,9 @@ import (
 
 	"github.com/majewsky/schwift"
 	"github.com/sapcc/go-bits/logg"
-	"github.com/sapcc/swift-http-import/pkg/util"
 	"pault.ag/go/debian/control"
+
+	"github.com/sapcc/swift-http-import/pkg/util"
 )
 
 //'Packages' indices
@@ -219,7 +220,7 @@ func (s *DebianSource) listDistFiles(distRootPath string, cache map[string]FileS
 			Filename string `control:"Filename"`
 		}
 		//get package index from 'Packages.xz'
-		_, _, lerr := s.downloadAndParseDCF(pkgIndexPath+".xz", &packageIndex, cache)
+		_, _, lerr = s.downloadAndParseDCF(pkgIndexPath+".xz", &packageIndex, cache)
 		if lerr != nil {
 			//some older distros only have 'Packages.gz'
 			_, _, lerr = s.downloadAndParseDCF(pkgIndexPath+".gz", &packageIndex, cache)
@@ -241,7 +242,7 @@ func (s *DebianSource) listDistFiles(distRootPath string, cache map[string]FileS
 		}
 
 		//get source index from 'Sources.xz'
-		_, _, lerr := s.downloadAndParseDCF(srcIndexPath+".xz", &sourceIndex, cache)
+		_, _, lerr = s.downloadAndParseDCF(srcIndexPath+".xz", &sourceIndex, cache)
 		if lerr != nil {
 			//some older distros only have 'Sources.gz'
 			_, _, lerr = s.downloadAndParseDCF(srcIndexPath+".gz", &sourceIndex, cache)
@@ -261,7 +262,8 @@ func (s *DebianSource) listDistFiles(distRootPath string, cache map[string]FileS
 	//files have already been uploaded (to avoid situations where a client
 	//might see repository metadata without being able to see the referenced
 	//packages)
-	entries, lerr := s.recursivelyListEntries(distRootPath)
+	var entries []string
+	entries, lerr = s.recursivelyListEntries(distRootPath)
 	if lerr != nil {
 		if !strings.Contains(lerr.Message, "GET returned status 404") {
 			return nil, lerr
