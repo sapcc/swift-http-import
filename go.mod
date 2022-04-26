@@ -10,7 +10,7 @@ require (
 	github.com/sapcc/go-bits v0.0.0-20220422143146-28336182f358
 	github.com/ulikunitz/xz v0.5.10
 	golang.org/x/crypto v0.0.0-20220411220226-7b82a4e95df4
-	golang.org/x/net v0.0.0-20220421235706-1d1ef9303861
+	golang.org/x/net v0.0.0-20220425223048-2871e0cb64e4
 	gopkg.in/yaml.v2 v2.4.0
 	pault.ag/go/debian v0.12.0
 )
