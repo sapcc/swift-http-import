@@ -9,7 +9,7 @@ require (
 	github.com/majewsky/schwift v1.1.0
 	github.com/sapcc/go-bits v0.0.0-20220506113623-52eeaae77c14
 	github.com/ulikunitz/xz v0.5.10
-	golang.org/x/crypto v0.0.0-20220427172511-eb4f295cb31f
+	golang.org/x/crypto v0.0.0-20220507011949-2cf3adece122
 	golang.org/x/net v0.0.0-20220425223048-2871e0cb64e4
 	gopkg.in/yaml.v2 v2.4.0
 	pault.ag/go/debian v0.12.0
