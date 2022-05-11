@@ -23,7 +23,7 @@ github.com/jpillora/longestcommon
 github.com/majewsky/schwift
 github.com/majewsky/schwift/capabilities
 github.com/majewsky/schwift/gopherschwift
-# github.com/sapcc/go-bits v0.0.0-20220506231902-df94414a6255
+# github.com/sapcc/go-bits v0.0.0-20220511093204-023c56bdc361
 ## explicit; go 1.17
 github.com/sapcc/go-bits/httpee
 github.com/sapcc/go-bits/httpext
