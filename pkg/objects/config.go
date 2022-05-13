@@ -219,10 +219,11 @@ type Job struct {
 
 //Compile validates the given JobConfiguration, then creates and prepares a Job from it.
 func (cfg JobConfiguration) Compile(name string, swift SwiftLocation) (job *Job, errors []error) {
-	if cfg.Source.Source == nil {
+	jobSrc := cfg.Source.Source
+	if jobSrc == nil {
 		errors = append(errors, fmt.Errorf("missing value for %s.from", name))
 	} else {
-		errors = append(errors, cfg.Source.Source.Validate(name+".from")...)
+		errors = append(errors, jobSrc.Validate(name+".from")...)
 	}
 	if cfg.Target == nil {
 		errors = append(errors, fmt.Errorf("missing value for %s.to", name))
@@ -242,27 +243,27 @@ func (cfg JobConfiguration) Compile(name string, swift SwiftLocation) (job *Job,
 	}
 
 	if cfg.Match.NotOlderThan != nil {
-		_, isSwiftSource := cfg.Source.Source.(*SwiftLocation)
+		_, isSwiftSource := jobSrc.(*SwiftLocation)
 		if !isSwiftSource {
-			errors = append(errors, fmt.Errorf("invalid value for %s.match.not_older_than: this option is not supported for source type %T", name, cfg.Source.Source))
+			errors = append(errors, fmt.Errorf("invalid value for %s.match.not_older_than: this option is not supported for source type %T", name, jobSrc))
 		}
 	}
 
 	if cfg.Match.SimplisticComparison != nil {
-		_, isURLSource := cfg.Source.Source.(*URLSource)
-		_, isSwiftSource := cfg.Source.Source.(*SwiftLocation)
+		_, isURLSource := jobSrc.(*URLSource)
+		_, isSwiftSource := jobSrc.(*SwiftLocation)
 		if !isURLSource && !isSwiftSource {
-			errors = append(errors, fmt.Errorf("invalid value for %s.match.simplistic_comparison: this option is not supported for source type %T", name, cfg.Source.Source))
+			errors = append(errors, fmt.Errorf("invalid value for %s.match.simplistic_comparison: this option is not supported for source type %T", name, jobSrc))
 		}
 	}
 
-	_, isYumSource := cfg.Source.Source.(*YumSource)
+	_, isYumSource := jobSrc.(*YumSource)
 	if isYumSource {
-		cfg.Source.Source.(*YumSource).gpgKeyRing = cfg.gpgKeyRing
+		jobSrc.(*YumSource).gpgKeyRing = cfg.gpgKeyRing
 	}
-	_, isDebianSource := cfg.Source.Source.(*DebianSource)
+	_, isDebianSource := jobSrc.(*DebianSource)
 	if isDebianSource {
-		cfg.Source.Source.(*DebianSource).gpgKeyRing = cfg.gpgKeyRing
+		jobSrc.(*DebianSource).gpgKeyRing = cfg.gpgKeyRing
 	}
 
 	if cfg.Segmenting != nil {
@@ -289,7 +290,7 @@ func (cfg JobConfiguration) Compile(name string, swift SwiftLocation) (job *Job,
 	}
 
 	job = &Job{
-		Source:     cfg.Source.Source,
+		Source:     jobSrc,
 		Target:     cfg.Target,
 		Segmenting: cfg.Segmenting,
 		Expiration: cfg.Expiration,
