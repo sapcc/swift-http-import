@@ -264,7 +264,7 @@ func (s *SwiftLocation) ListAllFiles(out chan<- FileSpec) *ListEntriesError {
 }
 
 //ListEntries implements the Source interface.
-func (s *SwiftLocation) ListEntries(path string) ([]FileSpec, *ListEntriesError) {
+func (s *SwiftLocation) ListEntries(directoryPath string) ([]FileSpec, *ListEntriesError) {
 	return nil, ErrListEntriesNotSupported
 }
 

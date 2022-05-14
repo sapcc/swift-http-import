@@ -90,8 +90,8 @@ func (s *DebianSource) ListEntries(directoryPath string) ([]FileSpec, *ListEntri
 }
 
 //GetFile implements the Source interface.
-func (s *DebianSource) GetFile(directoryPath string, requestHeaders schwift.ObjectHeaders) (body io.ReadCloser, sourceState FileState, err error) {
-	return s.urlSource.GetFile(directoryPath, requestHeaders)
+func (s *DebianSource) GetFile(path string, requestHeaders schwift.ObjectHeaders) (body io.ReadCloser, sourceState FileState, err error) {
+	return s.urlSource.GetFile(path, requestHeaders)
 }
 
 //ListAllFiles implements the Source interface.

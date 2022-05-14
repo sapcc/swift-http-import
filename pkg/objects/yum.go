@@ -79,8 +79,8 @@ func (s *YumSource) ListEntries(directoryPath string) ([]FileSpec, *ListEntriesE
 }
 
 //GetFile implements the Source interface.
-func (s *YumSource) GetFile(directoryPath string, requestHeaders schwift.ObjectHeaders) (body io.ReadCloser, sourceState FileState, err error) {
-	return s.urlSource.GetFile(directoryPath, requestHeaders)
+func (s *YumSource) GetFile(path string, requestHeaders schwift.ObjectHeaders) (body io.ReadCloser, sourceState FileState, err error) {
+	return s.urlSource.GetFile(path, requestHeaders)
 }
 
 //ListAllFiles implements the Source interface.

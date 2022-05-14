@@ -59,7 +59,7 @@ type Source interface {
 	//GetFile retrieves the contents and metadata for the file at the given path
 	//in the source. The `headers` map contains additional HTTP request headers
 	//that shall be passed to the source in the GET request.
-	GetFile(directoryPath string, headers schwift.ObjectHeaders) (body io.ReadCloser, sourceState FileState, err error)
+	GetFile(path string, headers schwift.ObjectHeaders) (body io.ReadCloser, sourceState FileState, err error)
 }
 
 //ListEntriesError is an error that occurs while scraping a directory.
@@ -319,8 +319,8 @@ func (u URLSource) ListEntries(directoryPath string) ([]FileSpec, *ListEntriesEr
 }
 
 //GetFile implements the Source interface.
-func (u URLSource) GetFile(directoryPath string, requestHeaders schwift.ObjectHeaders) (io.ReadCloser, FileState, error) {
-	uri := u.getURLForPath(directoryPath).String()
+func (u URLSource) GetFile(path string, requestHeaders schwift.ObjectHeaders) (io.ReadCloser, FileState, error) {
+	uri := u.getURLForPath(path).String()
 	requestHeaders.Set("User-Agent", "swift-http-import/"+util.Version)
 
 	//retrieve file from source
@@ -361,9 +361,9 @@ func (u URLSource) GetFile(directoryPath string, requestHeaders schwift.ObjectHe
 	}, nil
 }
 
-//Return the URL for the given directoryPath below this URLSource.
-func (u URLSource) getURLForPath(directoryPath string) *url.URL {
-	return u.URL.ResolveReference(&url.URL{Path: strings.TrimPrefix(directoryPath, "/")})
+//Return the URL for the given path below this URLSource.
+func (u URLSource) getURLForPath(path string) *url.URL {
+	return u.URL.ResolveReference(&url.URL{Path: strings.TrimPrefix(path, "/")})
 }
 
 //Helper function for custom source types.
