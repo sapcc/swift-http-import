@@ -72,10 +72,7 @@ func (s *YumSource) Connect(name string) error {
 
 //ListEntries implements the Source interface.
 func (s *YumSource) ListEntries(directoryPath string) ([]FileSpec, *ListEntriesError) {
-	return nil, &ListEntriesError{
-		Location: s.urlSource.getURLForPath(directoryPath).String(),
-		Message:  "ListEntries is not implemented for YumSource",
-	}
+	return nil, ErrListEntriesNotSupported
 }
 
 //GetFile implements the Source interface.
