@@ -17,8 +17,8 @@ github.com/kjk/lzma v0.0.0-20161016003348-3fd93898850d/go.mod h1:phT/jsRPBAEqjAi
 github.com/majewsky/schwift v1.1.0 h1:+d9nhlirFsWRi2PgDWumAjFjY+OsbrMJSwiPljHaJ8M=
 github.com/majewsky/schwift v1.1.0/go.mod h1:U9hKxikTsGLp4m0lI3oOcz2GtsLvD7kbgW7go2fdumg=
 github.com/mitchellh/go-homedir v1.1.0/go.mod h1:SfyaCUpYCn1Vlf4IUYiD9fPX4A5wJrkLzIz1N1q0pr0=
-github.com/sapcc/go-bits v0.0.0-20220513163648-283c57b10c36 h1:TIo+wKaPBL3ZZC5nHq7qXJE629tIgDkBpWOqchaX9Ug=
-github.com/sapcc/go-bits v0.0.0-20220513163648-283c57b10c36/go.mod h1:MGOBK2AEzKK77tAUjiZRy1fspGYOnTxhWIawbUJ1OoE=
+github.com/sapcc/go-bits v0.0.0-20220517080651-baba74caa927 h1:ZfhXLap8Mrw6CI7FaKTFYuZ3sU7kn/p6nXhZrqXXGR4=
+github.com/sapcc/go-bits v0.0.0-20220517080651-baba74caa927/go.mod h1:RTT9iSHpmLc4CEnsK6TIBZ5WE1mewFP+7YjFrVZduLA=
 github.com/ulikunitz/xz v0.5.10 h1:t92gobL9l3HE202wg3rlk19F6X+JOxl9BBrCCMYEYd8=
 github.com/ulikunitz/xz v0.5.10/go.mod h1:nbz6k7qbPmH4IRqmfOplQw/tblSgqTqBwxkY0oWt/14=
 github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8/go.mod h1:HUYIGzjTL3rfEspMxjDjgmT5uz5wzYJKVo23qUhYTos=
