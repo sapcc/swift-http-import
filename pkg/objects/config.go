@@ -199,6 +199,8 @@ func (u *SourceUnmarshaler) UnmarshalYAML(unmarshal func(interface{}) error) err
 			u.Source = &YumSource{}
 		case "debian":
 			u.Source = &DebianSource{}
+		case "github-releases":
+			u.Source = &GithubReleaseSource{}
 		default:
 			return fmt.Errorf("unexpected value: type = %q", probe.Type)
 		}
@@ -244,7 +246,8 @@ func (cfg JobConfiguration) Compile(name string, swift SwiftLocation) (job *Job,
 
 	if cfg.Match.NotOlderThan != nil {
 		_, isSwiftSource := jobSrc.(*SwiftLocation)
-		if !isSwiftSource {
+		_, isGitHubReleaseSource := jobSrc.(*GithubReleaseSource)
+		if !isSwiftSource && !isGitHubReleaseSource {
 			errors = append(errors, fmt.Errorf("invalid value for %s.match.not_older_than: this option is not supported for source type %T", name, jobSrc))
 		}
 	}
@@ -317,6 +320,10 @@ func (cfg JobConfiguration) Compile(name string, swift SwiftLocation) (job *Job,
 		job.Matcher.NotOlderThan = &cutoff
 	}
 	job.Matcher.SimplisticComparison = cfg.Match.SimplisticComparison
+	_, isGitHubReleaseSource := jobSrc.(*GithubReleaseSource)
+	if isGitHubReleaseSource {
+		jobSrc.(*GithubReleaseSource).notOlderThan = job.Matcher.NotOlderThan
+	}
 
 	//do not try connecting to Swift if credentials are invalid etc.
 	if len(errors) > 0 {

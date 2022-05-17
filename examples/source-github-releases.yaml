@@ -1,0 +1,21 @@
+swift:
+  auth_url: https://my.keystone.local:5000/v3
+  user_name: uploader
+  user_domain_name: Default
+  project_name: datastore
+  project_domain_name: Default
+  password: 20g82rzg235oughq
+
+jobs:
+  - from:
+      url: https://github.com/sapcc/limesctl/
+      type: github-releases
+      token: ghp_asjdkajsdlbyaksjd2
+      tag_name_pattern: "^v[0-9]+.[0-9]+.[0-9]+$"
+      include_draft: false
+      include_prerelease: false
+    to:
+      container: github
+      object_prefix: sapcc/limesctl
+    match:
+      not_older_than: 12 weeks

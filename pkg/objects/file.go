@@ -42,9 +42,12 @@ type File struct {
 //downloaded contents and metadata in the remaining fields of the FileSpec to
 //avoid double download.
 type FileSpec struct {
-	Path        string
-	IsDirectory bool
-	//only set for files in Swift sources (otherwise nil)
+	Path string
+	// DownloadPath is set for files whose path for downloading their contents is
+	// different from the Path variable which denotes their actual file path.
+	DownloadPath string
+	IsDirectory  bool
+	//only set for files in Swift and GitHub release sources (otherwise nil)
 	LastModified *time.Time
 	//only set for symlinks (refers to a path below the ObjectPrefix in the same container)
 	SymlinkTargetPath string
@@ -154,7 +157,11 @@ func (f File) PerformTransfer() (TransferResult, int64) {
 		sourceState FileState
 	)
 	if f.Spec.Contents == nil {
-		body, sourceState, err = f.Job.Source.GetFile(f.Spec.Path, requestHeaders)
+		path := f.Spec.Path
+		if f.Spec.DownloadPath != "" {
+			path = f.Spec.DownloadPath
+		}
+		body, sourceState, err = f.Job.Source.GetFile(path, requestHeaders)
 	} else {
 		logg.Debug("using cached contents for %s", f.Spec.Path)
 		body, sourceState, err = f.Spec.toTransferFormat(requestHeaders)

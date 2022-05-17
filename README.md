@@ -238,6 +238,43 @@ jobs:
       object_prefix: ubuntu
 ```
 
+#### Github Releases
+
+If `jobs[].from.url` refers to a GitHub repository, setting `jobs[].from.type` to
+`github-releases` will cause `swift-http-import` to use GitHub's API to discover and
+download GitHub releases for the repository. Repositories hosted on a GitHub Enterprise
+instance are also supported.
+
+Since GitHub's API rate limits the number of requests per IP therefore it is
+**recommended** that you specify a GitHub personal access token in the `jobs[].from.token`
+field. Refer to the [GitHub API docs](https://docs.github.com/en/rest/overview/resources-in-the-rest-api#rate-limiting)
+for more info on its rate limiting. This field is **required** if the repository is hosted on a Github Enterprise instance instead of `github.com`.
+Instead of providing your token as plain text in the config file, you can use the
+`fromEnv` special syntax for the `jobs[].from.token` field. See [Alternative
+authentication options](#alternative-authentication-options) for more details.
+
+If a repository publishes GitHub releases using different tags, e.g. server components at
+`server-x.y.z` and client at `client-x.y.z`, and you only want to get releases whose tag
+matches a specific pattern then you can specify a regex for this in the
+`jobs[].from.tag_name_pattern` field. Only releases whose tag name matches this regex will
+be transferred.
+
+Prerelease and draft releases are not transferred by default. You can override this
+behavior by setting the `jobs[].from.include_prerelease` and `jobs[].from.include_draft`
+field to `true`.
+
+[Link to full example config file](./examples/source-debian.yaml)
+
+```yaml
+jobs:
+  - from:
+      url: https://github.com/sapcc/limesctl/
+      type: github-releases
+    to:
+      container: mirror
+      object_prefix: sapcc/limesctl
+```
+
 #### Swift
 
 Alternatively, the source in `jobs[].from` can also be a private Swift container if Swift credentials are specified
