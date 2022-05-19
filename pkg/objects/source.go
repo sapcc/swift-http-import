@@ -137,10 +137,24 @@ func (u *URLSource) Validate(name string) (result []error) {
 	if u.URLString == "" {
 		result = append(result, fmt.Errorf("missing value for %s.url", name))
 	} else {
+		//parse URL
 		var err error
-		u.URL, err = parseURL(u.URLString)
+		u.URL, err = url.Parse(u.URLString)
 		if err != nil {
-			result = append(result, fmt.Errorf("could not parse %s.url: %s", name, err.Error()))
+			result = append(result, fmt.Errorf("invalid value for %s.url: %s", name, err.Error()))
+		}
+
+		//URL must refer to a directory, i.e. have a trailing slash
+		if u.URL.Path == "" {
+			u.URL.Path = "/"
+			u.URL.RawPath = ""
+		}
+		if !strings.HasSuffix(u.URL.Path, "/") {
+			logg.Error("source URL '%s' does not have a trailing slash (adding one for now; this will become a fatal error in future versions)", u.URLString)
+			u.URL.Path += "/"
+			if u.URL.RawPath != "" {
+				u.URL.RawPath += "/"
+			}
 		}
 	}
 
@@ -397,26 +411,4 @@ func (u URLSource) getFileContents(path string, cache map[string]FileSpec) (cont
 	}
 
 	return result, uri, nil
-}
-
-func parseURL(rawURL string) (*url.URL, error) {
-	url, err := url.Parse(rawURL)
-	if err != nil {
-		return nil, err
-	}
-
-	//URL must refer to a directory, i.e. have a trailing slash
-	if url.Path == "" {
-		url.Path = "/"
-		url.RawPath = ""
-	}
-	if !strings.HasSuffix(url.Path, "/") {
-		logg.Error("source URL '%s' does not have a trailing slash (adding one for now; this will become a fatal error in future versions)", rawURL)
-		url.Path += "/"
-		if url.RawPath != "" {
-			url.RawPath += "/"
-		}
-	}
-
-	return url, nil
 }
