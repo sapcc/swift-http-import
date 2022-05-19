@@ -1,4 +1,4 @@
-# v2.9.0 (TBD)
+# v2.9.0 (2022-05-19)
 
 New features:
 - Add support for GitHub releases.

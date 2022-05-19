@@ -1,0 +1,25 @@
+builds:
+  - env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -X github.com/sapcc/swift-http-import/pkg/util.Version=={{.Version}}
+    mod_timestamp: "{{ .CommitTimestamp }}" # Ensure builds are reproducible
+
+snapshot:
+  name_template: "{{ .Tag }}-next"
+
+checksum:
+  name_template: "checksums.txt"
+
+archives:
+  - name_template: '{{ .ProjectName }}-{{ replace .Version "v" "" }}-{{ .Os }}-{{ .Arch }}'
+    format_overrides:
+      - goos: windows
+        format: zip

@@ -1,7 +1,9 @@
 # build artifacts
 /build
+/dist
 
 # for my own testing
 /.env
 /*.yaml
+!/.goreleaser.yaml
 !/Makefile.maker.yaml
