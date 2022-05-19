@@ -3,6 +3,9 @@
 New features:
 - Add support for GitHub releases.
 
+Changes:
+- Updated all dependencies to their latest versions.
+
 Bugfixes:
 - Fixed transfer of objects from swift source when object name is not a well-formed path. For example, an object name like "a///b" is not wrongly normalized into "a/b" anymore.
 
