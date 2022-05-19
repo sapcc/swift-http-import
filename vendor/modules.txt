@@ -45,7 +45,7 @@ golang.org/x/crypto/openpgp/elgamal
 golang.org/x/crypto/openpgp/errors
 golang.org/x/crypto/openpgp/packet
 golang.org/x/crypto/openpgp/s2k
-# golang.org/x/net v0.0.0-20220516155154-20f960328961
+# golang.org/x/net v0.0.0-20220517181318-183a9ca12b87
 ## explicit; go 1.17
 golang.org/x/net/html
 golang.org/x/net/html/atom
