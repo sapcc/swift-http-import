@@ -210,8 +210,10 @@ func (s *GithubReleaseSource) GetFile(path string, requestHeaders schwift.Object
 		req.Header.Set(key, val)
 	}
 	req.Header.Set("User-Agent", "swift-http-import/"+util.Version)
-	req.Header.Set("Authorization", fmt.Sprintf("token %s", s.Token))
 	req.Header.Set("Accept", "application/octet-stream")
+	if s.Token != "" {
+		req.Header.Set("Authorization", fmt.Sprintf("token %s", s.Token))
+	}
 	resp, err := s.httpClient.Do(req)
 	if err != nil {
 		return nil, FileState{}, fmt.Errorf("skipping %s: GET failed: %s", req.URL.String(), err.Error())
