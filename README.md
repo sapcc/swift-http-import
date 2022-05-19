@@ -272,7 +272,7 @@ field to `true`.
 ```yaml
 jobs:
   - from:
-      url: https://github.com/sapcc/limesctl/
+      url: https://github.com/sapcc/limesctl
       type: github-releases
     to:
       container: mirror

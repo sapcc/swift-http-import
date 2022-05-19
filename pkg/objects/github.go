@@ -61,28 +61,37 @@ type GithubReleaseSource struct {
 	notOlderThan *time.Time `yaml:"-"`
 }
 
-// githubRepoRx is used to extract repository owner and name from a URL.
+// githubRepoRx is used to extract repository owner and name from a url.URL.Path field.
 //
 // Example:
-//   Input: https://github.com/sapcc/swift-http-import
+//   Input: /sapcc/swift-http-import
 //   Match groups: ["sapcc", "swift-http-import"]
-var githubRepoRx = regexp.MustCompile(`^https?://[^\s/]+/([^\s/]+)/([^\s/]+)/$`)
+var githubRepoRx = regexp.MustCompile(`^/([^\s/]+)/([^\s/]+)/?$`)
 
 // Validate implements the Source interface.
 func (s *GithubReleaseSource) Validate(name string) []error {
-	mL := githubRepoRx.FindStringSubmatch(s.URLString)
+	var err error
+	s.url, err = url.Parse(s.URLString)
+	if err != nil {
+		return []error{fmt.Errorf("could not parse %s.url: %s", name, err.Error())}
+	}
+
+	// Validate URL.
+	errInvalidURL := fmt.Errorf("invalid value for %s.url: expected a url in the format %q, got: %q",
+		name, "http(s)://<hostname>/<owner>/<repo>", s.URLString)
+	if s.url.Scheme != "http" && s.url.Scheme != "https" {
+		return []error{errInvalidURL}
+	}
+	if s.url.RawQuery != "" || s.url.Fragment != "" {
+		return []error{errInvalidURL}
+	}
+	mL := githubRepoRx.FindStringSubmatch(s.url.Path)
 	if mL == nil {
-		return []error{fmt.Errorf("invalid value for %s.url: expected a url in the format %q, got: %q",
-			name, "http(s)://<hostname>/<owner>/<repo>/", s.URLString)}
+		return []error{errInvalidURL}
 	}
 	s.owner = mL[1]
 	s.repo = mL[2]
 
-	url, err := parseURL(s.URLString)
-	if err != nil {
-		return []error{fmt.Errorf("could not parse %s.url: %s", name, err.Error())}
-	}
-	s.url = url
 	if s.url.Hostname() != "github.com" {
 		if s.Token == "" {
 			return []error{fmt.Errorf("%s.token is required for repositories hosted on GitHub Enterprise", name)}
@@ -113,9 +122,13 @@ func (s *GithubReleaseSource) Connect(name string) error {
 		client2 = oauth2.NewClient(context.Background(), src)
 	}
 	if s.url.Hostname() != "github.com" {
-		baseURL := strings.TrimSuffix(s.url.String(), s.url.Path)
+		// baseURL is s.url without the Path (/<owner>/<repo>).
+		baseURL := *s.url
+		baseURL.Path = ""
+		baseURL.RawPath = ""
+		baseURLStr := baseURL.String()
 		var err error
-		s.client, err = github.NewEnterpriseClient(baseURL, baseURL, client2)
+		s.client, err = github.NewEnterpriseClient(baseURLStr, baseURLStr, client2)
 		if err != nil {
 			return err
 		}
