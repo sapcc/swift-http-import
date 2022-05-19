@@ -167,11 +167,12 @@ func (s *GithubReleaseSource) ListAllFiles(out chan<- FileSpec) *ListEntriesErro
 			continue
 		}
 
-		aL, err := s.getReleaseAssets(r.GetID())
+		releaseID := r.GetID()
+		aL, err := s.getReleaseAssets(releaseID)
 		if err != nil {
 			return &ListEntriesError{
 				Location: s.url.String(),
-				Message:  "could not list release assets",
+				Message:  fmt.Sprintf("could not list release assets for release %d", releaseID),
 				Inner:    err,
 			}
 		}
