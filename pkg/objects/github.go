@@ -47,16 +47,11 @@ type GithubReleaseSource struct {
 	IncludePrerelease bool                 `yaml:"include_prerelease"`
 
 	// Compiled configuration.
-	url    *url.URL       `yaml:"-"`
-	client *github.Client `yaml:"-"`
-	// httpClient is an unauthenticated default http.Client that is used for downloading release assets.
-	// We use a separate client instead of the same http.Client that we create and pass to
-	// the github.Client because that http.Client, when obtained using oauth2.NewClient(),
-	// does not return all headers in the request response.
-	httpClient *http.Client   `yaml:"-"`
-	owner      string         `yaml:"-"` // repository owner
-	repo       string         `yaml:"-"`
-	tagNameRx  *regexp.Regexp `yaml:"-"`
+	url       *url.URL       `yaml:"-"`
+	client    *github.Client `yaml:"-"`
+	owner     string         `yaml:"-"` // repository owner
+	repo      string         `yaml:"-"`
+	tagNameRx *regexp.Regexp `yaml:"-"`
 	// notOlderThan is used to limit release listing to prevent excess API requests.
 	notOlderThan *time.Time `yaml:"-"`
 }
@@ -110,16 +105,10 @@ func (s *GithubReleaseSource) Validate(name string) []error {
 
 // Connect implements the Source interface.
 func (s *GithubReleaseSource) Connect(name string) error {
-	// HTTP client for downloading release assets.
-	// Note: we don't need an authenticated client here, we'll just pass the token in the
-	// `Authorization` header when we download the asset.
-	s.httpClient = &http.Client{}
-
-	// Use a separate http.Client for creating github.Client.
-	client2 := &http.Client{}
+	c := http.DefaultClient
 	if s.Token != "" {
 		src := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: string(s.Token)})
-		client2 = oauth2.NewClient(context.Background(), src)
+		c = oauth2.NewClient(context.Background(), src)
 	}
 	if s.url.Hostname() != "github.com" {
 		// baseURL is s.url without the Path (/<owner>/<repo>).
@@ -128,14 +117,13 @@ func (s *GithubReleaseSource) Connect(name string) error {
 		baseURL.RawPath = ""
 		baseURLStr := baseURL.String()
 		var err error
-		s.client, err = github.NewEnterpriseClient(baseURLStr, baseURLStr, client2)
+		s.client, err = github.NewEnterpriseClient(baseURLStr, baseURLStr, c)
 		if err != nil {
 			return err
 		}
 	} else {
-		s.client = github.NewClient(client2)
+		s.client = github.NewClient(c)
 	}
-
 	return nil
 }
 
@@ -215,7 +203,12 @@ func (s *GithubReleaseSource) GetFile(path string, requestHeaders schwift.Object
 	if s.Token != "" {
 		req.Header.Set("Authorization", fmt.Sprintf("token %s", s.Token))
 	}
-	resp, err := s.httpClient.Do(req)
+
+	// We use http.DefaultClient explicitly instead of retrieving (s.client.Client()) the
+	// same http.Client that was passed to github.Client because that http.Client, when
+	// obtained using oauth2.NewClient(), does not return all headers in the request
+	// response.
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, FileState{}, fmt.Errorf("skipping %s: GET failed: %s", req.URL.String(), err.Error())
 	}
