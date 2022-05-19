@@ -216,7 +216,7 @@ func (s *GithubReleaseSource) GetFile(path string, requestHeaders schwift.Object
 	if resp.StatusCode != http.StatusOK &&
 		resp.StatusCode != http.StatusNotModified {
 		return nil, FileState{}, fmt.Errorf(
-			"skipping %s: GET returned unexpected status code: expected one of [200, 302, 304] but got %d",
+			"skipping %s: GET returned unexpected status code: expected 200 or 304, but got %d",
 			req.URL.String(), resp.StatusCode,
 		)
 	}
