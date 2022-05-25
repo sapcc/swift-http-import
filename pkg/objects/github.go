@@ -156,7 +156,7 @@ func (s *GithubReleaseSource) ListAllFiles(out chan<- FileSpec) *ListEntriesErro
 
 		for _, a := range r.Assets {
 			fs := FileSpec{
-				Path: fmt.Sprintf("releases/download/%s/%s", tagName, a.GetName()),
+				Path: fmt.Sprintf("%s/%s", tagName, a.GetName()),
 				// Technically, DownloadPath is supposed to be a file path but since we
 				// only need asset ID to download the asset in GetFile() therefore we can
 				// simply use the asset ID here instead.
