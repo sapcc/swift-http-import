@@ -1,3 +1,8 @@
+# v2.9.1 (TBD)
+
+Bugfixes:
+- Fixed escaping of characters in the file path of GitHub releases.
+
 # v2.9.0 (2022-05-19)
 
 New features:

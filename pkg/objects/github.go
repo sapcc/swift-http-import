@@ -27,7 +27,6 @@ import (
 	"net/url"
 	"regexp"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/google/go-github/v44/github"
@@ -143,7 +142,6 @@ func (s *GithubReleaseSource) ListAllFiles(out chan<- FileSpec) *ListEntriesErro
 		}
 	}
 
-	var assets []*github.ReleaseAsset
 	for _, r := range releases {
 		if !s.IncludeDraft && r.GetDraft() {
 			continue
@@ -151,27 +149,14 @@ func (s *GithubReleaseSource) ListAllFiles(out chan<- FileSpec) *ListEntriesErro
 		if !s.IncludePrerelease && r.GetPrerelease() {
 			continue
 		}
-		if s.TagNamePattern != "" && !s.tagNameRx.MatchString(r.GetTagName()) {
+		tagName := r.GetTagName()
+		if s.TagNamePattern != "" && !s.tagNameRx.MatchString(tagName) {
 			continue
 		}
 
-		releaseID := r.GetID()
-		aL, err := s.getReleaseAssets(releaseID)
-		if err != nil {
-			return &ListEntriesError{
-				Location: s.url.String(),
-				Message:  fmt.Sprintf("could not list release assets for release %d", releaseID),
-				Inner:    err,
-			}
-		}
-		assets = append(assets, aL...)
-	}
-
-	for _, a := range assets {
-		if a.BrowserDownloadURL != nil {
+		for _, a := range r.Assets {
 			fs := FileSpec{
-				// We need to remove the base URL from the path.
-				Path: strings.TrimPrefix(*a.BrowserDownloadURL, s.url.String()),
+				Path: fmt.Sprintf("releases/download/%s/%s", tagName, a.GetName()),
 				// Technically, DownloadPath is supposed to be a file path but since we
 				// only need asset ID to download the asset in GetFile() therefore we can
 				// simply use the asset ID here instead.
@@ -257,28 +242,6 @@ func (s *GithubReleaseSource) getReleases() ([]*github.RepositoryRelease, error)
 				break
 			}
 		}
-	}
-
-	return result, nil
-}
-
-func (s *GithubReleaseSource) getReleaseAssets(releaseID int64) ([]*github.ReleaseAsset, error) {
-	var result []*github.ReleaseAsset
-
-	// Set higher value than default (30) for results per page to avoid exceeding API rate limit.
-	listOpts := &github.ListOptions{PerPage: 50}
-	resp := &github.Response{NextPage: 1}
-	for resp.NextPage != 0 {
-		var (
-			aL  []*github.ReleaseAsset
-			err error
-		)
-		listOpts.Page = resp.NextPage
-		aL, resp, err = s.client.Repositories.ListReleaseAssets(context.Background(), s.owner, s.repo, releaseID, listOpts)
-		if err != nil {
-			return nil, err
-		}
-		result = append(result, aL...)
 	}
 
 	return result, nil
