@@ -1,3 +1,12 @@
+# v2.9.1 (TBD)
+
+Bugfixes:
+- Fixed escaping of characters in the file path of GitHub releases.
+
+Changes:
+- GitHub release assets are now mirrored under its tag name instead of
+  `releases/download/$tagName/`.
+
 # v2.9.0 (2022-05-19)
 
 New features:
