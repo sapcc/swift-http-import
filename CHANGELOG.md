@@ -1,4 +1,4 @@
-# v2.9.1 (TBD)
+# v2.9.1 (2022-05-25)
 
 Bugfixes:
 - Fixed escaping of characters in the file path of GitHub releases.
