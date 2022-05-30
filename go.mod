@@ -5,10 +5,10 @@ go 1.17
 require (
 	github.com/cactus/go-statsd-client/v4 v4.0.0
 	github.com/google/go-github/v44 v44.1.0
-	github.com/gophercloud/gophercloud v0.24.0
+	github.com/gophercloud/gophercloud v0.25.0
 	github.com/gophercloud/utils v0.0.0-20220307143606-8e7800759d16
 	github.com/majewsky/schwift v1.1.0
-	github.com/sapcc/go-bits v0.0.0-20220517080651-baba74caa927
+	github.com/sapcc/go-bits v0.0.0-20220530163628-4dafc5c6baa2
 	github.com/ulikunitz/xz v0.5.10
 	golang.org/x/crypto v0.0.0-20220525230936-793ad666bf5e
 	golang.org/x/net v0.0.0-20220526153639-5463443f8c37
