@@ -1,5 +1,8 @@
 # Configuration file for <https://github.com/sapcc/go-makefile-maker>
 
+metadata:
+  url: https://github.com/sapcc/swift-http-import
+
 binaries:
   - name:        swift-http-import
     fromPackage: .
@@ -10,6 +13,12 @@ variables:
 
 vendoring:
   enabled: true
+
+dockerfile:
+  enabled: true
+  extraIgnores:
+    - examples/
+    - make-config.sh
 
 golangciLint:
   createConfig: true
