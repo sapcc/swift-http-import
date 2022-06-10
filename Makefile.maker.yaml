@@ -19,6 +19,8 @@ dockerfile:
   extraIgnores:
     - examples/
     - make-config.sh
+  extraPackages:
+    - tzdata
 
 golangciLint:
   createConfig: true
