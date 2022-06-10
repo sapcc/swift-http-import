@@ -8,7 +8,7 @@ require (
 	github.com/gophercloud/gophercloud v0.25.0
 	github.com/gophercloud/utils v0.0.0-20220307143606-8e7800759d16
 	github.com/majewsky/schwift v1.1.0
-	github.com/sapcc/go-bits v0.0.0-20220609133230-ebdc392bcda3
+	github.com/sapcc/go-bits v0.0.0-20220610155404-690aed13bb25
 	github.com/ulikunitz/xz v0.5.10
 	golang.org/x/crypto v0.0.0-20220525230936-793ad666bf5e
 	golang.org/x/net v0.0.0-20220607020251-c690dde0001d
