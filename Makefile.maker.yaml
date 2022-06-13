@@ -20,6 +20,8 @@ dockerfile:
     - examples/
     - make-config.sh
   extraPackages:
+    # used in the content-repo helm-chart
+    - tini
     - tzdata
 
 golangciLint:
