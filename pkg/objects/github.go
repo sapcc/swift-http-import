@@ -31,10 +31,9 @@ import (
 
 	"github.com/google/go-github/v44/github"
 	"github.com/majewsky/schwift"
+	"github.com/sapcc/go-api-declarations/bininfo"
 	"github.com/sapcc/go-bits/secrets"
 	"golang.org/x/oauth2"
-
-	"github.com/sapcc/swift-http-import/pkg/util"
 )
 
 type GithubReleaseSource struct {
@@ -183,7 +182,7 @@ func (s *GithubReleaseSource) GetFile(path string, requestHeaders schwift.Object
 	for key, val := range requestHeaders.Headers {
 		req.Header.Set(key, val)
 	}
-	req.Header.Set("User-Agent", "swift-http-import/"+util.Version)
+	req.Header.Set("User-Agent", "swift-http-import/"+bininfo.VersionOr("dev"))
 	req.Header.Set("Accept", "application/octet-stream")
 	if s.Token != "" {
 		req.Header.Set("Authorization", fmt.Sprintf("token %s", s.Token))

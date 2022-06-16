@@ -31,10 +31,9 @@ import (
 	"github.com/gophercloud/utils/client"
 	"github.com/majewsky/schwift"
 	"github.com/majewsky/schwift/gopherschwift"
+	"github.com/sapcc/go-api-declarations/bininfo"
 	"github.com/sapcc/go-bits/logg"
 	"github.com/sapcc/go-bits/secrets"
-
-	"github.com/sapcc/swift-http-import/pkg/util"
 )
 
 //SwiftLocation contains all parameters required to establish a Swift connection.
@@ -212,7 +211,7 @@ func (s *SwiftLocation) Connect(name string) error {
 			return fmt.Errorf("cannot create Swift client: %s", err.Error())
 		}
 		s.Account, err = gopherschwift.Wrap(client, &gopherschwift.Options{
-			UserAgent: "swift-http-import/" + util.Version,
+			UserAgent: "swift-http-import/" + bininfo.VersionOr("dev"),
 		})
 		if err != nil {
 			return fmt.Errorf("cannot wrap Swift client: %s", err.Error())

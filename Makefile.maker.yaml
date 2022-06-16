@@ -8,9 +8,6 @@ binaries:
     fromPackage: .
     installTo:   bin/
 
-variables:
-  GO_LDFLAGS: '-X github.com/sapcc/swift-http-import/pkg/util.Version=$(shell util/find_version.sh)'
-
 vendoring:
   enabled: true
 

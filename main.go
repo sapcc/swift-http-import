@@ -26,12 +26,12 @@ import (
 	"sync"
 	"time"
 
+	"github.com/sapcc/go-api-declarations/bininfo"
 	"github.com/sapcc/go-bits/httpee"
 	"github.com/sapcc/go-bits/logg"
 
 	"github.com/sapcc/swift-http-import/pkg/actors"
 	"github.com/sapcc/swift-http-import/pkg/objects"
-	"github.com/sapcc/swift-http-import/pkg/util"
 )
 
 func main() {
@@ -44,7 +44,7 @@ func main() {
 		os.Exit(1)
 	}
 	if os.Args[1] == "--version" {
-		fmt.Println("swift-http-import " + util.Version)
+		fmt.Println("swift-http-import " + bininfo.VersionOr("dev"))
 		os.Exit(0)
 	}
 

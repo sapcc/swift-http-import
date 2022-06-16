@@ -37,6 +37,7 @@ import (
 	"golang.org/x/net/html/atom"
 
 	"github.com/majewsky/schwift"
+	"github.com/sapcc/go-api-declarations/bininfo"
 	"github.com/sapcc/go-bits/logg"
 
 	"github.com/sapcc/swift-http-import/pkg/util"
@@ -335,7 +336,7 @@ func (u URLSource) ListEntries(directoryPath string) ([]FileSpec, *ListEntriesEr
 //GetFile implements the Source interface.
 func (u URLSource) GetFile(path string, requestHeaders schwift.ObjectHeaders) (io.ReadCloser, FileState, error) {
 	uri := u.getURLForPath(path).String()
-	requestHeaders.Set("User-Agent", "swift-http-import/"+util.Version)
+	requestHeaders.Set("User-Agent", "swift-http-import/"+bininfo.VersionOr("dev"))
 
 	//retrieve file from source
 	var (
