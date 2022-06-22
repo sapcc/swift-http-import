@@ -27,7 +27,7 @@ import (
 	"time"
 
 	"github.com/sapcc/go-api-declarations/bininfo"
-	"github.com/sapcc/go-bits/httpee"
+	"github.com/sapcc/go-bits/httpext"
 	"github.com/sapcc/go-bits/logg"
 
 	"github.com/sapcc/swift-http-import/pkg/actors"
@@ -78,7 +78,7 @@ func main() {
 
 func runPipeline(config *objects.Configuration, report chan<- actors.ReportEvent) {
 	//setup a context that shuts down all pipeline actors when an interrupt signal is received
-	ctx := httpee.ContextWithSIGINT(context.Background(), 1*time.Second)
+	ctx := httpext.ContextWithSIGINT(context.Background(), 1*time.Second)
 
 	//start the pipeline actors
 	var wg sync.WaitGroup
