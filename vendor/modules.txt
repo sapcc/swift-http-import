@@ -62,8 +62,8 @@ golang.org/x/net/context
 golang.org/x/net/context/ctxhttp
 golang.org/x/net/html
 golang.org/x/net/html/atom
-# golang.org/x/oauth2 v0.0.0-20220628200809-02e64fa58f26
-## explicit; go 1.15
+# golang.org/x/oauth2 v0.0.0-20220630143837-2104d58473e0
+## explicit; go 1.17
 golang.org/x/oauth2
 golang.org/x/oauth2/internal
 # google.golang.org/appengine v1.6.7
