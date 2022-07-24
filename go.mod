@@ -13,7 +13,7 @@ require (
 	github.com/ulikunitz/xz v0.5.10
 	golang.org/x/crypto v0.0.0-20220722155217-630584e8d5aa
 	golang.org/x/net v0.0.0-20220722155237-a158d28d115b
-	golang.org/x/oauth2 v0.0.0-20220630143837-2104d58473e0
+	golang.org/x/oauth2 v0.0.0-20220722155238-128564f6959c
 	gopkg.in/yaml.v2 v2.4.0
 	pault.ag/go/debian v0.12.0
 )
