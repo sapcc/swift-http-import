@@ -35,7 +35,7 @@ github.com/majewsky/schwift/gopherschwift
 # github.com/sapcc/go-api-declarations v1.2.0
 ## explicit; go 1.17
 github.com/sapcc/go-api-declarations/bininfo
-# github.com/sapcc/go-bits v0.0.0-20220803132021-fd783720dde3
+# github.com/sapcc/go-bits v0.0.0-20220806113733-304e620cef60
 ## explicit; go 1.18
 github.com/sapcc/go-bits/httpext
 github.com/sapcc/go-bits/logg
@@ -76,7 +76,7 @@ google.golang.org/appengine/internal/log
 google.golang.org/appengine/internal/remote_api
 google.golang.org/appengine/internal/urlfetch
 google.golang.org/appengine/urlfetch
-# google.golang.org/protobuf v1.28.0
+# google.golang.org/protobuf v1.28.1
 ## explicit; go 1.11
 google.golang.org/protobuf/encoding/prototext
 google.golang.org/protobuf/encoding/protowire
