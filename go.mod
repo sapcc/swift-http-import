@@ -12,7 +12,7 @@ require (
 	github.com/sapcc/go-bits v0.0.0-20220806113733-304e620cef60
 	github.com/ulikunitz/xz v0.5.10
 	golang.org/x/crypto v0.0.0-20220722155217-630584e8d5aa
-	golang.org/x/net v0.0.0-20220805013720-a33c5aa5df48
+	golang.org/x/net v0.0.0-20220809184613-07c6da5e1ced
 	golang.org/x/oauth2 v0.0.0-20220722155238-128564f6959c
 	gopkg.in/yaml.v2 v2.4.0
 	pault.ag/go/debian v0.12.0
