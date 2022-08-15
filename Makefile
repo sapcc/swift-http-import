@@ -41,7 +41,8 @@ else
 endif
 
 install: FORCE build/swift-http-import
-	install -D -m 0755 build/swift-http-import "$(DESTDIR)$(PREFIX)/bin/swift-http-import"
+	install -d -m 0755 "$(DESTDIR)$(PREFIX)/bin"
+	install -m 0755 build/swift-http-import "$(DESTDIR)$(PREFIX)/bin/swift-http-import"
 
 # which packages to test with "go test"
 GO_TESTPKGS := $(shell go list -f '{{if or .TestGoFiles .XTestGoFiles}}{{.ImportPath}}{{end}}' ./...)
