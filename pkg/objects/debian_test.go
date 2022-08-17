@@ -21,12 +21,12 @@ package objects
 
 import "testing"
 
-//TestDebianReleasePackagesEntryRx tests the regular expression that is used to
-//match an entry in a 'Release' debian control file that represents the path
-//for a 'Packages' index file for some architecture for some distribution
-//component.
+// TestDebianReleasePackagesEntryRx tests the regular expression that is used to
+// match an entry in a 'Release' debian control file that represents the path
+// for a 'Packages' index file for some architecture for some distribution
+// component.
 //
-//e.g. "main/binary-amd64/Packages.gz"
+// e.g. "main/binary-amd64/Packages.gz"
 func TestDebianReleasePackagesEntryRx(t *testing.T) {
 	tt := []struct {
 		in    string

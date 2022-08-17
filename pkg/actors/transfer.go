@@ -27,10 +27,10 @@ import (
 	"github.com/sapcc/swift-http-import/pkg/objects"
 )
 
-//Transferor is an actor that transfers files from a Source to a target SwiftLocation.
+// Transferor is an actor that transfers files from a Source to a target SwiftLocation.
 //
-//Files to transfer are read from the `Input` channel until it is closed.
-//For each input file, a report is sent into the `Report` channel.
+// Files to transfer are read from the `Input` channel until it is closed.
+// For each input file, a report is sent into the `Report` channel.
 type Transferor struct {
 	Context context.Context
 	Input   <-chan objects.File
@@ -38,7 +38,7 @@ type Transferor struct {
 	Report  chan<- ReportEvent
 }
 
-//Run implements the Actor interface.
+// Run implements the Actor interface.
 func (t *Transferor) Run() {
 	done := t.Context.Done()
 

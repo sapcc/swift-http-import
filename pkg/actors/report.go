@@ -29,8 +29,8 @@ import (
 	"github.com/sapcc/swift-http-import/pkg/objects"
 )
 
-//ReportEvent counts either a directory that was scraped, or a file that was
-//found (and maybe transferred). It is consumed by the Report actor.
+// ReportEvent counts either a directory that was scraped, or a file that was
+// found (and maybe transferred). It is consumed by the Report actor.
 type ReportEvent struct {
 	IsJob      bool
 	JobSkipped bool
@@ -46,15 +46,15 @@ type ReportEvent struct {
 	CleanedUpObjectCount int64
 }
 
-//Report is an actor that counts scraped directories and transferred files.
-//It emits StatsD metrics (if desired), logs the final report, and decides
-//whether to exit with an error status.
+// Report is an actor that counts scraped directories and transferred files.
+// It emits StatsD metrics (if desired), logs the final report, and decides
+// whether to exit with an error status.
 //
-//Events are read from the `Input` channel until it is closed.
-//The `Done` channel can be closed to interrupt the actor.
-//If the `Statter` is not nil, statsd metrics will be emitted.
-//The `StartTime` is used to measure this run's duration at the end.
-//The `ExitCode` can be read after the actor is done.
+// Events are read from the `Input` channel until it is closed.
+// The `Done` channel can be closed to interrupt the actor.
+// If the `Statter` is not nil, statsd metrics will be emitted.
+// The `StartTime` is used to measure this run's duration at the end.
+// The `ExitCode` can be read after the actor is done.
 type Report struct {
 	Input     <-chan ReportEvent
 	Statsd    objects.StatsdConfiguration
@@ -63,7 +63,7 @@ type Report struct {
 	stats     Stats
 }
 
-//Stats contains the report statistics
+// Stats contains the report statistics
 type Stats struct {
 	DirectoriesScanned int64
 	DirectoriesFailed  int64
@@ -76,12 +76,12 @@ type Stats struct {
 	Duration           time.Duration
 }
 
-//Stats returns a copy of stats member.
+// Stats returns a copy of stats member.
 func (r *Report) Stats() Stats {
 	return r.stats
 }
 
-//Run implements the Actor interface.
+// Run implements the Actor interface.
 func (r *Report) Run() {
 	var statter statsd.Statter
 

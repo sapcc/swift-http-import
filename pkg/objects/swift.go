@@ -36,8 +36,8 @@ import (
 	"github.com/sapcc/go-bits/secrets"
 )
 
-//SwiftLocation contains all parameters required to establish a Swift connection.
-//It implements the Source interface, but is also used on the target side.
+// SwiftLocation contains all parameters required to establish a Swift connection.
+// It implements the Source interface, but is also used on the target side.
 type SwiftLocation struct {
 	AuthURL                     string               `yaml:"auth_url"`
 	UserName                    string               `yaml:"user_name"`
@@ -80,7 +80,7 @@ func (s SwiftLocation) cacheKey(name string) string {
 	return strings.Join(v, "\000")
 }
 
-//Validate returns an empty list only if all required credentials are present.
+// Validate returns an empty list only if all required credentials are present.
 func (s *SwiftLocation) Validate(name string) []error {
 	var result []error
 
@@ -143,7 +143,7 @@ func (l logger) Printf(format string, args ...interface{}) {
 	}
 }
 
-//Connect implements the Source interface. It establishes the connection to Swift.
+// Connect implements the Source interface. It establishes the connection to Swift.
 func (s *SwiftLocation) Connect(name string) error {
 	if s.Account != nil {
 		return nil
@@ -224,14 +224,14 @@ func (s *SwiftLocation) Connect(name string) error {
 	return err
 }
 
-//ObjectAtPath returns an Object instance for the object at the given path
-//(below the ObjectNamePrefix, if any) in this container.
+// ObjectAtPath returns an Object instance for the object at the given path
+// (below the ObjectNamePrefix, if any) in this container.
 func (s *SwiftLocation) ObjectAtPath(path string) *schwift.Object {
 	objectName := strings.TrimPrefix(path, "/")
 	return s.Container.Object(s.ObjectNamePrefix + objectName)
 }
 
-//ListAllFiles implements the Source interface.
+// ListAllFiles implements the Source interface.
 func (s *SwiftLocation) ListAllFiles(out chan<- FileSpec) *ListEntriesError {
 	objectPath := s.ObjectNamePrefix
 	if objectPath != "" && !strings.HasSuffix(objectPath, "/") {
@@ -256,7 +256,7 @@ func (s *SwiftLocation) ListAllFiles(out chan<- FileSpec) *ListEntriesError {
 	return nil
 }
 
-//ListEntries implements the Source interface.
+// ListEntries implements the Source interface.
 func (s *SwiftLocation) ListEntries(directoryPath string) ([]FileSpec, *ListEntriesError) {
 	return nil, ErrListEntriesNotSupported
 }
@@ -282,7 +282,7 @@ func (s *SwiftLocation) getFileSpec(info schwift.ObjectInfo) FileSpec {
 	return f
 }
 
-//GetFile implements the Source interface.
+// GetFile implements the Source interface.
 func (s *SwiftLocation) GetFile(path string, requestHeaders schwift.ObjectHeaders) (io.ReadCloser, FileState, error) {
 	object := s.ObjectAtPath(path)
 
@@ -316,12 +316,12 @@ func (s *SwiftLocation) GetFile(path string, requestHeaders schwift.ObjectHeader
 	}, nil
 }
 
-//DiscoverExistingFiles finds all objects that currently exist in this location
-//(i.e. in this Swift container below the given object name prefix) and fills
-//s.FileExists accordingly.
+// DiscoverExistingFiles finds all objects that currently exist in this location
+// (i.e. in this Swift container below the given object name prefix) and fills
+// s.FileExists accordingly.
 //
-//The given Matcher is used to find out which files are to be considered as
-//belonging to the transfer job in question.
+// The given Matcher is used to find out which files are to be considered as
+// belonging to the transfer job in question.
 func (s *SwiftLocation) DiscoverExistingFiles(matcher Matcher) error {
 	prefix := s.ObjectNamePrefix
 	if prefix != "" && !strings.HasSuffix(prefix, "/") {

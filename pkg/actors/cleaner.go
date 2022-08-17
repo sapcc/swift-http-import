@@ -29,21 +29,21 @@ import (
 	"github.com/sapcc/swift-http-import/pkg/objects"
 )
 
-//FileInfoForCleaner contains information about a transferred file for the Cleaner actor.
+// FileInfoForCleaner contains information about a transferred file for the Cleaner actor.
 type FileInfoForCleaner struct {
 	objects.File
 	Failed bool
 }
 
-//Cleaner is an actor that cleans up unknown objects on the target side (i.e.
-//those objects which do not exist on the source side).
+// Cleaner is an actor that cleans up unknown objects on the target side (i.e.
+// those objects which do not exist on the source side).
 type Cleaner struct {
 	Context context.Context
 	Input   <-chan FileInfoForCleaner
 	Report  chan<- ReportEvent
 }
 
-//Run implements the Actor interface.
+// Run implements the Actor interface.
 func (c *Cleaner) Run() {
 	isJobFailed := make(map[*objects.Job]bool)
 	isFileTransferred := make(map[*objects.Job]map[string]bool) //string = object name incl. prefix (if any)

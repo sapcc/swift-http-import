@@ -32,8 +32,8 @@ import (
 	"github.com/ulikunitz/xz"
 )
 
-//AgeSpec is a timestamp that is deserialized from a duration in the format
-//"<value> <unit>", e.g. "4 days" or "2 weeks".
+// AgeSpec is a timestamp that is deserialized from a duration in the format
+// "<value> <unit>", e.g. "4 days" or "2 weeks".
 type AgeSpec time.Duration
 
 var (
@@ -61,7 +61,7 @@ var (
 	}
 )
 
-//UnmarshalYAML implements the yaml.Unmarshaler interface.
+// UnmarshalYAML implements the yaml.Unmarshaler interface.
 func (a *AgeSpec) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	var input string
 	err := unmarshal(&input)
@@ -90,8 +90,8 @@ func (a *AgeSpec) UnmarshalYAML(unmarshal func(interface{}) error) error {
 
 var gzipMagicNumber = []byte{0x1f, 0x8b, 0x08}
 
-//decompressGZipArchive decompresses and returns the contents of a slice of
-//gzip compressed bytes.
+// decompressGZipArchive decompresses and returns the contents of a slice of
+// gzip compressed bytes.
 func decompressGZipArchive(buf []byte) ([]byte, error) {
 	reader, err := gzip.NewReader(bytes.NewReader(buf))
 	if err != nil {
@@ -108,8 +108,8 @@ func decompressGZipArchive(buf []byte) ([]byte, error) {
 
 var xzMagicNumber = []byte{0xfd, 0x37, 0x7a, 0x58, 0x5a, 0x00}
 
-//decompressXZArchive decompresses and returns the contents of a slice of xz
-//compressed bytes.
+// decompressXZArchive decompresses and returns the contents of a slice of xz
+// compressed bytes.
 func decompressXZArchive(buf []byte) ([]byte, error) {
 	reader, err := xz.NewReader(bytes.NewReader(buf))
 	if err != nil {

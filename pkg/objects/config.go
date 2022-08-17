@@ -31,7 +31,7 @@ import (
 	"github.com/sapcc/swift-http-import/pkg/util"
 )
 
-//Configuration contains the contents of the configuration file.
+// Configuration contains the contents of the configuration file.
 type Configuration struct {
 	Swift        SwiftLocation `yaml:"swift"`
 	WorkerCounts struct {
@@ -43,7 +43,7 @@ type Configuration struct {
 	Jobs       []*Job              `yaml:"-"`
 }
 
-//ReadConfiguration reads the configuration file.
+// ReadConfiguration reads the configuration file.
 func ReadConfiguration(path string) (*Configuration, []error) {
 	configBytes, err := os.ReadFile(path)
 	if err != nil {
@@ -99,22 +99,22 @@ func ReadConfiguration(path string) (*Configuration, []error) {
 	return &cfg, errors
 }
 
-//StatsdConfiguration contains the configuration options relating to StatsD
-//metric emission.
+// StatsdConfiguration contains the configuration options relating to StatsD
+// metric emission.
 type StatsdConfiguration struct {
 	HostName string `yaml:"hostname"`
 	Port     int    `yaml:"port"`
 	Prefix   string `yaml:"prefix"`
 }
 
-//GPGConfiguration contains the configuration options relating to GPG signature
-//verification for Debian/Yum repos.
+// GPGConfiguration contains the configuration options relating to GPG signature
+// verification for Debian/Yum repos.
 type GPGConfiguration struct {
 	CacheContainerName   *string  `yaml:"cache_container_name"`
 	KeyserverURLPatterns []string `yaml:"keyserver_urls"`
 }
 
-//JobConfiguration describes a transfer job in the configuration file.
+// JobConfiguration describes a transfer job in the configuration file.
 type JobConfiguration struct {
 	//basic options
 	Source SourceUnmarshaler `yaml:"from"`
@@ -132,13 +132,13 @@ type JobConfiguration struct {
 	gpgKeyRing *util.GPGKeyRing
 }
 
-//MatchConfiguration contains the "match" section of a JobConfiguration.
+// MatchConfiguration contains the "match" section of a JobConfiguration.
 type MatchConfiguration struct {
 	NotOlderThan         *AgeSpec `yaml:"not_older_than"`
 	SimplisticComparison *bool    `yaml:"simplistic_comparison"`
 }
 
-//SegmentingConfiguration contains the "segmenting" section of a JobConfiguration.
+// SegmentingConfiguration contains the "segmenting" section of a JobConfiguration.
 type SegmentingConfiguration struct {
 	MinObjectSize uint64 `yaml:"min_bytes"`
 	SegmentSize   uint64 `yaml:"segment_bytes"`
@@ -147,14 +147,14 @@ type SegmentingConfiguration struct {
 	Container *schwift.Container `yaml:"-"`
 }
 
-//ExpirationConfiguration contains the "expiration" section of a JobConfiguration.
+// ExpirationConfiguration contains the "expiration" section of a JobConfiguration.
 type ExpirationConfiguration struct {
 	EnabledIn    *bool  `yaml:"enabled"`
 	Enabled      bool   `yaml:"-"`
 	DelaySeconds uint32 `yaml:"delay_seconds"`
 }
 
-//CleanupStrategy is an enum of legal values for the jobs[].cleanup.strategy configuration option.
+// CleanupStrategy is an enum of legal values for the jobs[].cleanup.strategy configuration option.
 type CleanupStrategy string
 
 const (
@@ -166,17 +166,17 @@ const (
 	ReportUnknownFiles CleanupStrategy = "report"
 )
 
-//CleanupConfiguration contains the "cleanup" section of a JobConfiguration.
+// CleanupConfiguration contains the "cleanup" section of a JobConfiguration.
 type CleanupConfiguration struct {
 	Strategy CleanupStrategy `yaml:"strategy"`
 }
 
-//SourceUnmarshaler provides a yaml.Unmarshaler implementation for the Source interface.
+// SourceUnmarshaler provides a yaml.Unmarshaler implementation for the Source interface.
 type SourceUnmarshaler struct {
 	Source
 }
 
-//UnmarshalYAML implements the yaml.Unmarshaler interface.
+// UnmarshalYAML implements the yaml.Unmarshaler interface.
 func (u *SourceUnmarshaler) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	//unmarshal a few indicative fields
 	var probe struct {
@@ -208,7 +208,7 @@ func (u *SourceUnmarshaler) UnmarshalYAML(unmarshal func(interface{}) error) err
 	return unmarshal(u.Source)
 }
 
-//Job describes a transfer job at runtime.
+// Job describes a transfer job at runtime.
 type Job struct {
 	Source               Source
 	Target               *SwiftLocation
@@ -219,7 +219,7 @@ type Job struct {
 	IsScrapingIncomplete bool
 }
 
-//Compile validates the given JobConfiguration, then creates and prepares a Job from it.
+// Compile validates the given JobConfiguration, then creates and prepares a Job from it.
 func (cfg JobConfiguration) Compile(name string, swift SwiftLocation) (job *Job, errors []error) {
 	jobSrc := cfg.Source.Source
 	if jobSrc == nil {

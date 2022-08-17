@@ -32,10 +32,10 @@ import (
 	"github.com/sapcc/swift-http-import/pkg/util"
 )
 
-//YumSource is a URLSource containing a Yum repository. This type reuses the
-//Validate() and Connect() logic of URLSource, but adds a custom scraping
-//implementation that reads the Yum repository metadata instead of relying on
-//directory listings.
+// YumSource is a URLSource containing a Yum repository. This type reuses the
+// Validate() and Connect() logic of URLSource, but adds a custom scraping
+// implementation that reads the Yum repository metadata instead of relying on
+// directory listings.
 type YumSource struct {
 	//options from config file
 	URLString                string   `yaml:"url"`
@@ -50,7 +50,7 @@ type YumSource struct {
 	gpgKeyRing      *util.GPGKeyRing `yaml:"-"`
 }
 
-//Validate implements the Source interface.
+// Validate implements the Source interface.
 func (s *YumSource) Validate(name string) []error {
 	s.urlSource = &URLSource{
 		URLString:                s.URLString,
@@ -65,22 +65,22 @@ func (s *YumSource) Validate(name string) []error {
 	return s.urlSource.Validate(name)
 }
 
-//Connect implements the Source interface.
+// Connect implements the Source interface.
 func (s *YumSource) Connect(name string) error {
 	return s.urlSource.Connect(name)
 }
 
-//ListEntries implements the Source interface.
+// ListEntries implements the Source interface.
 func (s *YumSource) ListEntries(directoryPath string) ([]FileSpec, *ListEntriesError) {
 	return nil, ErrListEntriesNotSupported
 }
 
-//GetFile implements the Source interface.
+// GetFile implements the Source interface.
 func (s *YumSource) GetFile(path string, requestHeaders schwift.ObjectHeaders) (body io.ReadCloser, sourceState FileState, err error) {
 	return s.urlSource.GetFile(path, requestHeaders)
 }
 
-//ListAllFiles implements the Source interface.
+// ListAllFiles implements the Source interface.
 func (s *YumSource) ListAllFiles(out chan<- FileSpec) *ListEntriesError {
 	cache := make(map[string]FileSpec)
 
@@ -200,14 +200,14 @@ func (s *YumSource) ListAllFiles(out chan<- FileSpec) *ListEntriesError {
 	return nil
 }
 
-//getFileSpec returns a FileSpec for a given path.
+// getFileSpec returns a FileSpec for a given path.
 //
-//It checks the cache for a existing FileSpec for the given path to avoid
-//double download. For Debian/Yum, this also ensures that the transferred set
-//of packages is consistent with the transferred repo metadata. If we were to
-//download metadata file(s) again during the transfer step, there is a chance
-//that new metadata has been uploaded to the source in the meantime. In this
-//case, we would be missing the packages referenced only in the new metadata.
+// It checks the cache for a existing FileSpec for the given path to avoid
+// double download. For Debian/Yum, this also ensures that the transferred set
+// of packages is consistent with the transferred repo metadata. If we were to
+// download metadata file(s) again during the transfer step, there is a chance
+// that new metadata has been uploaded to the source in the meantime. In this
+// case, we would be missing the packages referenced only in the new metadata.
 func getFileSpec(path string, cache map[string]FileSpec) FileSpec {
 	f, exists := cache[path]
 	if !exists {
@@ -216,7 +216,7 @@ func getFileSpec(path string, cache map[string]FileSpec) FileSpec {
 	return f
 }
 
-//Helper function for YumSource.ListAllFiles().
+// Helper function for YumSource.ListAllFiles().
 func (s *YumSource) handlesArchitecture(arch string) bool {
 	if len(s.Architectures) == 0 || arch == "" {
 		return true
@@ -229,7 +229,7 @@ func (s *YumSource) handlesArchitecture(arch string) bool {
 	return false
 }
 
-//Helper function for YumSource.ListAllFiles().
+// Helper function for YumSource.ListAllFiles().
 func (s *YumSource) downloadAndParseXML(path string, data interface{}, cache map[string]FileSpec) (contents []byte, uri string, e *ListEntriesError) {
 	buf, uri, lerr := s.urlSource.getFileContents(path, cache)
 	if lerr != nil {

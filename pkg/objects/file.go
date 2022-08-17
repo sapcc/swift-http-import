@@ -31,16 +31,16 @@ import (
 	"github.com/sapcc/swift-http-import/pkg/util"
 )
 
-//File describes a single file which is mirrored as part of a Job.
+// File describes a single file which is mirrored as part of a Job.
 type File struct {
 	Job  *Job
 	Spec FileSpec
 }
 
-//FileSpec contains metadata for a File. The only required field is Path.
-//Sources that download some files early (during scraping) can pass the
-//downloaded contents and metadata in the remaining fields of the FileSpec to
-//avoid double download.
+// FileSpec contains metadata for a File. The only required field is Path.
+// Sources that download some files early (during scraping) can pass the
+// downloaded contents and metadata in the remaining fields of the FileSpec to
+// avoid double download.
 type FileSpec struct {
 	Path string
 	// DownloadPath is set for files whose path for downloading their contents is
@@ -56,12 +56,12 @@ type FileSpec struct {
 	Headers  http.Header
 }
 
-//TargetObject returns the object corresponding to this file in the target container.
+// TargetObject returns the object corresponding to this file in the target container.
 func (f File) TargetObject() *schwift.Object {
 	return f.Job.Target.ObjectAtPath(f.Spec.Path)
 }
 
-//TransferResult is the return type for PerformTransfer().
+// TransferResult is the return type for PerformTransfer().
 type TransferResult uint
 
 const (
@@ -75,9 +75,9 @@ const (
 	TransferFailed
 )
 
-//PerformTransfer transfers this file from the source to the target.
-//It returns the TransferResult (which indicates if the transfer finished successfully)
-//and the number of bytes transferred.
+// PerformTransfer transfers this file from the source to the target.
+// It returns the TransferResult (which indicates if the transfer finished successfully)
+// and the number of bytes transferred.
 func (f File) PerformTransfer() (TransferResult, int64) {
 	object := f.TargetObject()
 
@@ -263,8 +263,8 @@ func (s FileSpec) toTransferFormat(requestHeaders schwift.ObjectHeaders) (io.Rea
 	return io.NopCloser(bytes.NewReader(s.Contents)), sourceState, nil
 }
 
-//StatusSwiftRateLimit is the non-standard HTTP status code used by Swift to
-//indicate Too Many Requests.
+// StatusSwiftRateLimit is the non-standard HTTP status code used by Swift to
+// indicate Too Many Requests.
 const StatusSwiftRateLimit = 498
 
 func (f File) uploadNormalObject(body io.Reader, hdr schwift.ObjectHeaders, cleanupOldSegments bool) (ok bool) {

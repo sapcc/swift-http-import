@@ -43,7 +43,7 @@ import (
 	"github.com/sapcc/swift-http-import/pkg/util"
 )
 
-//Source describes a place from which files can be fetched.
+// Source describes a place from which files can be fetched.
 type Source interface {
 	//Validate reports errors if this source is malspecified.
 	Validate(name string) []error
@@ -63,7 +63,7 @@ type Source interface {
 	GetFile(path string, headers schwift.ObjectHeaders) (body io.ReadCloser, sourceState FileState, err error)
 }
 
-//ListEntriesError is an error that occurs while scraping a directory.
+// ListEntriesError is an error that occurs while scraping a directory.
 type ListEntriesError struct {
 	//the location of the directory (e.g. an URL)
 	Location string
@@ -72,8 +72,8 @@ type ListEntriesError struct {
 	Inner   error
 }
 
-//FullMessage returns the full error message for this error. This merges the
-//.Messages with the .Inner.Error().
+// FullMessage returns the full error message for this error. This merges the
+// .Messages with the .Inner.Error().
 func (e ListEntriesError) FullMessage() string {
 	if e.Inner == nil {
 		return e.Message
@@ -85,25 +85,25 @@ func (e ListEntriesError) FullMessage() string {
 	return msg
 }
 
-//Some common values for ListEntriesError.Message that are always accompanied
-//by an Inner error.
+// Some common values for ListEntriesError.Message that are always accompanied
+// by an Inner error.
 const (
 	ErrMessageGPGVerificationFailed = "error while verifying GPG signature"
 )
 
-//ErrListAllFilesNotSupported is returned by ListAllFiles() for sources that
-//only support ListEntries().
+// ErrListAllFilesNotSupported is returned by ListAllFiles() for sources that
+// only support ListEntries().
 var ErrListAllFilesNotSupported = &ListEntriesError{
 	Message: "ListAllFiles not supported by this source",
 }
 
-//ErrListEntriesNotSupported is returned by ListEntries() for sources that only
-//support ListAllFiles().
+// ErrListEntriesNotSupported is returned by ListEntries() for sources that only
+// support ListAllFiles().
 var ErrListEntriesNotSupported = &ListEntriesError{
 	Message: "ListEntries not supported by this source",
 }
 
-//FileState is used by Source.GetFile() to describe the state of a file.
+// FileState is used by Source.GetFile() to describe the state of a file.
 type FileState struct {
 	Etag         string
 	LastModified string
@@ -116,7 +116,7 @@ type FileState struct {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-//URLSource describes a source that's accessible via HTTP.
+// URLSource describes a source that's accessible via HTTP.
 type URLSource struct {
 	URLString string   `yaml:"url"`
 	URL       *url.URL `yaml:"-"`
@@ -133,7 +133,7 @@ type URLSource struct {
 	//the custom source types (e.g. YumSource) with the same YAML field names.
 }
 
-//Validate implements the Source interface.
+// Validate implements the Source interface.
 func (u *URLSource) Validate(name string) (result []error) {
 	if u.URLString == "" {
 		result = append(result, fmt.Errorf("missing value for %s.url", name))
@@ -181,7 +181,7 @@ func (u *URLSource) Validate(name string) (result []error) {
 	return
 }
 
-//Connect implements the Source interface.
+// Connect implements the Source interface.
 func (u *URLSource) Connect(name string) error {
 	tlsConfig := &tls.Config{}
 
@@ -222,15 +222,15 @@ func (u *URLSource) Connect(name string) error {
 	return nil
 }
 
-//matches ".." path element
+// matches ".." path element
 var dotdotRx = regexp.MustCompile(`(?:^|/)\.\.(?:$|/)`)
 
-//ListAllFiles implements the Source interface.
+// ListAllFiles implements the Source interface.
 func (u URLSource) ListAllFiles(out chan<- FileSpec) *ListEntriesError {
 	return ErrListAllFilesNotSupported
 }
 
-//ListEntries implements the Source interface.
+// ListEntries implements the Source interface.
 func (u URLSource) ListEntries(directoryPath string) ([]FileSpec, *ListEntriesError) {
 	//get full URL of this subdirectory
 	uri := u.getURLForPath(directoryPath)
@@ -333,7 +333,7 @@ func (u URLSource) ListEntries(directoryPath string) ([]FileSpec, *ListEntriesEr
 	}
 }
 
-//GetFile implements the Source interface.
+// GetFile implements the Source interface.
 func (u URLSource) GetFile(path string, requestHeaders schwift.ObjectHeaders) (io.ReadCloser, FileState, error) {
 	uri := u.getURLForPath(path).String()
 	requestHeaders.Set("User-Agent", "swift-http-import/"+bininfo.VersionOr("dev"))
@@ -376,12 +376,12 @@ func (u URLSource) GetFile(path string, requestHeaders schwift.ObjectHeaders) (i
 	}, nil
 }
 
-//Return the URL for the given path below this URLSource.
+// Return the URL for the given path below this URLSource.
 func (u URLSource) getURLForPath(path string) *url.URL {
 	return u.URL.ResolveReference(&url.URL{Path: strings.TrimPrefix(path, "/")})
 }
 
-//Helper function for custom source types.
+// Helper function for custom source types.
 func (u URLSource) getFileContents(path string, cache map[string]FileSpec) (contents []byte, uri string, e *ListEntriesError) {
 	uri = u.getURLForPath(path).String()
 

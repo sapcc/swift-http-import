@@ -43,9 +43,9 @@ import (
 	"golang.org/x/crypto/openpgp/packet"
 )
 
-//GPGKeyRing contains a list of openpgp Entities. It is used to verify different
-//types of GPG signatures.
-//If a new key is discovered/downloaded, it is uploaded to the SwiftContainer.
+// GPGKeyRing contains a list of openpgp Entities. It is used to verify different
+// types of GPG signatures.
+// If a new key is discovered/downloaded, it is uploaded to the SwiftContainer.
 type GPGKeyRing struct {
 	EntityList openpgp.EntityList
 	Mux        sync.RWMutex
@@ -54,7 +54,7 @@ type GPGKeyRing struct {
 	SwiftContainer       *schwift.Container
 }
 
-//NewGPGKeyRing creates a new GPGKeyRing instance.
+// NewGPGKeyRing creates a new GPGKeyRing instance.
 func NewGPGKeyRing(cntr *schwift.Container, keyserverURLPatterns []string) *GPGKeyRing {
 	ksURLPatterns := keyserverURLPatterns
 	if len(ksURLPatterns) == 0 {
@@ -96,22 +96,22 @@ func NewGPGKeyRing(cntr *schwift.Container, keyserverURLPatterns []string) *GPGK
 	}
 }
 
-//VerifyClearSignedGPGSignature takes a clear signed message and checks if the
-//signature is valid.
-//If the key ring does not contain the concerning public key then the key is downloaded
-//from a pool server and added to the existing key ring.
-//A non-nil error is returned, if signature verification was unsuccessful.
+// VerifyClearSignedGPGSignature takes a clear signed message and checks if the
+// signature is valid.
+// If the key ring does not contain the concerning public key then the key is downloaded
+// from a pool server and added to the existing key ring.
+// A non-nil error is returned, if signature verification was unsuccessful.
 func (k *GPGKeyRing) VerifyClearSignedGPGSignature(messageWithSignature []byte) error {
 	block, _ := clearsign.Decode(messageWithSignature)
 	return k.verifyGPGSignature(block.Bytes, block.ArmoredSignature)
 }
 
-//VerifyDetachedGPGSignature takes a message along with its detached signature
-//and checks if the signature is valid. The detached signature is expected to
-//be armored.
-//If the key ring does not contain the concerning public key then the key is downloaded
-//from a pool server and added to the existing key ring.
-//A non-nil error is returned, if signature verification was unsuccessful.
+// VerifyDetachedGPGSignature takes a message along with its detached signature
+// and checks if the signature is valid. The detached signature is expected to
+// be armored.
+// If the key ring does not contain the concerning public key then the key is downloaded
+// from a pool server and added to the existing key ring.
+// A non-nil error is returned, if signature verification was unsuccessful.
 func (k *GPGKeyRing) VerifyDetachedGPGSignature(message, armoredSignature []byte) error {
 	block, err := armor.Decode(bytes.NewReader(armoredSignature))
 	if err != nil {

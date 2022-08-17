@@ -57,8 +57,9 @@ type GithubReleaseSource struct {
 // githubRepoRx is used to extract repository owner and name from a url.URL.Path field.
 //
 // Example:
-//   Input: /sapcc/swift-http-import
-//   Match groups: ["sapcc", "swift-http-import"]
+//
+//	Input: /sapcc/swift-http-import
+//	Match groups: ["sapcc", "swift-http-import"]
 var githubRepoRx = regexp.MustCompile(`^/([^\s/]+)/([^\s/]+)/?$`)
 
 // Validate implements the Source interface.

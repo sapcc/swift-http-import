@@ -33,19 +33,20 @@ import (
 	"github.com/sapcc/swift-http-import/pkg/util"
 )
 
-//'Packages' indices
-//Reference:
-//  For '$COMP/binary-$ARCH/Packages.(gz|xz)' or
-//  '$COMP/debian-installer/binary-$ARCH/Packages.(gz|xz)'.
+// 'Packages' indices
+// Reference:
 //
-//  matchList[1] = "$COMP"
-//  matchList[3] = "$ARCH"
+//	For '$COMP/binary-$ARCH/Packages.(gz|xz)' or
+//	'$COMP/debian-installer/binary-$ARCH/Packages.(gz|xz)'.
+//
+//	matchList[1] = "$COMP"
+//	matchList[3] = "$ARCH"
 var debReleasePackagesEntryRx = regexp.MustCompile(`^([a-zA-Z]+)/(debian-installer/)?binary-(\w+)/Packages(\.gz|\.xz)$`)
 
-//DebianSource is a URLSource containing a Debian repository. This type reuses
-//the Validate() and Connect() logic of URLSource, but adds a custom scraping
-//implementation that reads the Debian repository metadata instead of relying
-//on directory listings.
+// DebianSource is a URLSource containing a Debian repository. This type reuses
+// the Validate() and Connect() logic of URLSource, but adds a custom scraping
+// implementation that reads the Debian repository metadata instead of relying
+// on directory listings.
 type DebianSource struct {
 	//options from config file
 	URLString                string   `yaml:"url"`
@@ -61,7 +62,7 @@ type DebianSource struct {
 	gpgKeyRing      *util.GPGKeyRing `yaml:"-"`
 }
 
-//Validate implements the Source interface.
+// Validate implements the Source interface.
 func (s *DebianSource) Validate(name string) []error {
 	s.urlSource = &URLSource{
 		URLString:                s.URLString,
@@ -76,22 +77,22 @@ func (s *DebianSource) Validate(name string) []error {
 	return s.urlSource.Validate(name)
 }
 
-//Connect implements the Source interface.
+// Connect implements the Source interface.
 func (s *DebianSource) Connect(name string) error {
 	return s.urlSource.Connect(name)
 }
 
-//ListEntries implements the Source interface.
+// ListEntries implements the Source interface.
 func (s *DebianSource) ListEntries(directoryPath string) ([]FileSpec, *ListEntriesError) {
 	return nil, ErrListEntriesNotSupported
 }
 
-//GetFile implements the Source interface.
+// GetFile implements the Source interface.
 func (s *DebianSource) GetFile(path string, requestHeaders schwift.ObjectHeaders) (body io.ReadCloser, sourceState FileState, err error) {
 	return s.urlSource.GetFile(path, requestHeaders)
 }
 
-//ListAllFiles implements the Source interface.
+// ListAllFiles implements the Source interface.
 func (s *DebianSource) ListAllFiles(out chan<- FileSpec) *ListEntriesError {
 	if len(s.Distributions) == 0 {
 		return &ListEntriesError{
@@ -126,7 +127,7 @@ func (s *DebianSource) ListAllFiles(out chan<- FileSpec) *ListEntriesError {
 	return nil
 }
 
-//Helper function for DebianSource.ListAllFiles().
+// Helper function for DebianSource.ListAllFiles().
 func (s *DebianSource) listDistFiles(distRootPath string, cache map[string]FileSpec) ([]string, *ListEntriesError) {
 	var distFiles []string
 
@@ -271,7 +272,7 @@ func (s *DebianSource) listDistFiles(distRootPath string, cache map[string]FileS
 	return distFiles, nil
 }
 
-//Helper function for DebianSource.ListAllFiles().
+// Helper function for DebianSource.ListAllFiles().
 func (s *DebianSource) downloadAndParseDCF(path string, data interface{}, cache map[string]FileSpec) (contents []byte, uri string, e *ListEntriesError) {
 	buf, uri, lerr := s.urlSource.getFileContents(path, cache)
 	if lerr != nil {
@@ -308,7 +309,7 @@ func (s *DebianSource) downloadAndParseDCF(path string, data interface{}, cache 
 	return buf, uri, nil
 }
 
-//Helper function for DebianSource.ListAllFiles().
+// Helper function for DebianSource.ListAllFiles().
 func stripFileExtension(fileName string) string {
 	ext := filepath.Ext(fileName)
 	if ext == "" {
@@ -318,7 +319,7 @@ func stripFileExtension(fileName string) string {
 	return strings.TrimSuffix(fileName, ext)
 }
 
-//Helper function for DebianSource.ListAllFiles().
+// Helper function for DebianSource.ListAllFiles().
 func (s *DebianSource) recursivelyListEntries(path string) ([]string, *ListEntriesError) {
 	var files []string
 

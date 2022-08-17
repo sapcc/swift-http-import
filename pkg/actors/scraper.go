@@ -28,12 +28,12 @@ import (
 	"github.com/sapcc/swift-http-import/pkg/objects"
 )
 
-//Scraper is an actor that reads directory listings on the source side to
-//enumerate all files that need to be transferred.
+// Scraper is an actor that reads directory listings on the source side to
+// enumerate all files that need to be transferred.
 //
-//Scraping starts from the root directories of each job in the `Jobs` list.
-//For each input file, a File struct is sent into the `Output` channel.
-//For each directory, a report is sent into the `Report` channel.
+// Scraping starts from the root directories of each job in the `Jobs` list.
+// For each input file, a File struct is sent into the `Output` channel.
+// For each directory, a report is sent into the `Report` channel.
 type Scraper struct {
 	Context context.Context
 	Jobs    []*objects.Job
@@ -41,7 +41,7 @@ type Scraper struct {
 	Report  chan<- ReportEvent
 }
 
-//Run implements the Actor interface.
+// Run implements the Actor interface.
 func (s *Scraper) Run() {
 	//push jobs in *reverse* order so that the first job will be processed first
 	stack := make(directoryStack, 0, len(s.Jobs))
@@ -145,7 +145,7 @@ func (s *Scraper) Run() {
 	close(s.Output)
 }
 
-//directoryStack is a []objects.Directory that implements LIFO semantics.
+// directoryStack is a []objects.Directory that implements LIFO semantics.
 type directoryStack []objects.Directory
 
 func (s directoryStack) IsEmpty() bool {
