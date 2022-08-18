@@ -34,7 +34,7 @@ func init() {
 	//where you definitely don't want to turn off certificate verification.)
 	if os.Getenv("INSECURE") == "1" {
 		http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{
-			InsecureSkipVerify: true,
+			InsecureSkipVerify: true, //nolint:gosec // only used in development environments
 		}
 	}
 }

@@ -124,7 +124,7 @@ type parsedResponseHeaders struct {
 }
 
 func (d *downloader) buildRequest() (*http.Request, error) {
-	req, err := http.NewRequest("GET", d.URI, nil)
+	req, err := http.NewRequest(http.MethodGet, d.URI, http.NoBody)
 	if err != nil {
 		return nil, err
 	}

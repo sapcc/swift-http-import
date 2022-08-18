@@ -198,13 +198,13 @@ func (s *SwiftLocation) Connect(name string) error {
 			)
 		}
 
-		client, err := openstack.NewObjectStorageV1(provider, gophercloud.EndpointOpts{
+		serviceClient, err := openstack.NewObjectStorageV1(provider, gophercloud.EndpointOpts{
 			Region: s.RegionName,
 		})
 		if err != nil {
 			return fmt.Errorf("cannot create Swift client: %s", err.Error())
 		}
-		s.Account, err = gopherschwift.Wrap(client, &gopherschwift.Options{
+		s.Account, err = gopherschwift.Wrap(serviceClient, &gopherschwift.Options{
 			UserAgent: "swift-http-import/" + bininfo.VersionOr("dev"),
 		})
 		if err != nil {

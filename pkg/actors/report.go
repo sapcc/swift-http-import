@@ -141,7 +141,7 @@ func (r *Report) Run() {
 	gauge("last_run.files_failed", r.stats.FilesFailed, 1.0)          //nolint:errcheck
 	gauge("last_run.files_cleaned_up", r.stats.FilesCleanedUp, 1.0)   //nolint:errcheck
 	gauge("last_run.bytes_transfered", r.stats.BytesTransferred, 1.0) //nolint:errcheck
-	if r.stats.FilesFailed > 0 || r.stats.DirectoriesFailed > 0 {     //nolint:errcheck
+	if r.stats.FilesFailed > 0 || r.stats.DirectoriesFailed > 0 {
 		gauge("last_run.success", 0, 1.0) //nolint:errcheck
 		r.ExitCode = 1
 	} else {

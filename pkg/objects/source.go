@@ -183,7 +183,7 @@ func (u *URLSource) Validate(name string) (result []error) {
 
 // Connect implements the Source interface.
 func (u *URLSource) Connect(name string) error {
-	tlsConfig := &tls.Config{}
+	tlsConfig := &tls.Config{} //nolint:gosec // only used in a client which defaults to min TLS version 1.2
 
 	if u.ClientCertificatePath != "" {
 		// Load client cert
@@ -334,25 +334,22 @@ func (u URLSource) ListEntries(directoryPath string) ([]FileSpec, *ListEntriesEr
 }
 
 // GetFile implements the Source interface.
-func (u URLSource) GetFile(path string, requestHeaders schwift.ObjectHeaders) (io.ReadCloser, FileState, error) {
-	uri := u.getURLForPath(path).String()
+func (u URLSource) GetFile(filePath string, requestHeaders schwift.ObjectHeaders) (respBody io.ReadCloser, fileState FileState, err error) {
+	uri := u.getURLForPath(filePath).String()
 	requestHeaders.Set("User-Agent", "swift-http-import/"+bininfo.VersionOr("dev"))
 
 	//retrieve file from source
-	var (
-		response *http.Response
-		err      error
-	)
+	var response *http.Response
 	if u.Segmenting {
-		response, err = util.EnhancedGet(u.HTTPClient, uri, requestHeaders.ToHTTP(), u.SegmentSize)
+		response, err = util.EnhancedGet(u.HTTPClient, uri, requestHeaders.ToHTTP(), u.SegmentSize) //nolint:bodyclose // response.Body is returned and can't be closed yet
 	} else {
 		var req *http.Request
-		req, err = http.NewRequest("GET", uri, nil)
+		req, err = http.NewRequest(http.MethodGet, uri, http.NoBody)
 		if err == nil {
 			for key, val := range requestHeaders.Headers {
 				req.Header.Set(key, val)
 			}
-			response, err = u.HTTPClient.Do(req)
+			response, err = u.HTTPClient.Do(req) //nolint:bodyclose // response.Body is returned and can't be closed yet
 		}
 	}
 	if err != nil {
@@ -377,15 +374,15 @@ func (u URLSource) GetFile(path string, requestHeaders schwift.ObjectHeaders) (i
 }
 
 // Return the URL for the given path below this URLSource.
-func (u URLSource) getURLForPath(path string) *url.URL {
-	return u.URL.ResolveReference(&url.URL{Path: strings.TrimPrefix(path, "/")})
+func (u URLSource) getURLForPath(filePath string) *url.URL {
+	return u.URL.ResolveReference(&url.URL{Path: strings.TrimPrefix(filePath, "/")})
 }
 
 // Helper function for custom source types.
-func (u URLSource) getFileContents(path string, cache map[string]FileSpec) (contents []byte, uri string, e *ListEntriesError) {
-	uri = u.getURLForPath(path).String()
+func (u URLSource) getFileContents(filePath string, cache map[string]FileSpec) (contents []byte, uri string, e *ListEntriesError) {
+	uri = u.getURLForPath(filePath).String()
 
-	req, err := http.NewRequest("GET", uri, nil)
+	req, err := http.NewRequest(http.MethodGet, uri, http.NoBody)
 	if err != nil {
 		return nil, uri, &ListEntriesError{uri, "GET failed", err}
 	}
@@ -405,8 +402,8 @@ func (u URLSource) getFileContents(path string, cache map[string]FileSpec) (cont
 		return nil, uri, &ListEntriesError{uri, fmt.Sprintf("GET returned status %d", resp.StatusCode), nil}
 	}
 
-	cache[path] = FileSpec{
-		Path:     path,
+	cache[filePath] = FileSpec{
+		Path:     filePath,
 		Contents: result,
 		Headers:  resp.Header,
 	}
