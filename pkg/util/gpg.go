@@ -207,7 +207,7 @@ var (
 )
 
 func getPublicKeyFromServer(uri string) ([]byte, error) {
-	resp, err := http.Get(uri)
+	resp, err := http.Get(uri) //nolint:gosec // potential servers are hardcoded in configuration and URL needs to be variable
 	if err != nil {
 		return nil, err
 	}

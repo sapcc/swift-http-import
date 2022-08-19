@@ -78,7 +78,7 @@ const (
 // PerformTransfer transfers this file from the source to the target.
 // It returns the TransferResult (which indicates if the transfer finished successfully)
 // and the number of bytes transferred.
-func (f File) PerformTransfer() (TransferResult, int64) {
+func (f File) PerformTransfer() (transferResult TransferResult, _ int64) {
 	object := f.TargetObject()
 
 	//check if this file needs transfer
