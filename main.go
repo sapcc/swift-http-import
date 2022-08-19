@@ -22,6 +22,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 	"sync"
 	"time"
@@ -29,6 +30,7 @@ import (
 	"github.com/sapcc/go-api-declarations/bininfo"
 	"github.com/sapcc/go-bits/httpext"
 	"github.com/sapcc/go-bits/logg"
+	"github.com/sapcc/go-bits/osext"
 
 	"github.com/sapcc/swift-http-import/pkg/actors"
 	"github.com/sapcc/swift-http-import/pkg/objects"
@@ -36,6 +38,10 @@ import (
 
 func main() {
 	startTime := time.Now()
+
+	wrap := httpext.WrapTransport(&http.DefaultTransport)
+	wrap.SetInsecureSkipVerify(osext.GetenvBool("INSECURE")) //for debugging with mitmproxy etc. (DO NOT SET IN PRODUCTION)
+	wrap.SetOverrideUserAgent(bininfo.Component(), bininfo.VersionOr("dev"))
 
 	//read arguments
 	if len(os.Args) != 2 {
