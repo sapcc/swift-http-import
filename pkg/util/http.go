@@ -165,7 +165,7 @@ func (d *downloader) getNextChunk() (*http.Response, *parsedResponseHeaders, err
 
 	//parse Content-Range header
 	var headers parsedResponseHeaders
-	if resp.StatusCode == 206 {
+	if resp.StatusCode == http.StatusPartialContent {
 		contentRange := resp.Header.Get("Content-Range")
 		start, stop, total, ok := parseContentRange(contentRange)
 		if !ok {
