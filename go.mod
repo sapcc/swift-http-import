@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/cactus/go-statsd-client/v4 v4.0.0
 	github.com/google/go-github/v44 v44.1.0
-	github.com/gophercloud/gophercloud v0.25.0
+	github.com/gophercloud/gophercloud v1.0.0
 	github.com/gophercloud/utils v0.0.0-20220704184730-55bdbbaec4ba
 	github.com/majewsky/schwift v1.1.0
 	github.com/sapcc/go-api-declarations v1.3.0
