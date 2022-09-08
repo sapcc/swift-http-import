@@ -9,7 +9,7 @@ require (
 	github.com/gophercloud/utils v0.0.0-20220704184730-55bdbbaec4ba
 	github.com/majewsky/schwift v1.1.0
 	github.com/sapcc/go-api-declarations v1.3.0
-	github.com/sapcc/go-bits v0.0.0-20220829144248-42b88f9c5789
+	github.com/sapcc/go-bits v0.0.0-20220908182641-3f500a62345d
 	github.com/ulikunitz/xz v0.5.10
 	golang.org/x/crypto v0.0.0-20220829220503-c86fa9a7ed90
 	golang.org/x/net v0.0.0-20220907135653-1e95f45603a7
