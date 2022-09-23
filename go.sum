@@ -30,8 +30,8 @@ github.com/majewsky/schwift v1.1.0/go.mod h1:U9hKxikTsGLp4m0lI3oOcz2GtsLvD7kbgW7
 github.com/mitchellh/go-homedir v1.1.0/go.mod h1:SfyaCUpYCn1Vlf4IUYiD9fPX4A5wJrkLzIz1N1q0pr0=
 github.com/sapcc/go-api-declarations v1.3.0 h1:4FMj0UR+Pydil1cpIewa068w/55mqvg3+/ILy3hGQ0g=
 github.com/sapcc/go-api-declarations v1.3.0/go.mod h1:EA4x5xxJGyG/3JTteUOYBg6cJLJgsBHrDj3ryfNU4dQ=
-github.com/sapcc/go-bits v0.0.0-20220909131733-7e2aa654bf15 h1:f61Vt5bV3ThpngnYTRgAdt90DM8xHWG3mmboQLfHbzo=
-github.com/sapcc/go-bits v0.0.0-20220909131733-7e2aa654bf15/go.mod h1:FNojq308YiA7iTASrgJ1myN/O6wofl7wvSeAH13xYyc=
+github.com/sapcc/go-bits v0.0.0-20220919133313-cbe76a8983ac h1:MsAwYxjc45hgUfStA9xr3VRMKzRscAFBG3O1vqOmL90=
+github.com/sapcc/go-bits v0.0.0-20220919133313-cbe76a8983ac/go.mod h1:rxtXaI5YwlaopZXSED/4GKTz4Azq9mAuywdz+FQ5ns0=
 github.com/sergi/go-diff v1.2.0 h1:XU+rvMAioB0UC3q1MFrIQy4Vo5/4VsRDQQXHsEya6xQ=
 github.com/ulikunitz/xz v0.5.10 h1:t92gobL9l3HE202wg3rlk19F6X+JOxl9BBrCCMYEYd8=
 github.com/ulikunitz/xz v0.5.10/go.mod h1:nbz6k7qbPmH4IRqmfOplQw/tblSgqTqBwxkY0oWt/14=
