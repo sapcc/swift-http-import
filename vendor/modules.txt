@@ -63,7 +63,7 @@ golang.org/x/net/context
 golang.org/x/net/context/ctxhttp
 golang.org/x/net/html
 golang.org/x/net/html/atom
-# golang.org/x/oauth2 v0.0.0-20220909003341-f21342109be1
+# golang.org/x/oauth2 v0.0.0-20221006150949-b44042a4b9c1
 ## explicit; go 1.17
 golang.org/x/oauth2
 golang.org/x/oauth2/internal
