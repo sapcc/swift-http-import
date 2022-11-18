@@ -11,7 +11,7 @@ require (
 	github.com/sapcc/go-api-declarations v1.4.2
 	github.com/sapcc/go-bits v0.0.0-20221118052741-73416f11c308
 	github.com/ulikunitz/xz v0.5.10
-	golang.org/x/crypto v0.2.0
+	golang.org/x/crypto v0.3.0
 	golang.org/x/net v0.2.0
 	golang.org/x/oauth2 v0.2.0
 	gopkg.in/yaml.v2 v2.4.0
