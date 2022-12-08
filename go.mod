@@ -5,15 +5,15 @@ go 1.19
 require (
 	github.com/cactus/go-statsd-client/v4 v4.0.0
 	github.com/google/go-github/v44 v44.1.0
-	github.com/gophercloud/gophercloud v1.1.0
-	github.com/gophercloud/utils v0.0.0-20221128194715-5caf33c866da
+	github.com/gophercloud/gophercloud v1.1.1
+	github.com/gophercloud/utils v0.0.0-20221207145018-e8fba78967ca
 	github.com/majewsky/schwift v1.2.0
 	github.com/sapcc/go-api-declarations v1.4.2
-	github.com/sapcc/go-bits v0.0.0-20221129160449-962ccbbba85a
+	github.com/sapcc/go-bits v0.0.0-20221208125747-5e9258fd2f23
 	github.com/ulikunitz/xz v0.5.10
-	golang.org/x/crypto v0.3.0
-	golang.org/x/net v0.2.0
-	golang.org/x/oauth2 v0.2.0
+	golang.org/x/crypto v0.4.0
+	golang.org/x/net v0.4.0
+	golang.org/x/oauth2 v0.3.0
 	gopkg.in/yaml.v2 v2.4.0
 	pault.ag/go/debian v0.12.0
 )
