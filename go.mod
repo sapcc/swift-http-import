@@ -3,8 +3,8 @@ module github.com/sapcc/swift-http-import
 go 1.19
 
 require (
-	github.com/cactus/go-statsd-client/v4 v4.0.0
-	github.com/google/go-github/v44 v44.1.0
+	github.com/cactus/go-statsd-client/v5 v5.0.0
+	github.com/google/go-github/v48 v48.2.0
 	github.com/gophercloud/gophercloud v1.1.1
 	github.com/gophercloud/utils v0.0.0-20221207145018-e8fba78967ca
 	github.com/majewsky/schwift v1.2.0
@@ -14,7 +14,7 @@ require (
 	golang.org/x/crypto v0.4.0
 	golang.org/x/net v0.4.0
 	golang.org/x/oauth2 v0.3.0
-	gopkg.in/yaml.v2 v2.4.0
+	gopkg.in/yaml.v3 v3.0.1
 	pault.ag/go/debian v0.12.0
 )
 
