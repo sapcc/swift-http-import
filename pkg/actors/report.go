@@ -23,7 +23,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/cactus/go-statsd-client/v4/statsd"
+	"github.com/cactus/go-statsd-client/v5/statsd"
 	"github.com/sapcc/go-bits/logg"
 
 	"github.com/sapcc/swift-http-import/pkg/objects"
@@ -128,11 +128,11 @@ func (r *Report) Run() {
 	}
 
 	//send statistics
-	var gauge func(string, int64, float32) error
+	var gauge func(string, int64, float32, ...statsd.Tag) error
 	if statter != nil {
 		gauge = statter.Gauge
 	} else {
-		gauge = func(bucket string, value int64, rate float32) error { return nil }
+		gauge = func(bucket string, value int64, rate float32, tags ...statsd.Tag) error { return nil }
 	}
 	gauge("last_run.jobs_skipped", r.stats.JobsSkipped, 1.0)          //nolint:errcheck
 	gauge("last_run.dirs_scanned", r.stats.DirectoriesScanned, 1.0)   //nolint:errcheck
