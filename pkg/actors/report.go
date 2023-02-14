@@ -20,6 +20,7 @@
 package actors
 
 import (
+	"context"
 	"strconv"
 	"time"
 
@@ -82,7 +83,7 @@ func (r *Report) Stats() Stats {
 }
 
 // Run implements the Actor interface.
-func (r *Report) Run() {
+func (r *Report) Run(ctx context.Context) {
 	var statter statsd.Statter
 
 	//initialize statsd client

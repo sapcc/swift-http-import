@@ -32,15 +32,14 @@ import (
 // Files to transfer are read from the `Input` channel until it is closed.
 // For each input file, a report is sent into the `Report` channel.
 type Transferor struct {
-	Context context.Context
-	Input   <-chan objects.File
-	Output  chan<- FileInfoForCleaner
-	Report  chan<- ReportEvent
+	Input  <-chan objects.File
+	Output chan<- FileInfoForCleaner
+	Report chan<- ReportEvent
 }
 
 // Run implements the Actor interface.
-func (t *Transferor) Run() {
-	done := t.Context.Done()
+func (t *Transferor) Run(ctx context.Context) {
+	done := ctx.Done()
 
 	//main transfer loop - report successful and skipped transfers immediately,
 	//but push back failed transfers for later retry
@@ -76,7 +75,7 @@ LOOP:
 		//...but only if we were not aborted (this is checked in every loop
 		//iteration because the abort signal (i.e. Ctrl-C) could also happen
 		//during this loop)
-		if !aborted && t.Context.Err() == nil {
+		if !aborted && ctx.Err() == nil {
 			result, size = file.PerformTransfer()
 		}
 		t.Output <- FileInfoForCleaner{File: file, Failed: result == objects.TransferFailed}

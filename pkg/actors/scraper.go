@@ -35,14 +35,13 @@ import (
 // For each input file, a File struct is sent into the `Output` channel.
 // For each directory, a report is sent into the `Report` channel.
 type Scraper struct {
-	Context context.Context
-	Jobs    []*objects.Job
-	Output  chan<- objects.File
-	Report  chan<- ReportEvent
+	Jobs   []*objects.Job
+	Output chan<- objects.File
+	Report chan<- ReportEvent
 }
 
 // Run implements the Actor interface.
-func (s *Scraper) Run() {
+func (s *Scraper) Run(ctx context.Context) {
 	//push jobs in *reverse* order so that the first job will be processed first
 	stack := make(directoryStack, 0, len(s.Jobs))
 	for idx := range s.Jobs {
@@ -54,7 +53,7 @@ func (s *Scraper) Run() {
 
 	for !stack.IsEmpty() {
 		//check if state.Context.Done() is closed
-		if s.Context.Err() != nil {
+		if ctx.Err() != nil {
 			break
 		}
 

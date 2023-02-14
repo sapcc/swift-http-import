@@ -38,13 +38,12 @@ type FileInfoForCleaner struct {
 // Cleaner is an actor that cleans up unknown objects on the target side (i.e.
 // those objects which do not exist on the source side).
 type Cleaner struct {
-	Context context.Context
-	Input   <-chan FileInfoForCleaner
-	Report  chan<- ReportEvent
+	Input  <-chan FileInfoForCleaner
+	Report chan<- ReportEvent
 }
 
 // Run implements the Actor interface.
-func (c *Cleaner) Run() {
+func (c *Cleaner) Run(ctx context.Context) {
 	isJobFailed := make(map[*objects.Job]bool)
 	isFileTransferred := make(map[*objects.Job]map[string]bool) //string = object name incl. prefix (if any)
 
@@ -69,7 +68,7 @@ func (c *Cleaner) Run() {
 		}
 		m[info.File.TargetObject().Name()] = true
 	}
-	if c.Context.Err() != nil {
+	if ctx.Err() != nil {
 		logg.Info("skipping cleanup phase: interrupt was received")
 		return
 	}
@@ -92,7 +91,7 @@ func (c *Cleaner) Run() {
 
 	//perform cleanup if it is safe to do so
 	for job, transferred := range isFileTransferred {
-		if c.Context.Err() != nil {
+		if ctx.Err() != nil {
 			//interrupt received
 			return
 		}

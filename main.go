@@ -71,10 +71,12 @@ func main() {
 		StartTime: startTime,
 	}
 	var wgReport sync.WaitGroup
-	actors.Start(&report, &wgReport)
+	//setup a context that shuts down all pipeline actors when an interrupt signal is received
+	ctx := httpext.ContextWithSIGINT(context.Background(), 1*time.Second)
+	actors.Start(ctx, &report, &wgReport)
 
 	//do the work
-	runPipeline(config, reportChan)
+	runPipeline(ctx, config, reportChan)
 
 	//shutdown Report actor
 	close(reportChan)
@@ -82,36 +84,30 @@ func main() {
 	os.Exit(report.ExitCode)
 }
 
-func runPipeline(config *objects.Configuration, report chan<- actors.ReportEvent) {
-	//setup a context that shuts down all pipeline actors when an interrupt signal is received
-	ctx := httpext.ContextWithSIGINT(context.Background(), 1*time.Second)
-
+func runPipeline(ctx context.Context, config *objects.Configuration, report chan<- actors.ReportEvent) {
 	//start the pipeline actors
 	var wg sync.WaitGroup
 	var wgTransfer sync.WaitGroup
 	queue1 := make(chan objects.File, 10)              //will be closed by scraper when it's done
 	queue2 := make(chan actors.FileInfoForCleaner, 10) //will be closed by us when all transferors are done
 
-	actors.Start(&actors.Scraper{
-		Context: ctx,
-		Jobs:    config.Jobs,
-		Output:  queue1,
-		Report:  report,
+	actors.Start(ctx, &actors.Scraper{
+		Jobs:   config.Jobs,
+		Output: queue1,
+		Report: report,
 	}, &wg)
 
 	for i := uint(0); i < config.WorkerCounts.Transfer; i++ {
-		actors.Start(&actors.Transferor{
-			Context: ctx,
-			Input:   queue1,
-			Output:  queue2,
-			Report:  report,
+		actors.Start(ctx, &actors.Transferor{
+			Input:  queue1,
+			Output: queue2,
+			Report: report,
 		}, &wg, &wgTransfer)
 	}
 
-	actors.Start(&actors.Cleaner{
-		Context: ctx,
-		Input:   queue2,
-		Report:  report,
+	actors.Start(ctx, &actors.Cleaner{
+		Input:  queue2,
+		Report: report,
 	}, &wg)
 
 	//wait for transfer phase to finish
