@@ -99,7 +99,7 @@ func (s *SwiftLocation) Validate(name string) []error {
 				result = append(result, fmt.Errorf("missing value for %s.user_domain_name", name))
 			}
 		}
-		if string(s.ApplicationCredentialSecret) == "" {
+		if s.ApplicationCredentialSecret == "" {
 			result = append(result, fmt.Errorf("missing value for %s.application_credential_secret", name))
 		}
 	} else {
