@@ -38,11 +38,11 @@ import (
 
 type GithubReleaseSource struct {
 	// Options from config file.
-	URLString         string               `yaml:"url"`
-	Token             secrets.AuthPassword `yaml:"token"`
-	TagNamePattern    string               `yaml:"tag_name_pattern"`
-	IncludeDraft      bool                 `yaml:"include_draft"`
-	IncludePrerelease bool                 `yaml:"include_prerelease"`
+	URLString         string          `yaml:"url"`
+	Token             secrets.FromEnv `yaml:"token"`
+	TagNamePattern    string          `yaml:"tag_name_pattern"`
+	IncludeDraft      bool            `yaml:"include_draft"`
+	IncludePrerelease bool            `yaml:"include_prerelease"`
 
 	// Compiled configuration.
 	url       *url.URL       `yaml:"-"`
