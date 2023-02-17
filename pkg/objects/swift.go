@@ -20,6 +20,7 @@
 package objects
 
 import (
+	"crypto/tls"
 	"fmt"
 	"io"
 	"net/http"
@@ -48,6 +49,8 @@ type SwiftLocation struct {
 	ApplicationCredentialID     secrets.FromEnv `yaml:"application_credential_id"`
 	ApplicationCredentialName   secrets.FromEnv `yaml:"application_credential_name"`
 	ApplicationCredentialSecret secrets.FromEnv `yaml:"application_credential_secret"`
+	TLSClientCertificatePath    secrets.FromEnv `yaml:"tls_client_certificate_path"`
+	TLSClientKeyPath            secrets.FromEnv `yaml:"tls_client_key_path"`
 	RegionName                  secrets.FromEnv `yaml:"region_name"`
 	ContainerName               secrets.FromEnv `yaml:"container"`
 	ObjectNamePrefix            secrets.FromEnv `yaml:"object_prefix"`
@@ -86,6 +89,15 @@ func (s *SwiftLocation) Validate(name string) []error {
 
 	if s.AuthURL == "" {
 		result = append(result, fmt.Errorf("missing value for %s.auth_url", name))
+	}
+
+	if s.TLSClientCertificatePath != "" || s.TLSClientKeyPath != "" {
+		if s.TLSClientCertificatePath == "" {
+			result = append(result, fmt.Errorf("missing value for %s.tls_client_certificate_path", name))
+		}
+		if s.TLSClientKeyPath == "" {
+			result = append(result, fmt.Errorf("missing value for %s.tls_client_key_path", name))
+		}
 	}
 
 	if s.ApplicationCredentialID != "" || s.ApplicationCredentialName != "" {
@@ -173,9 +185,22 @@ func (s *SwiftLocation) Connect(name string) error {
 			return fmt.Errorf("cannot create OpenStack client: %s", err.Error())
 		}
 
+		transport := &http.Transport{}
+		if s.TLSClientCertificatePath != "" && s.TLSClientKeyPath != "" {
+			cert, err := tls.LoadX509KeyPair(string(s.TLSClientCertificatePath), string(s.TLSClientKeyPath))
+			if err != nil {
+				return fmt.Errorf("failed to load x509 key pair: %s", err.Error())
+			}
+			transport.TLSClientConfig = &tls.Config{
+				Certificates: []tls.Certificate{cert},
+				MinVersion:   tls.VersionTLS12,
+			}
+			provider.HTTPClient.Transport = transport
+		}
+
 		if logg.ShowDebug {
 			provider.HTTPClient.Transport = &client.RoundTripper{
-				Rt:     http.DefaultTransport,
+				Rt:     transport,
 				Logger: &logger{Prefix: name},
 			}
 		}
