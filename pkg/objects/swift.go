@@ -39,18 +39,18 @@ import (
 // SwiftLocation contains all parameters required to establish a Swift connection.
 // It implements the Source interface, but is also used on the target side.
 type SwiftLocation struct {
-	AuthURL                     string          `yaml:"auth_url"`
-	UserName                    string          `yaml:"user_name"`
-	UserDomainName              string          `yaml:"user_domain_name"`
-	ProjectName                 string          `yaml:"project_name"`
-	ProjectDomainName           string          `yaml:"project_domain_name"`
+	AuthURL                     secrets.FromEnv `yaml:"auth_url"`
+	UserName                    secrets.FromEnv `yaml:"user_name"`
+	UserDomainName              secrets.FromEnv `yaml:"user_domain_name"`
+	ProjectName                 secrets.FromEnv `yaml:"project_name"`
+	ProjectDomainName           secrets.FromEnv `yaml:"project_domain_name"`
 	Password                    secrets.FromEnv `yaml:"password"`
-	ApplicationCredentialID     string          `yaml:"application_credential_id"`
-	ApplicationCredentialName   string          `yaml:"application_credential_name"`
+	ApplicationCredentialID     secrets.FromEnv `yaml:"application_credential_id"`
+	ApplicationCredentialName   secrets.FromEnv `yaml:"application_credential_name"`
 	ApplicationCredentialSecret secrets.FromEnv `yaml:"application_credential_secret"`
-	RegionName                  string          `yaml:"region_name"`
-	ContainerName               string          `yaml:"container"`
-	ObjectNamePrefix            string          `yaml:"object_prefix"`
+	RegionName                  secrets.FromEnv `yaml:"region_name"`
+	ContainerName               secrets.FromEnv `yaml:"container"`
+	ObjectNamePrefix            secrets.FromEnv `yaml:"object_prefix"`
 	//configuration for Validate()
 	ValidateIgnoreEmptyContainer bool `yaml:"-"`
 	//Account and Container is filled by Connect(). Container will be nil if ContainerName is empty.
@@ -63,16 +63,16 @@ type SwiftLocation struct {
 
 func (s SwiftLocation) cacheKey(name string) string {
 	v := []string{
-		s.AuthURL,
-		s.UserName,
-		s.UserDomainName,
-		s.ProjectName,
-		s.ProjectDomainName,
+		string(s.AuthURL),
+		string(s.UserName),
+		string(s.UserDomainName),
+		string(s.ProjectName),
+		string(s.ProjectDomainName),
 		string(s.Password),
-		s.ApplicationCredentialID,
-		s.ApplicationCredentialName,
+		string(s.ApplicationCredentialID),
+		string(s.ApplicationCredentialName),
 		string(s.ApplicationCredentialSecret),
-		s.RegionName,
+		string(s.RegionName),
 	}
 	if logg.ShowDebug {
 		v = append(v, name)
@@ -124,7 +124,7 @@ func (s *SwiftLocation) Validate(name string) []error {
 		result = append(result, fmt.Errorf("missing value for %s.container", name))
 	}
 
-	if s.ObjectNamePrefix != "" && !strings.HasSuffix(s.ObjectNamePrefix, "/") {
+	if s.ObjectNamePrefix != "" && !strings.HasSuffix(string(s.ObjectNamePrefix), "/") {
 		s.ObjectNamePrefix += "/"
 	}
 
@@ -154,16 +154,16 @@ func (s *SwiftLocation) Connect(name string) error {
 	s.Account = accountCache[key]
 	if s.Account == nil {
 		authOptions := gophercloud.AuthOptions{
-			IdentityEndpoint:            s.AuthURL,
-			Username:                    s.UserName,
-			DomainName:                  s.UserDomainName,
+			IdentityEndpoint:            string(s.AuthURL),
+			Username:                    string(s.UserName),
+			DomainName:                  string(s.UserDomainName),
 			Password:                    string(s.Password),
-			ApplicationCredentialID:     s.ApplicationCredentialID,
-			ApplicationCredentialName:   s.ApplicationCredentialName,
+			ApplicationCredentialID:     string(s.ApplicationCredentialID),
+			ApplicationCredentialName:   string(s.ApplicationCredentialName),
 			ApplicationCredentialSecret: string(s.ApplicationCredentialSecret),
 			Scope: &gophercloud.AuthScope{
-				ProjectName: s.ProjectName,
-				DomainName:  s.ProjectDomainName,
+				ProjectName: string(s.ProjectName),
+				DomainName:  string(s.ProjectDomainName),
 			},
 			AllowReauth: true,
 		}
@@ -199,7 +199,7 @@ func (s *SwiftLocation) Connect(name string) error {
 		}
 
 		serviceClient, err := openstack.NewObjectStorageV1(provider, gophercloud.EndpointOpts{
-			Region: s.RegionName,
+			Region: string(s.RegionName),
 		})
 		if err != nil {
 			return fmt.Errorf("cannot create Swift client: %s", err.Error())
@@ -220,7 +220,7 @@ func (s *SwiftLocation) Connect(name string) error {
 		return nil
 	}
 	var err error
-	s.Container, err = s.Account.Container(s.ContainerName).EnsureExists()
+	s.Container, err = s.Account.Container(string(s.ContainerName)).EnsureExists()
 	return err
 }
 
@@ -228,12 +228,12 @@ func (s *SwiftLocation) Connect(name string) error {
 // (below the ObjectNamePrefix, if any) in this container.
 func (s *SwiftLocation) ObjectAtPath(path string) *schwift.Object {
 	objectName := strings.TrimPrefix(path, "/")
-	return s.Container.Object(s.ObjectNamePrefix + objectName)
+	return s.Container.Object(string(s.ObjectNamePrefix) + objectName)
 }
 
 // ListAllFiles implements the Source interface.
 func (s *SwiftLocation) ListAllFiles(out chan<- FileSpec) *ListEntriesError {
-	objectPath := s.ObjectNamePrefix
+	objectPath := string(s.ObjectNamePrefix)
 	if objectPath != "" && !strings.HasSuffix(objectPath, "/") {
 		objectPath += "/"
 	}
@@ -247,7 +247,7 @@ func (s *SwiftLocation) ListAllFiles(out chan<- FileSpec) *ListEntriesError {
 	})
 	if err != nil {
 		return &ListEntriesError{
-			Location: s.ContainerName + "/" + objectPath,
+			Location: string(s.ContainerName) + "/" + objectPath,
 			Message:  "GET failed",
 			Inner:    err,
 		}
@@ -265,17 +265,17 @@ func (s *SwiftLocation) getFileSpec(info schwift.ObjectInfo) FileSpec {
 	var f FileSpec
 	//strip ObjectNamePrefix from the resulting objects
 	if info.SubDirectory != "" {
-		f.Path = strings.TrimPrefix(info.SubDirectory, s.ObjectNamePrefix)
+		f.Path = strings.TrimPrefix(info.SubDirectory, string(s.ObjectNamePrefix))
 		f.IsDirectory = true
 	} else {
-		f.Path = strings.TrimPrefix(info.Object.Name(), s.ObjectNamePrefix)
+		f.Path = strings.TrimPrefix(info.Object.Name(), string(s.ObjectNamePrefix))
 		lm := info.LastModified
 		f.LastModified = &lm
 
 		if info.SymlinkTarget != nil && info.SymlinkTarget.Container().IsEqualTo(s.Container) {
 			targetPath := info.SymlinkTarget.Name()
-			if strings.HasPrefix(targetPath, s.ObjectNamePrefix) {
-				f.SymlinkTargetPath = strings.TrimPrefix(targetPath, s.ObjectNamePrefix)
+			if strings.HasPrefix(targetPath, string(s.ObjectNamePrefix)) {
+				f.SymlinkTargetPath = strings.TrimPrefix(targetPath, string(s.ObjectNamePrefix))
 			}
 		}
 	}
@@ -323,7 +323,7 @@ func (s *SwiftLocation) GetFile(path string, requestHeaders schwift.ObjectHeader
 // The given Matcher is used to find out which files are to be considered as
 // belonging to the transfer job in question.
 func (s *SwiftLocation) DiscoverExistingFiles(matcher Matcher) error {
-	prefix := s.ObjectNamePrefix
+	prefix := string(s.ObjectNamePrefix)
 	if prefix != "" && !strings.HasSuffix(prefix, "/") {
 		prefix += "/"
 	}

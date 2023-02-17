@@ -28,6 +28,7 @@ import (
 	"github.com/majewsky/schwift"
 	yaml "gopkg.in/yaml.v2"
 
+	"github.com/sapcc/go-bits/secrets"
 	"github.com/sapcc/swift-http-import/pkg/util"
 )
 
@@ -74,10 +75,11 @@ func ReadConfiguration(path string) (*Configuration, []error) {
 	//across all Debian/Yum jobs.
 	var gpgCacheContainer *schwift.Container
 	if cfg.GPG.CacheContainerName != nil && *cfg.GPG.CacheContainerName != "" {
+		cntrName := *cfg.GPG.CacheContainerName
 		sl := cfg.Swift
-		sl.ContainerName = *cfg.GPG.CacheContainerName
+		sl.ContainerName = secrets.FromEnv(cntrName)
 		sl.ObjectNamePrefix = ""
-		err := sl.Connect(sl.ContainerName)
+		err := sl.Connect(cntrName)
 		if err == nil {
 			gpgCacheContainer = sl.Container
 		} else {
@@ -277,7 +279,7 @@ func (cfg JobConfiguration) Compile(name string, swift SwiftLocation) (job *Job,
 			errors = append(errors, fmt.Errorf("missing value for %s.segmenting.segment_bytes", name))
 		}
 		if cfg.Segmenting.ContainerName == "" {
-			cfg.Segmenting.ContainerName = cfg.Target.ContainerName + "_segments"
+			cfg.Segmenting.ContainerName = string(cfg.Target.ContainerName) + "_segments"
 		}
 	}
 
