@@ -29,6 +29,7 @@ import (
 	yaml "gopkg.in/yaml.v2"
 
 	"github.com/sapcc/go-bits/secrets"
+
 	"github.com/sapcc/swift-http-import/pkg/util"
 )
 
