@@ -49,8 +49,8 @@ type SwiftLocation struct {
 	ApplicationCredentialID     secrets.FromEnv `yaml:"application_credential_id"`
 	ApplicationCredentialName   secrets.FromEnv `yaml:"application_credential_name"`
 	ApplicationCredentialSecret secrets.FromEnv `yaml:"application_credential_secret"`
-	TLSClientCertificatePath    secrets.FromEnv `yaml:"tls_client_certificate_path"`
-	TLSClientKeyPath            secrets.FromEnv `yaml:"tls_client_key_path"`
+	TLSClientCertificateFile    secrets.FromEnv `yaml:"tls_client_certificate_file"`
+	TLSClientKeyFile            secrets.FromEnv `yaml:"tls_client_key_file"`
 	RegionName                  secrets.FromEnv `yaml:"region_name"`
 	ContainerName               secrets.FromEnv `yaml:"container"`
 	ObjectNamePrefix            secrets.FromEnv `yaml:"object_prefix"`
@@ -91,12 +91,12 @@ func (s *SwiftLocation) Validate(name string) []error {
 		result = append(result, fmt.Errorf("missing value for %s.auth_url", name))
 	}
 
-	if s.TLSClientCertificatePath != "" || s.TLSClientKeyPath != "" {
-		if s.TLSClientCertificatePath == "" {
-			result = append(result, fmt.Errorf("missing value for %s.tls_client_certificate_path", name))
+	if s.TLSClientCertificateFile != "" || s.TLSClientKeyFile != "" {
+		if s.TLSClientCertificateFile == "" {
+			result = append(result, fmt.Errorf("missing value for %s.tls_client_certificate_file", name))
 		}
-		if s.TLSClientKeyPath == "" {
-			result = append(result, fmt.Errorf("missing value for %s.tls_client_key_path", name))
+		if s.TLSClientKeyFile == "" {
+			result = append(result, fmt.Errorf("missing value for %s.tls_client_key_file", name))
 		}
 	}
 
@@ -186,8 +186,8 @@ func (s *SwiftLocation) Connect(name string) error {
 		}
 
 		transport := &http.Transport{}
-		if s.TLSClientCertificatePath != "" && s.TLSClientKeyPath != "" {
-			cert, err := tls.LoadX509KeyPair(string(s.TLSClientCertificatePath), string(s.TLSClientKeyPath))
+		if s.TLSClientCertificateFile != "" && s.TLSClientKeyFile != "" {
+			cert, err := tls.LoadX509KeyPair(string(s.TLSClientCertificateFile), string(s.TLSClientKeyFile))
 			if err != nil {
 				return fmt.Errorf("failed to load x509 key pair: %s", err.Error())
 			}

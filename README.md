@@ -109,7 +109,7 @@ jobs:
 
 The first paragraph contains the authentication parameters for
 OpenStack's Identity v3 API. Optionally a `region_name` can be specified, but this is only
-required if there are multiple regions to choose from. You can also specify the `tls_client_certificate_path` and `tls_client_key_path` for creating a TLS client.
+required if there are multiple regions to choose from. You can also specify the `tls_client_certificate_file` and `tls_client_key_file` for creating a TLS client.
 
 You can use the `fromEnv` special syntax for the `to.container`, `to.object_prefix`, and
 the Swift fields (options under the `swift` key).
