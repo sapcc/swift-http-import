@@ -1,3 +1,12 @@
+# v2.10.0 (2023-02-28)
+
+New features:
+- Add support for specifying TLS client certificate and key file.
+- Add `{ fromEnv: ENV_VAR }` syntax support for all Swift options.
+
+Changes:
+- Updated all dependencies to their latest versions.
+
 # v2.9.1 (2022-05-25)
 
 Bugfixes:
