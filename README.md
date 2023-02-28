@@ -1,10 +1,11 @@
 # swift-http-import
 
 * [Why this instead of rclone?](#why-this-instead-of-rclone)
-* [Do NOT use if...](#do-not-use-if)
+* [Do NOT use if\.\.\.](#do-not-use-if)
 * [Implicit assumptions](#implicit-assumptions)
 * [Installation](#installation)
 * [Usage](#usage)
+  * [Specifying sensitive info as environment variables](#specifying-sensitive-info-as-environment-variables)
   * [Alternative authentication options](#alternative-authentication-options)
   * [Source specification](#source-specification)
     * [Yum](#yum)
@@ -106,8 +107,13 @@ jobs:
       object_prefix: ubuntu-repos
 ```
 
-The first paragraph contains the authentication parameters for OpenStack's Identity v3 API. Optionally a `region_name`
-can be specified, but this is only required if there are multiple regions to choose from.
+The first paragraph contains the authentication parameters for
+OpenStack's Identity v3 API. Optionally a `region_name` can be specified, but this is only
+required if there are multiple regions to choose from. You can also specify the `tls_client_certificate_file` and `tls_client_key_file` for creating a TLS client.
+
+You can use the `fromEnv` special syntax for the `to.container`, `to.object_prefix`, and
+the Swift fields (options under the `swift` key).
+See [specifying sensitive info as environment variables](#specifying-sensitive-info-as-environment-variables) for more details.
 
 Each sync job contains the source URL as `from.url`, and `to.container` has the target container name, optionally paired with an
 object name prefix in the target container. For example, in the case above, the file
@@ -124,6 +130,21 @@ ubuntu-repos/pool/main/p/pam/pam_1.1.8.orig.tar.gz
 
 The order of jobs is significant: Source trees will be scraped in the order indicated by the `jobs` list.
 
+### Specifying sensitive info as environment variables
+
+For some config fields, instead of specifying the value as plain text, you can use the
+special `fromEnv` syntax to read the respective value from an exported environment
+variable.
+
+For example, instead of specifying the `swift.password` as plain text, you can use the
+following syntax to retrieve the password from the `OS_PASSWORD` environment variable:
+
+```yaml
+swift:
+  password: { fromEnv: OS_PASSWORD }
+  ...
+```
+
 ### Alternative authentication options
 
 Instead of password-based authentication, [application credentials][app-cred] can also be used, for example:
@@ -139,13 +160,6 @@ jobs: ...
 
 [app-cred]: https://docs.openstack.org/python-openstackclient/latest/cli/command-objects/application-credentials.html
 
-Instead of providing your secret credentials as plain text in the config file, you can use a special syntax for the
-`password` field or the `application_credential_secret` field to read the respective password from an exported
-environment variable:
-
-```yaml
-password: { fromEnv: ENVIRONMENT_VARIABLE }
-```
 
 ### Source specification
 
@@ -254,8 +268,8 @@ Since GitHub's API rate limits the number of requests per IP therefore it is
 field. Refer to the [GitHub API docs](https://docs.github.com/en/rest/overview/resources-in-the-rest-api#rate-limiting)
 for more info on its rate limiting. This field is **required** if the repository is hosted on a Github Enterprise instance instead of `github.com`.
 Instead of providing your token as plain text in the config file, you can use the
-`fromEnv` special syntax for the `jobs[].from.token` field. See [Alternative
-authentication options](#alternative-authentication-options) for more details.
+`fromEnv` special syntax for the `jobs[].from.token` field. See
+[specifying sensitive info as environment variables](#specifying-sensitive-info-as-environment-variables) for more details.
 
 If a repository publishes GitHub releases using different tags, e.g. server components at
 `server-x.y.z` and client at `client-x.y.z`, and you only want to get releases whose tag
@@ -300,6 +314,10 @@ jobs:
       container: mirror
       object_prefix: ubuntu-repos
 ```
+
+For defining Swift options, you can use the `fromEnv` special syntax for all the fields
+under the `from` key instead of specifying these fields as plain text. See
+[specifying sensitive info as environment variables](#specifying-sensitive-info-as-environment-variables)
 
 ### File selection
 
