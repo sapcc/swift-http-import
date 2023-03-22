@@ -8,9 +8,6 @@ binaries:
     fromPackage: .
     installTo:   bin/
 
-vendoring:
-  enabled: true
-
 dockerfile:
   enabled: true
   extraIgnores:
@@ -29,9 +26,6 @@ spellCheck:
 
 githubWorkflow:
   global:
-    assignees:
-      - majewsky
-      - SuperSandro2000
     ignorePaths: ["**.md"] # all Markdown files
   license:
     enabled: true
@@ -42,6 +36,12 @@ githubWorkflow:
     ignorePaths: [] # override global setting so that nothing is ignored
 
 renovate:
+  enabled: true
+  assignees:
+    - majewsky
+    - SuperSandro2000
+
+vendoring:
   enabled: true
 
 verbatim: |
