@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/cactus/go-statsd-client/v5 v5.0.0
-	github.com/google/go-github/v50 v50.2.0
+	github.com/google/go-github/v51 v51.0.0
 	github.com/gophercloud/gophercloud v1.3.0
 	github.com/gophercloud/utils v0.0.0-20230330070308-5bd5e1d608f8
 	github.com/majewsky/schwift v1.2.0
@@ -14,7 +14,7 @@ require (
 	golang.org/x/crypto v0.8.0
 	golang.org/x/net v0.9.0
 	golang.org/x/oauth2 v0.7.0
-	gopkg.in/yaml.v2 v2.4.0
+	gopkg.in/yaml.v3 v3.0.1
 	pault.ag/go/debian v0.12.0
 )
 
