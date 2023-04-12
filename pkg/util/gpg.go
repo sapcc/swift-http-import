@@ -21,6 +21,7 @@ package util
 
 import (
 	"bytes"
+	//nolint:depguard
 	"crypto/sha256"
 	"errors"
 	"fmt"
