@@ -44,9 +44,9 @@ cleanup_containers() {
         xargs() { command xargs -r "$@"; }
       fi
       # do not delete the public container itself; want to keep the metadata
-      swift list "${CONTAINER_NAME}" | xargs swift delete "${CONTAINER_NAME}"
+      swift list "${CONTAINER_NAME}" | xargs swift delete "${CONTAINER_NAME}" || true
     else
-      swift delete "${CONTAINER_NAME}"
+      swift delete "${CONTAINER_NAME}" || true
     fi
   done
 }
