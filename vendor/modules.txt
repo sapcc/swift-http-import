@@ -61,6 +61,8 @@ github.com/gophercloud/utils/client
 # github.com/jpillora/longestcommon v0.0.0-20161227235612-adb9d91ee629
 ## explicit
 github.com/jpillora/longestcommon
+# github.com/kr/text v0.2.0
+## explicit
 # github.com/majewsky/schwift v1.2.0
 ## explicit; go 1.16
 github.com/majewsky/schwift
@@ -73,6 +75,7 @@ github.com/sapcc/go-api-declarations/bininfo
 ## explicit; go 1.20
 github.com/sapcc/go-bits/httpext
 github.com/sapcc/go-bits/logg
+github.com/sapcc/go-bits/must
 github.com/sapcc/go-bits/osext
 github.com/sapcc/go-bits/secrets
 # github.com/ulikunitz/xz v0.5.11
@@ -81,6 +84,11 @@ github.com/ulikunitz/xz
 github.com/ulikunitz/xz/internal/hash
 github.com/ulikunitz/xz/internal/xlog
 github.com/ulikunitz/xz/lzma
+# go.uber.org/automaxprocs v1.5.2
+## explicit; go 1.18
+go.uber.org/automaxprocs/internal/cgroups
+go.uber.org/automaxprocs/internal/runtime
+go.uber.org/automaxprocs/maxprocs
 # golang.org/x/crypto v0.8.0
 ## explicit; go 1.17
 golang.org/x/crypto/cast5
