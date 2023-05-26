@@ -44,7 +44,7 @@ github.com/google/go-github/v52/github
 # github.com/google/go-querystring v1.1.0
 ## explicit; go 1.10
 github.com/google/go-querystring/query
-# github.com/gophercloud/gophercloud v1.3.0
+# github.com/gophercloud/gophercloud v1.4.0
 ## explicit; go 1.14
 github.com/gophercloud/gophercloud
 github.com/gophercloud/gophercloud/openstack
@@ -71,7 +71,7 @@ github.com/majewsky/schwift/gopherschwift
 # github.com/sapcc/go-api-declarations v1.5.1
 ## explicit; go 1.20
 github.com/sapcc/go-api-declarations/bininfo
-# github.com/sapcc/go-bits v0.0.0-20230511083554-fcf45d69f407
+# github.com/sapcc/go-bits v0.0.0-20230525104154-4ee9a7b263f9
 ## explicit; go 1.20
 github.com/sapcc/go-bits/httpext
 github.com/sapcc/go-bits/logg
