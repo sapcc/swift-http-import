@@ -25,7 +25,8 @@ spellCheck:
   ignoreWords: ["transfered"] # excluding because some metrics have it in their name
 
 githubWorkflow:
-  global:
+  ci:
+    enabled: true
     ignorePaths: ["**.md"] # all Markdown files
   license:
     enabled: true
@@ -33,7 +34,6 @@ githubWorkflow:
     enabled: true
   spellCheck:
     enabled: true
-    ignorePaths: [] # override global setting so that nothing is ignored
 
 renovate:
   enabled: true
