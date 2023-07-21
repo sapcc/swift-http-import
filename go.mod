@@ -3,7 +3,7 @@ module github.com/sapcc/swift-http-import
 go 1.20
 
 require (
-	github.com/cactus/go-statsd-client/v5 v5.0.0
+	github.com/cactus/go-statsd-client/v5 v5.1.0
 	github.com/google/go-github/v53 v53.2.0
 	github.com/gophercloud/gophercloud v1.5.0
 	github.com/gophercloud/utils v0.0.0-20230523080330-de873b9cf00d
@@ -11,7 +11,7 @@ require (
 	github.com/sapcc/go-api-declarations v1.7.0
 	github.com/sapcc/go-bits v0.0.0-20230706125105-e29c088132b0
 	github.com/ulikunitz/xz v0.5.11
-	go.uber.org/automaxprocs v1.5.2
+	go.uber.org/automaxprocs v1.5.3
 	golang.org/x/crypto v0.11.0
 	golang.org/x/net v0.12.0
 	golang.org/x/oauth2 v0.10.0
