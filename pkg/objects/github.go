@@ -127,12 +127,12 @@ func (s *GithubReleaseSource) Connect(name string) error {
 }
 
 // ListEntries implements the Source interface.
-func (s *GithubReleaseSource) ListEntries(directoryPath string) ([]FileSpec, *ListEntriesError) {
+func (s *GithubReleaseSource) ListEntries(_ context.Context, directoryPath string) ([]FileSpec, *ListEntriesError) {
 	return nil, ErrListEntriesNotSupported
 }
 
 // ListAllFiles implements the Source interface.
-func (s *GithubReleaseSource) ListAllFiles(out chan<- FileSpec) *ListEntriesError {
+func (s *GithubReleaseSource) ListAllFiles(_ context.Context, out chan<- FileSpec) *ListEntriesError {
 	releases, err := s.getReleases()
 	if err != nil {
 		return &ListEntriesError{
@@ -173,7 +173,7 @@ func (s *GithubReleaseSource) ListAllFiles(out chan<- FileSpec) *ListEntriesErro
 }
 
 // GetFile implements the Source interface.
-func (s *GithubReleaseSource) GetFile(path string, requestHeaders schwift.ObjectHeaders) (io.ReadCloser, FileState, error) {
+func (s *GithubReleaseSource) GetFile(_ context.Context, path string, requestHeaders schwift.ObjectHeaders) (io.ReadCloser, FileState, error) {
 	u := fmt.Sprintf("repos/%s/%s/releases/assets/%s", s.owner, s.repo, path)
 	req, err := s.client.NewRequest(http.MethodGet, u, nil)
 	if err != nil {

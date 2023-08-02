@@ -98,7 +98,7 @@ func (s *Scraper) Run(ctx context.Context) {
 				wg.Done()
 			}()
 
-			err = job.Source.ListAllFiles(c)
+			err = job.Source.ListAllFiles(ctx, c)
 			close(c)  //terminate receiver loop
 			wg.Wait() //wait for receiver goroutine to finish
 			if err != objects.ErrListAllFilesNotSupported {
@@ -107,7 +107,7 @@ func (s *Scraper) Run(ctx context.Context) {
 			fallthrough //try ListEntries() if err == objects.ErrListAllFilesNotSupported
 		default:
 			var entries []objects.FileSpec
-			entries, err = job.Source.ListEntries(directory.Path)
+			entries, err = job.Source.ListEntries(ctx, directory.Path)
 			if err == nil {
 				for _, entry := range entries {
 					handleFileSpec(entry)

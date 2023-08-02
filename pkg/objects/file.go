@@ -21,6 +21,7 @@ package objects
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"net/http"
 	"time"
@@ -78,7 +79,7 @@ const (
 // PerformTransfer transfers this file from the source to the target.
 // It returns the TransferResult (which indicates if the transfer finished successfully)
 // and the number of bytes transferred.
-func (f File) PerformTransfer() (transferResult TransferResult, _ int64) {
+func (f File) PerformTransfer(ctx context.Context) (transferResult TransferResult, _ int64) {
 	object := f.TargetObject()
 
 	//check if this file needs transfer
@@ -161,7 +162,7 @@ func (f File) PerformTransfer() (transferResult TransferResult, _ int64) {
 		if f.Spec.DownloadPath != "" {
 			path = f.Spec.DownloadPath
 		}
-		body, sourceState, err = f.Job.Source.GetFile(path, requestHeaders)
+		body, sourceState, err = f.Job.Source.GetFile(ctx, path, requestHeaders)
 	} else {
 		logg.Debug("using cached contents for %s", f.Spec.Path)
 		body, sourceState, err = f.Spec.toTransferFormat(requestHeaders)
