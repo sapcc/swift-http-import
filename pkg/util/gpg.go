@@ -137,7 +137,7 @@ func (k *GPGKeyRing) verifyGPGSignature(ctx context.Context, message []byte, sig
 	for {
 		p, err := r.Next()
 		if err != nil {
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				break
 			}
 			return err

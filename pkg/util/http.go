@@ -227,10 +227,10 @@ func (d *downloader) Read(buf []byte) (int, error) {
 	//read from the current response body
 	bytesRead, err := d.Reader.Read(buf)
 	d.BytesRead += int64(bytesRead)
-	switch err {
-	case nil:
+	switch {
+	case err == nil:
 		return bytesRead, err
-	case io.EOF:
+	case errors.Is(err, io.EOF):
 		//current response body is EOF -> close it
 		err = d.Reader.Close()
 		d.Reader = nil
