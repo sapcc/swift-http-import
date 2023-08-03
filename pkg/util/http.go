@@ -20,6 +20,7 @@
 package util
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -37,25 +38,26 @@ const (
 
 // EnhancedGet is like http.Client.Get(), but recognizes if the HTTP server
 // understands range requests, and downloads the file in segments in that case.
-func EnhancedGet(client *http.Client, uri string, requestHeaders http.Header, segmentBytes uint64) (*http.Response, error) {
+func EnhancedGet(ctx context.Context, client *http.Client, uri string, requestHeaders http.Header, segmentBytes uint64) (*http.Response, error) {
 	d := downloader{
 		Client:         client,
 		URI:            uri,
 		RequestHeaders: requestHeaders,
 		SegmentBytes:   int64(segmentBytes),
 		BytesTotal:     -1,
+		ctx:            ctx,
 	}
 
 	//make initial HTTP request that detects whether the source server supports
 	//range requests
-	resp, headers, err := d.getNextChunk()
+	resp, headers, err := d.getNextChunk(ctx)
 	//if we receive a 416 (Requested Range Not Satisfiable), the most likely cause
 	//is that the object is 0 bytes long, so even byte index 0 is already over
 	//EOF -> fall back to a plain HTTP request in this case
 	if resp != nil && resp.StatusCode == http.StatusRequestedRangeNotSatisfiable {
 		logg.Info("received status code 416 -> falling back to plain GET for %s", uri)
 		resp.Body.Close()
-		req, err := d.buildRequest()
+		req, err := d.buildRequest(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -107,11 +109,12 @@ type downloader struct {
 	RequestHeaders http.Header
 	SegmentBytes   int64
 	//this object's internal state
-	Etag       string        //we track the source URL's Etag to detect changes mid-transfer
-	BytesRead  int64         //how many bytes have already been read out of this Reader
-	BytesTotal int64         //the total Content-Length the file, or -1 if not known
-	Reader     io.ReadCloser //current, not-yet-exhausted, response.Body, or nil after EOF or error
-	Err        error         //non-nil after error
+	Etag       string          //we track the source URL's Etag to detect changes mid-transfer
+	BytesRead  int64           //how many bytes have already been read out of this Reader
+	BytesTotal int64           //the total Content-Length the file, or -1 if not known
+	Reader     io.ReadCloser   //current, not-yet-exhausted, response.Body, or nil after EOF or error
+	Err        error           //non-nil after error
+	ctx        context.Context //nolint:containedctx // we cannot supply it any other way for the Read() function because the interface does not allow it
 	//retry handling
 	LastErrorAtBytesRead int64 //at which offset the last read error occurred
 	LastErrorRetryCount  int   //retry counter for said offset, or 0 if no error occurred before
@@ -123,8 +126,8 @@ type parsedResponseHeaders struct {
 	ContentRangeLength int64
 }
 
-func (d *downloader) buildRequest() (*http.Request, error) {
-	req, err := http.NewRequest(http.MethodGet, d.URI, http.NoBody)
+func (d *downloader) buildRequest(ctx context.Context) (*http.Request, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, d.URI, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
@@ -134,8 +137,8 @@ func (d *downloader) buildRequest() (*http.Request, error) {
 	return req, nil
 }
 
-func (d *downloader) getNextChunk() (*http.Response, *parsedResponseHeaders, error) {
-	req, err := d.buildRequest()
+func (d *downloader) getNextChunk(ctx context.Context) (*http.Response, *parsedResponseHeaders, error) {
+	req, err := d.buildRequest(ctx)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -224,10 +227,10 @@ func (d *downloader) Read(buf []byte) (int, error) {
 	//read from the current response body
 	bytesRead, err := d.Reader.Read(buf)
 	d.BytesRead += int64(bytesRead)
-	switch err {
-	case nil:
+	switch {
+	case err == nil:
 		return bytesRead, err
-	case io.EOF:
+	case errors.Is(err, io.EOF):
 		//current response body is EOF -> close it
 		err = d.Reader.Close()
 		d.Reader = nil
@@ -258,7 +261,7 @@ func (d *downloader) Read(buf []byte) (int, error) {
 	}
 
 	//get next chunk
-	resp, headers, err := d.getNextChunk()
+	resp, headers, err := d.getNextChunk(d.ctx)
 	if err != nil {
 		return bytesRead, err
 	}

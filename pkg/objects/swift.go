@@ -20,6 +20,7 @@
 package objects
 
 import (
+	"context"
 	"crypto/tls"
 	"fmt"
 	"io"
@@ -257,7 +258,7 @@ func (s *SwiftLocation) ObjectAtPath(path string) *schwift.Object {
 }
 
 // ListAllFiles implements the Source interface.
-func (s *SwiftLocation) ListAllFiles(out chan<- FileSpec) *ListEntriesError {
+func (s *SwiftLocation) ListAllFiles(_ context.Context, out chan<- FileSpec) *ListEntriesError {
 	objectPath := string(s.ObjectNamePrefix)
 	if objectPath != "" && !strings.HasSuffix(objectPath, "/") {
 		objectPath += "/"
@@ -282,7 +283,7 @@ func (s *SwiftLocation) ListAllFiles(out chan<- FileSpec) *ListEntriesError {
 }
 
 // ListEntries implements the Source interface.
-func (s *SwiftLocation) ListEntries(directoryPath string) ([]FileSpec, *ListEntriesError) {
+func (s *SwiftLocation) ListEntries(_ context.Context, directoryPath string) ([]FileSpec, *ListEntriesError) {
 	return nil, ErrListEntriesNotSupported
 }
 
@@ -308,7 +309,7 @@ func (s *SwiftLocation) getFileSpec(info schwift.ObjectInfo) FileSpec {
 }
 
 // GetFile implements the Source interface.
-func (s *SwiftLocation) GetFile(path string, requestHeaders schwift.ObjectHeaders) (io.ReadCloser, FileState, error) {
+func (s *SwiftLocation) GetFile(_ context.Context, path string, requestHeaders schwift.ObjectHeaders) (io.ReadCloser, FileState, error) {
 	object := s.ObjectAtPath(path)
 
 	body, err := object.Download(requestHeaders.ToOpts()).AsReadCloser()

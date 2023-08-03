@@ -20,6 +20,7 @@
 package objects
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
@@ -52,15 +53,15 @@ type Source interface {
 	//ListAllFiles returns all files in the source (as paths relative to the
 	//source's root). If this returns ErrListAllFilesNotSupported, ListEntries
 	//must be used instead.
-	ListAllFiles(out chan<- FileSpec) *ListEntriesError
+	ListAllFiles(ctx context.Context, out chan<- FileSpec) *ListEntriesError
 	//ListEntries returns all files and subdirectories at this path in the
 	//source. Each result value must have a "/" prefix for subdirectories, or
 	//none for files.
-	ListEntries(directoryPath string) ([]FileSpec, *ListEntriesError)
+	ListEntries(ctx context.Context, directoryPath string) ([]FileSpec, *ListEntriesError)
 	//GetFile retrieves the contents and metadata for the file at the given path
 	//in the source. The `headers` map contains additional HTTP request headers
 	//that shall be passed to the source in the GET request.
-	GetFile(path string, headers schwift.ObjectHeaders) (body io.ReadCloser, sourceState FileState, err error)
+	GetFile(ctx context.Context, path string, headers schwift.ObjectHeaders) (body io.ReadCloser, sourceState FileState, err error)
 }
 
 // ListEntriesError is an error that occurs while scraping a directory.
@@ -226,12 +227,12 @@ func (u *URLSource) Connect(name string) error {
 var dotdotRx = regexp.MustCompile(`(?:^|/)\.\.(?:$|/)`)
 
 // ListAllFiles implements the Source interface.
-func (u URLSource) ListAllFiles(out chan<- FileSpec) *ListEntriesError {
+func (u URLSource) ListAllFiles(_ context.Context, out chan<- FileSpec) *ListEntriesError {
 	return ErrListAllFilesNotSupported
 }
 
 // ListEntries implements the Source interface.
-func (u URLSource) ListEntries(directoryPath string) ([]FileSpec, *ListEntriesError) {
+func (u URLSource) ListEntries(ctx context.Context, directoryPath string) ([]FileSpec, *ListEntriesError) {
 	//get full URL of this subdirectory
 	uri := u.getURLForPath(directoryPath)
 	//to get a well-formatted directory listing, the directory URL must have a
@@ -248,28 +249,31 @@ func (u URLSource) ListEntries(directoryPath string) ([]FileSpec, *ListEntriesEr
 	logg.Debug("scraping %s", uri)
 
 	//retrieve directory listing
-	//TODO: This should send "Accept: text/html", but at least Apache and nginx
-	//don't care about the Accept header, anyway, as far as my testing showed.
-	response, err := u.HTTPClient.Get(uri.String())
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, uri.String(), http.NoBody)
 	if err != nil {
 		return nil, &ListEntriesError{uri.String(), "GET failed", err}
 	}
-	defer response.Body.Close()
+	req.Header.Set("Accept", "text/html")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, &ListEntriesError{uri.String(), "GET failed", err}
+	}
+	defer resp.Body.Close()
 
 	//check that we actually got a directory listing
-	if !strings.HasPrefix(response.Status, "2") {
+	if !strings.HasPrefix(resp.Status, "2") {
 		//DebianSource parses error message strings that end in "GET returned
 		//status 404". Changes to this error format will break things on the
 		//DebianSource end
-		return nil, &ListEntriesError{uri.String(), "GET returned status " + response.Status, nil}
+		return nil, &ListEntriesError{uri.String(), "GET returned status " + resp.Status, nil}
 	}
-	contentType := response.Header.Get("Content-Type")
+	contentType := resp.Header.Get("Content-Type")
 	if !strings.HasPrefix(contentType, "text/html") {
 		return nil, &ListEntriesError{uri.String(), "GET returned unexpected Content-Type: " + contentType, nil}
 	}
 
 	//find links inside the HTML document
-	tokenizer := html.NewTokenizer(response.Body)
+	tokenizer := html.NewTokenizer(resp.Body)
 	var result []FileSpec
 	for {
 		tokenType := tokenizer.Next()
@@ -334,17 +338,17 @@ func (u URLSource) ListEntries(directoryPath string) ([]FileSpec, *ListEntriesEr
 }
 
 // GetFile implements the Source interface.
-func (u URLSource) GetFile(filePath string, requestHeaders schwift.ObjectHeaders) (respBody io.ReadCloser, fileState FileState, err error) {
+func (u URLSource) GetFile(ctx context.Context, filePath string, requestHeaders schwift.ObjectHeaders) (respBody io.ReadCloser, fileState FileState, err error) {
 	uri := u.getURLForPath(filePath).String()
 	requestHeaders.Set("User-Agent", "swift-http-import/"+bininfo.VersionOr("dev"))
 
 	//retrieve file from source
 	var response *http.Response
 	if u.Segmenting {
-		response, err = util.EnhancedGet(u.HTTPClient, uri, requestHeaders.ToHTTP(), u.SegmentSize) //nolint:bodyclose // response.Body is returned and can't be closed yet
+		response, err = util.EnhancedGet(ctx, u.HTTPClient, uri, requestHeaders.ToHTTP(), u.SegmentSize) //nolint:bodyclose // response.Body is returned and can't be closed yet
 	} else {
 		var req *http.Request
-		req, err = http.NewRequest(http.MethodGet, uri, http.NoBody)
+		req, err = http.NewRequestWithContext(ctx, http.MethodGet, uri, http.NoBody)
 		if err == nil {
 			for key, val := range requestHeaders.Headers {
 				req.Header.Set(key, val)
@@ -379,10 +383,10 @@ func (u URLSource) getURLForPath(filePath string) *url.URL {
 }
 
 // Helper function for custom source types.
-func (u URLSource) getFileContents(filePath string, cache map[string]FileSpec) (contents []byte, uri string, e *ListEntriesError) {
+func (u URLSource) getFileContents(ctx context.Context, filePath string, cache map[string]FileSpec) (contents []byte, uri string, e *ListEntriesError) {
 	uri = u.getURLForPath(filePath).String()
 
-	req, err := http.NewRequest(http.MethodGet, uri, http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, uri, http.NoBody)
 	if err != nil {
 		return nil, uri, &ListEntriesError{uri, "GET failed", err}
 	}

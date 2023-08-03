@@ -24,6 +24,7 @@ import (
 	"sort"
 
 	"github.com/majewsky/schwift"
+	"github.com/sapcc/go-bits/errext"
 	"github.com/sapcc/go-bits/logg"
 
 	"github.com/sapcc/swift-http-import/pkg/objects"
@@ -130,7 +131,7 @@ func (c *Cleaner) performCleanup(job *objects.Job, isFileTransferred map[string]
 		c.Report <- ReportEvent{IsCleanup: true, CleanedUpObjectCount: int64(numDeleted)}
 		if err != nil {
 			logg.Error("cleanup of %d objects on target side failed: %s", (len(objs) - numDeleted), err.Error())
-			if berr, ok := err.(schwift.BulkError); ok {
+			if berr, ok := errext.As[schwift.BulkError](err); ok {
 				for _, oerr := range berr.ObjectErrors {
 					logg.Error("DELETE " + oerr.Error())
 				}

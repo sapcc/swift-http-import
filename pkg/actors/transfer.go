@@ -55,7 +55,7 @@ LOOP:
 			if !ok {
 				break LOOP
 			}
-			result, size := file.PerformTransfer()
+			result, size := file.PerformTransfer(ctx)
 			if result == objects.TransferFailed {
 				filesToRetry = append(filesToRetry, file)
 			} else {
@@ -76,7 +76,7 @@ LOOP:
 		//iteration because the abort signal (i.e. Ctrl-C) could also happen
 		//during this loop)
 		if !aborted && ctx.Err() == nil {
-			result, size = file.PerformTransfer()
+			result, size = file.PerformTransfer(ctx)
 		}
 		t.Output <- FileInfoForCleaner{File: file, Failed: result == objects.TransferFailed}
 		t.Report <- ReportEvent{IsFile: true, FileTransferResult: result, FileTransferBytes: size}
