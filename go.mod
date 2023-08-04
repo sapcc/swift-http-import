@@ -13,7 +13,7 @@ require (
 	github.com/ulikunitz/xz v0.5.11
 	go.uber.org/automaxprocs v1.5.3
 	golang.org/x/crypto v0.11.0
-	golang.org/x/net v0.12.0
+	golang.org/x/net v0.13.0
 	golang.org/x/oauth2 v0.10.0
 	gopkg.in/yaml.v2 v2.4.0
 	pault.ag/go/debian v0.15.0
