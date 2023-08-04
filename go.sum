@@ -42,8 +42,8 @@ github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZb
 github.com/prashantv/gostub v1.1.0 h1:BTyx3RfQjRHnUWaGF9oQos79AlQ5k8WNktv7VGvVH4g=
 github.com/sapcc/go-api-declarations v1.7.0 h1:fABKw/dw300ZQ5TKEjVnKPqMSH5aCOSbJ06XnfWtpuw=
 github.com/sapcc/go-api-declarations v1.7.0/go.mod h1:3OCDo75YJwpytM/I0SjwcZJf1ZNu89KeAZ55kdOTSqE=
-github.com/sapcc/go-bits v0.0.0-20230803115409-d2170ecbba46 h1:U9o4Aj5/VyljWdSyw2292cCJelSQdsOijCFt9IExMJ4=
-github.com/sapcc/go-bits v0.0.0-20230803115409-d2170ecbba46/go.mod h1:J/Q/o/JysipZxYy4p4Os1FZhxgKw53Dw68Y5e6c4IbE=
+github.com/sapcc/go-bits v0.0.0-20230803125152-91a869119633 h1:snNH608Oups2b3Ho0zSFTBHMicTNWHRdNY6dE1FWUDc=
+github.com/sapcc/go-bits v0.0.0-20230803125152-91a869119633/go.mod h1:94w1EQba5TBJlu8Wfeo6LorQdLHm/h4LZaHDPKp2j8M=
 github.com/sergi/go-diff v1.3.1 h1:xkr+Oxo4BOQKmkn/B9eMK0g5Kg/983T9DqqPHwYqD+8=
 github.com/stretchr/testify v1.7.1 h1:5TQK59W5E3v0r2duFAb7P95B6hEeOyEnHRa8MjYSMTY=
 github.com/ulikunitz/xz v0.5.11 h1:kpFauv27b6ynzBNT/Xy+1k+fK4WswhN/6PN5WhFAGw8=

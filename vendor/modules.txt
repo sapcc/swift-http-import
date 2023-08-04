@@ -71,7 +71,7 @@ github.com/majewsky/schwift/gopherschwift
 # github.com/sapcc/go-api-declarations v1.7.0
 ## explicit; go 1.20
 github.com/sapcc/go-api-declarations/bininfo
-# github.com/sapcc/go-bits v0.0.0-20230803115409-d2170ecbba46
+# github.com/sapcc/go-bits v0.0.0-20230803125152-91a869119633
 ## explicit; go 1.20
 github.com/sapcc/go-bits/errext
 github.com/sapcc/go-bits/httpext
