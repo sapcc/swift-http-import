@@ -12,9 +12,9 @@ require (
 	github.com/sapcc/go-bits v0.0.0-20230803125152-91a869119633
 	github.com/ulikunitz/xz v0.5.11
 	go.uber.org/automaxprocs v1.5.3
-	golang.org/x/crypto v0.11.0
-	golang.org/x/net v0.13.0
-	golang.org/x/oauth2 v0.10.0
+	golang.org/x/crypto v0.12.0
+	golang.org/x/net v0.14.0
+	golang.org/x/oauth2 v0.11.0
 	gopkg.in/yaml.v2 v2.4.0
 	pault.ag/go/debian v0.15.0
 )
@@ -26,7 +26,7 @@ require (
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/jpillora/longestcommon v0.0.0-20161227235612-adb9d91ee629 // indirect
 	github.com/kr/text v0.2.0 // indirect
-	golang.org/x/sys v0.10.0 // indirect
+	golang.org/x/sys v0.11.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 	pault.ag/go/topsort v0.1.1 // indirect
