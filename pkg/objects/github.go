@@ -163,7 +163,8 @@ func (s *GithubReleaseSource) ListAllFiles(_ context.Context, out chan<- FileSpe
 				DownloadPath: strconv.FormatInt(a.GetID(), 10),
 			}
 			if a.UpdatedAt != nil {
-				fs.LastModified = &a.UpdatedAt.Time
+				updatedAtTime := a.UpdatedAt.Time
+				fs.LastModified = &updatedAtTime
 			}
 			out <- fs
 		}
