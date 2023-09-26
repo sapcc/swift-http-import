@@ -17,6 +17,7 @@ dockerfile:
     # used in the content-repo helm-chart
     - tini
     - tzdata
+  withLinkerdAwait: true
 
 golang:
   enableVendoring: true
