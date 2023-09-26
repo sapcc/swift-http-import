@@ -1,10 +1,3 @@
-FROM curlimages/curl AS linkerd
-ARG LINKERD_AWAIT_VERSION=v0.2.7
-RUN curl -sSLo /tmp/linkerd-await https://github.com/linkerd/linkerd-await/releases/download/release%2F${LINKERD_AWAIT_VERSION}/linkerd-await-${LINKERD_AWAIT_VERSION}-amd64 && \
-    chmod 755 /tmp/linkerd-await
-
-################################################################################
-
 FROM golang:1.21.1-alpine3.18 as builder
 
 RUN apk add --no-cache --no-progress gcc git make musl-dev
@@ -19,10 +12,15 @@ FROM alpine:3.18
 
 RUN addgroup -g 4200 appgroup \
   && adduser -h /home/appuser -s /sbin/nologin -G appgroup -D -u 4200 appuser
+
 # upgrade all installed packages to fix potential CVEs in advance
 RUN apk upgrade --no-cache --no-progress \
   && apk add --no-cache --no-progress ca-certificates tini tzdata
-COPY --from=linkerd /tmp/linkerd-await /usr/bin/linkerd-await
+
+ARG LINKERD_AWAIT_VERSION=v0.2.7
+RUN wget -qO /usr/bin/linkerd-await https://github.com/linkerd/linkerd-await/releases/download/release%2F${LINKERD_AWAIT_VERSION}/linkerd-await-${LINKERD_AWAIT_VERSION}-amd64 \
+  && chmod 755 /usr/bin/linkerd-await
+
 COPY --from=builder /pkg/ /usr/
 
 ARG BININFO_BUILD_DATE BININFO_COMMIT_HASH BININFO_VERSION
