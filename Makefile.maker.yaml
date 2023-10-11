@@ -26,6 +26,9 @@ golang:
 golangciLint:
   createConfig: true
 
+goReleaser:
+  createConfig: true
+
 spellCheck:
   ignoreWords: ["transfered"] # excluding because some metrics have it in their name
 
@@ -34,6 +37,8 @@ githubWorkflow:
     enabled: true
     ignorePaths: ["**.md"] # all Markdown files
   license:
+    enabled: true
+  release:
     enabled: true
   securityChecks:
     enabled: true
