@@ -117,7 +117,7 @@ google.golang.org/protobuf/types/descriptorpb
 # gopkg.in/yaml.v2 v2.4.0
 ## explicit; go 1.15
 gopkg.in/yaml.v2
-# pault.ag/go/debian v0.15.0
+# pault.ag/go/debian v0.16.0
 ## explicit; go 1.19
 pault.ag/go/debian/control
 pault.ag/go/debian/dependency
