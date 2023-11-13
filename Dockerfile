@@ -14,8 +14,10 @@ RUN addgroup -g 4200 appgroup \
   && adduser -h /home/appuser -s /sbin/nologin -G appgroup -D -u 4200 appuser
 
 # upgrade all installed packages to fix potential CVEs in advance
+# also remove apk package manager to hopefully remove dependecy on openssl 🤞
 RUN apk upgrade --no-cache --no-progress \
-  && apk add --no-cache --no-progress ca-certificates tini tzdata
+  && apk add --no-cache --no-progress ca-certificates tini tzdata \
+  && apk del --no-cache --no-progress apk-tools alpine-keys
 
 RUN wget -qO /usr/bin/linkerd-await https://github.com/linkerd/linkerd-await/releases/download/release%2Fv0.2.7/linkerd-await-v0.2.7-amd64 \
   && chmod 755 /usr/bin/linkerd-await
