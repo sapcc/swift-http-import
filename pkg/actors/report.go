@@ -138,10 +138,10 @@ func (r *Report) Run(ctx context.Context) {
 	gauge("last_run.jobs_skipped", r.stats.JobsSkipped, 1.0)          //nolint:errcheck
 	gauge("last_run.dirs_scanned", r.stats.DirectoriesScanned, 1.0)   //nolint:errcheck
 	gauge("last_run.files_found", r.stats.FilesFound, 1.0)            //nolint:errcheck
-	gauge("last_run.files_transfered", r.stats.FilesTransferred, 1.0) //nolint:errcheck
+	gauge("last_run.files_transfered", r.stats.FilesTransferred, 1.0) //nolint:errcheck,misspell // to much of a hassle to fix....
 	gauge("last_run.files_failed", r.stats.FilesFailed, 1.0)          //nolint:errcheck
 	gauge("last_run.files_cleaned_up", r.stats.FilesCleanedUp, 1.0)   //nolint:errcheck
-	gauge("last_run.bytes_transfered", r.stats.BytesTransferred, 1.0) //nolint:errcheck
+	gauge("last_run.bytes_transfered", r.stats.BytesTransferred, 1.0) //nolint:errcheck,misspell // to much of a hassle to fix....
 	if r.stats.FilesFailed > 0 || r.stats.DirectoriesFailed > 0 {
 		gauge("last_run.success", 0, 1.0) //nolint:errcheck
 		r.ExitCode = 1
