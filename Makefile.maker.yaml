@@ -39,11 +39,16 @@ githubWorkflow:
     enabled: true
   securityChecks:
     enabled: true
+
 renovate:
   enabled: true
   assignees:
     - majewsky
     - SuperSandro2000
+
+spellCheck:
+  ignoreWords:
+    - transfered # typo in metrics names
 
 verbatim: |
   functional-test:
