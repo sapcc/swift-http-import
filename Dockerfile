@@ -17,11 +17,9 @@ RUN addgroup -g 4200 appgroup \
 # also remove apk package manager to hopefully remove dependecy on openssl 🤞
 RUN apk upgrade --no-cache --no-progress \
   && apk add --no-cache --no-progress ca-certificates tini tzdata \
+  && wget -qO /usr/bin/linkerd-await https://github.com/linkerd/linkerd-await/releases/download/release%2Fv0.2.7/linkerd-await-v0.2.7-amd64 \
+  && chmod 755 /usr/bin/linkerd-await \
   && apk del --no-cache --no-progress apk-tools alpine-keys
-
-RUN wget -qO /usr/bin/linkerd-await https://github.com/linkerd/linkerd-await/releases/download/release%2Fv0.2.7/linkerd-await-v0.2.7-amd64 \
-  && chmod 755 /usr/bin/linkerd-await
-
 COPY --from=builder /pkg/ /usr/
 
 ARG BININFO_BUILD_DATE BININFO_COMMIT_HASH BININFO_VERSION
