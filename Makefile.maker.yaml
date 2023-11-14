@@ -29,9 +29,6 @@ golangciLint:
 goReleaser:
   createConfig: true
 
-spellCheck:
-  ignoreWords: ["transfered"] # excluding because some metrics have it in their name
-
 githubWorkflow:
   ci:
     enabled: true
@@ -42,9 +39,6 @@ githubWorkflow:
     enabled: true
   securityChecks:
     enabled: true
-  spellCheck:
-    enabled: true
-
 renovate:
   enabled: true
   assignees:
