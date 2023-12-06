@@ -1,3 +1,8 @@
+## v2.10.1 - 2023-12-06
+
+Changes:
+- Updated all dependencies to their latest versions.
+
 ## v2.10.0 - 2023-02-28
 
 New features:
