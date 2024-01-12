@@ -28,7 +28,7 @@ import (
 )
 
 const (
-	Version = "v57.0.0"
+	Version = "v58.0.0"
 
 	defaultAPIVersion = "2022-11-28"
 	defaultBaseURL    = "https://api.github.com/"
@@ -186,6 +186,7 @@ type Client struct {
 	CodeScanning       *CodeScanningService
 	CodesOfConduct     *CodesOfConductService
 	Codespaces         *CodespacesService
+	Copilot            *CopilotService
 	Dependabot         *DependabotService
 	DependencyGraph    *DependencyGraphService
 	Emojis             *EmojisService
@@ -220,6 +221,8 @@ type service struct {
 }
 
 // Client returns the http.Client used by this GitHub client.
+// This should only be used for requests to the GitHub API because
+// request headers will contain an authorization token.
 func (c *Client) Client() *http.Client {
 	c.clientMu.Lock()
 	defer c.clientMu.Unlock()
@@ -315,7 +318,11 @@ func addOptions(s string, opts interface{}) (string, error) {
 // an http.Client that will perform the authentication for you (such as that
 // provided by the golang.org/x/oauth2 library).
 func NewClient(httpClient *http.Client) *Client {
-	c := &Client{client: httpClient}
+	if httpClient == nil {
+		httpClient = &http.Client{}
+	}
+	httpClient2 := *httpClient
+	c := &Client{client: &httpClient2}
 	c.initialize()
 	return c
 }
@@ -408,6 +415,7 @@ func (c *Client) initialize() {
 	c.CodeScanning = (*CodeScanningService)(&c.common)
 	c.Codespaces = (*CodespacesService)(&c.common)
 	c.CodesOfConduct = (*CodesOfConductService)(&c.common)
+	c.Copilot = (*CopilotService)(&c.common)
 	c.Dependabot = (*DependabotService)(&c.common)
 	c.DependencyGraph = (*DependencyGraphService)(&c.common)
 	c.Emojis = (*EmojisService)(&c.common)
@@ -1303,6 +1311,8 @@ const (
 	codeScanningUploadCategory
 	actionsRunnerRegistrationCategory
 	scimCategory
+	dependencySnapshotsCategory
+	codeSearchCategory
 
 	categories // An array of this length will be able to contain all rate limit categories.
 )
@@ -1315,6 +1325,12 @@ func category(method, path string) rateLimitCategory {
 		// NOTE: coreCategory is returned for actionsRunnerRegistrationCategory too,
 		// because no API found for this category.
 		return coreCategory
+
+	// https://docs.github.com/en/rest/search/search#search-code
+	case strings.HasPrefix(path, "/search/code") &&
+		method == http.MethodGet:
+		return codeSearchCategory
+
 	case strings.HasPrefix(path, "/search/"):
 		return searchCategory
 	case path == "/graphql":
@@ -1337,6 +1353,12 @@ func category(method, path string) rateLimitCategory {
 	// https://docs.github.com/enterprise-cloud@latest/rest/scim
 	case strings.HasPrefix(path, "/scim/"):
 		return scimCategory
+
+	// https://docs.github.com/en/rest/dependency-graph/dependency-submission#create-a-snapshot-of-dependencies-for-a-repository
+	case strings.HasPrefix(path, "/repos/") &&
+		strings.HasSuffix(path, "/dependency-graph/snapshots") &&
+		method == http.MethodPost:
+		return dependencySnapshotsCategory
 	}
 }
 
