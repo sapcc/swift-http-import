@@ -39,7 +39,7 @@ github.com/majewsky/schwift/internal/errext
 # github.com/sapcc/go-api-declarations v1.10.9
 ## explicit; go 1.21
 github.com/sapcc/go-api-declarations/bininfo
-# github.com/sapcc/go-bits v0.0.0-20240208161424-5cb4409b5a2e
+# github.com/sapcc/go-bits v0.0.0-20240212161259-3df536cae9cd
 ## explicit; go 1.21
 github.com/sapcc/go-bits/errext
 github.com/sapcc/go-bits/httpext
