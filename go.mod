@@ -5,11 +5,11 @@ go 1.22
 require (
 	github.com/cactus/go-statsd-client/v5 v5.1.0
 	github.com/google/go-github/v59 v59.0.0
-	github.com/gophercloud/gophercloud v1.9.0
+	github.com/gophercloud/gophercloud v1.10.0
 	github.com/gophercloud/utils v0.0.0-20231010081019-80377eca5d56
 	github.com/majewsky/schwift v1.3.0
 	github.com/sapcc/go-api-declarations v1.10.9
-	github.com/sapcc/go-bits v0.0.0-20240222221204-90b493ffdee9
+	github.com/sapcc/go-bits v0.0.0-20240229224940-f0612298e3a6
 	github.com/ulikunitz/xz v0.5.11
 	go.uber.org/automaxprocs v1.5.3
 	golang.org/x/crypto v0.19.0
