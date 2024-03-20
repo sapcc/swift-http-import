@@ -211,7 +211,7 @@ func (s *GithubReleaseSource) GetFile(_ context.Context, path string, requestHea
 		Etag:         resp.Header.Get("Etag"),
 		LastModified: resp.Header.Get("Last-Modified"),
 		SizeBytes:    resp.ContentLength,
-		ExpiryTime:   nil, //no way to get this information via HTTP only
+		ExpiryTime:   nil, // no way to get this information via HTTP only
 		SkipTransfer: resp.StatusCode == http.StatusNotModified,
 		ContentType:  resp.Header.Get("Content-Type"),
 	}, nil

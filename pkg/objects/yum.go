@@ -38,14 +38,14 @@ import (
 // implementation that reads the Yum repository metadata instead of relying on
 // directory listings.
 type YumSource struct {
-	//options from config file
+	// options from config file
 	URLString                string   `yaml:"url"`
 	ClientCertificatePath    string   `yaml:"cert"`
 	ClientCertificateKeyPath string   `yaml:"key"`
 	ServerCAPath             string   `yaml:"ca"`
 	Architectures            []string `yaml:"arch"`
 	VerifySignature          *bool    `yaml:"verify_signature"`
-	//compiled configuration
+	// compiled configuration
 	urlSource       *URLSource       `yaml:"-"`
 	gpgVerification bool             `yaml:"-"`
 	gpgKeyRing      *util.GPGKeyRing `yaml:"-"`
@@ -86,7 +86,7 @@ func (s *YumSource) ListAllFiles(ctx context.Context, out chan<- FileSpec) *List
 	cache := make(map[string]FileSpec)
 
 	repomdPath := "repodata/repomd.xml"
-	//parse repomd.xml to find paths of all other metadata files
+	// parse repomd.xml to find paths of all other metadata files
 	var repomd struct {
 		Entries []struct {
 			Type     string `xml:"type,attr"`
@@ -100,13 +100,13 @@ func (s *YumSource) ListAllFiles(ctx context.Context, out chan<- FileSpec) *List
 		return lerr
 	}
 
-	//we transfer the signature and it's key file (down below) regardless of
-	//whether GPG verification is enabled because some packages need it
+	// we transfer the signature and it's key file (down below) regardless of
+	// whether GPG verification is enabled because some packages need it
 	signaturePath := repomdPath + ".asc"
 	signatureBytes, signatureURI, lerr := s.urlSource.getFileContents(ctx, signaturePath, cache)
 	if lerr == nil {
 		out <- getFileSpec(signaturePath, cache)
-		//verify repomd's GPG signature
+		// verify repomd's GPG signature
 		if s.gpgVerification {
 			err := s.gpgKeyRing.VerifyDetachedGPGSignature(ctx, repomdBytes, signatureBytes)
 			if err != nil {
@@ -120,19 +120,19 @@ func (s *YumSource) ListAllFiles(ctx context.Context, out chan<- FileSpec) *List
 			logg.Debug("successfully verified GPG signature at %s for file %s", signatureURI, "-"+filepath.Base(repomdPath))
 		}
 	} else if !strings.Contains(lerr.Message, "GET returned status 404") {
-		//not all repos have signature files therefore we only return an err if
-		//not 404.
+		// not all repos have signature files therefore we only return an err if
+		// not 404.
 		return lerr
 	}
 
-	//note metadata files for transfer
+	// note metadata files for transfer
 	hrefsByType := make(map[string]string)
 	for _, entry := range repomd.Entries {
 		out <- getFileSpec(entry.Location.Href, cache)
 		hrefsByType[entry.Type] = entry.Location.Href
 	}
 
-	//parse primary.xml.gz to find paths of RPMs
+	// parse primary.xml.gz to find paths of RPMs
 	href, exists := hrefsByType["primary"]
 	if !exists {
 		return &ListEntriesError{
@@ -158,8 +158,8 @@ func (s *YumSource) ListAllFiles(ctx context.Context, out chan<- FileSpec) *List
 		}
 	}
 
-	//parse prestodelta.xml.gz (if present) to find paths of DRPMs
-	//(NOTE: this is called "deltainfo.xml.gz" on Suse)
+	// parse prestodelta.xml.gz (if present) to find paths of DRPMs
+	// (NOTE: this is called "deltainfo.xml.gz" on Suse)
 	href, exists = hrefsByType["prestodelta"]
 	if !exists {
 		href, exists = hrefsByType["deltainfo"]
@@ -186,9 +186,9 @@ func (s *YumSource) ListAllFiles(ctx context.Context, out chan<- FileSpec) *List
 		}
 	}
 
-	//transfer repomd.xml.* files at the very end, when everything else has already been
-	//uploaded (to avoid situations where a client might see repository metadata
-	//without being able to see the referenced packages)
+	// transfer repomd.xml.* files at the very end, when everything else has already been
+	// uploaded (to avoid situations where a client might see repository metadata
+	// without being able to see the referenced packages)
 	repomdKeyPath := repomdPath + ".key"
 	_, _, lerr = s.urlSource.getFileContents(ctx, repomdKeyPath, cache)
 	if lerr == nil {
@@ -237,7 +237,7 @@ func (s *YumSource) downloadAndParseXML(ctx context.Context, path string, data i
 		return nil, uri, lerr
 	}
 
-	//if `buf` has the magic number for GZip, decompress before parsing as XML
+	// if `buf` has the magic number for GZip, decompress before parsing as XML
 	if bytes.HasPrefix(buf, gzipMagicNumber) {
 		var err error
 		buf, err = decompressGZipArchive(buf)
@@ -246,7 +246,7 @@ func (s *YumSource) downloadAndParseXML(ctx context.Context, path string, data i
 		}
 	}
 
-	//if `buf` has the magic number for XZ, decompress before parsing as XML
+	// if `buf` has the magic number for XZ, decompress before parsing as XML
 	if bytes.HasPrefix(buf, xzMagicNumber) {
 		var err error
 		buf, err = decompressXZArchive(buf)

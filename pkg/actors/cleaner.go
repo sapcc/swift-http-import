@@ -46,13 +46,13 @@ type Cleaner struct {
 // Run implements the Actor interface.
 func (c *Cleaner) Run(ctx context.Context) {
 	isJobFailed := make(map[*objects.Job]bool)
-	isFileTransferred := make(map[*objects.Job]map[string]bool) //string = object name incl. prefix (if any)
+	isFileTransferred := make(map[*objects.Job]map[string]bool) // string = object name incl. prefix (if any)
 
-	//collect information about transferred files from the transferors
-	//(we don't need to check Context.Done in the loop; when the process is
-	//interrupted, main() will close our Input and we will move on)
+	// collect information about transferred files from the transferors
+	// (we don't need to check Context.Done in the loop; when the process is
+	// interrupted, main() will close our Input and we will move on)
 	for info := range c.Input {
-		//ignore all files in jobs where no cleanup is configured
+		// ignore all files in jobs where no cleanup is configured
 		job := info.File.Job
 		if job.Cleanup.Strategy == objects.KeepUnknownFiles {
 			continue
@@ -74,11 +74,11 @@ func (c *Cleaner) Run(ctx context.Context) {
 		return
 	}
 
-	//collect information about incomplete scrapes (this is not safe to do in the
-	//above loop because the scraper job might be writing the
-	//Job.IsScrapingIncomplete attribute concurrently; at this point the scraper
-	//is definitely done, so these attributes are safe to read without risking a
-	//data race)
+	// collect information about incomplete scrapes (this is not safe to do in the
+	// above loop because the scraper job might be writing the
+	// Job.IsScrapingIncomplete attribute concurrently; at this point the scraper
+	// is definitely done, so these attributes are safe to read without risking a
+	// data race)
 	for job := range isFileTransferred {
 		if job.IsScrapingIncomplete {
 			isJobFailed[job] = true
@@ -90,10 +90,10 @@ func (c *Cleaner) Run(ctx context.Context) {
 			len(isJobFailed))
 	}
 
-	//perform cleanup if it is safe to do so
+	// perform cleanup if it is safe to do so
 	for job, transferred := range isFileTransferred {
 		if ctx.Err() != nil {
-			//interrupt received
+			// interrupt received
 			return
 		}
 		if !isJobFailed[job] {
@@ -103,7 +103,7 @@ func (c *Cleaner) Run(ctx context.Context) {
 }
 
 func (c *Cleaner) performCleanup(job *objects.Job, isFileTransferred map[string]bool) {
-	//collect objects to cleanup
+	// collect objects to cleanup
 	var objs []*schwift.Object
 	for objectName := range job.Target.FileExists {
 		if isFileTransferred[objectName] {
@@ -119,7 +119,7 @@ func (c *Cleaner) performCleanup(job *objects.Job, isFileTransferred map[string]
 		logg.Info("starting cleanup of %d objects on target side", len(objs))
 	}
 
-	//perform cleanup according to selected strategy
+	// perform cleanup according to selected strategy
 	switch job.Cleanup.Strategy {
 	case objects.ReportUnknownFiles:
 		for _, obj := range objs {

@@ -55,13 +55,13 @@ type SwiftLocation struct {
 	RegionName                  secrets.FromEnv `yaml:"region_name"`
 	ContainerName               secrets.FromEnv `yaml:"container"`
 	ObjectNamePrefix            secrets.FromEnv `yaml:"object_prefix"`
-	//configuration for Validate()
+	// configuration for Validate()
 	ValidateIgnoreEmptyContainer bool `yaml:"-"`
-	//Account and Container is filled by Connect(). Container will be nil if ContainerName is empty.
+	// Account and Container is filled by Connect(). Container will be nil if ContainerName is empty.
 	Account   *schwift.Account   `yaml:"-"`
 	Container *schwift.Container `yaml:"-"`
-	//FileExists is filled by DiscoverExistingFiles(). The keys are object names
-	//including the ObjectNamePrefix, if any.
+	// FileExists is filled by DiscoverExistingFiles(). The keys are object names
+	// including the ObjectNamePrefix, if any.
 	FileExists map[string]bool `yaml:"-"`
 }
 
@@ -102,9 +102,9 @@ func (s *SwiftLocation) Validate(name string) []error {
 	}
 
 	if s.ApplicationCredentialID != "" || s.ApplicationCredentialName != "" {
-		//checking application credential requirements
+		// checking application credential requirements
 		if s.ApplicationCredentialID == "" {
-			//if application_credential_id is not set, then we need to know user_name and user_domain_name
+			// if application_credential_id is not set, then we need to know user_name and user_domain_name
 			if s.UserName == "" {
 				result = append(result, fmt.Errorf("missing value for %s.user_name", name))
 			}
@@ -162,7 +162,7 @@ func (s *SwiftLocation) Connect(name string) error {
 		return nil
 	}
 
-	//connect to Swift account (but re-use connection if cached)
+	// connect to Swift account (but re-use connection if cached)
 	key := s.cacheKey(name)
 	s.Account = accountCache[key]
 	if s.Account == nil {
@@ -240,7 +240,7 @@ func (s *SwiftLocation) Connect(name string) error {
 		accountCache[key] = s.Account
 	}
 
-	//create target container if missing
+	// create target container if missing
 	if s.ContainerName == "" {
 		s.Container = nil
 		return nil
@@ -289,7 +289,7 @@ func (s *SwiftLocation) ListEntries(_ context.Context, directoryPath string) ([]
 
 func (s *SwiftLocation) getFileSpec(info schwift.ObjectInfo) FileSpec {
 	var f FileSpec
-	//strip ObjectNamePrefix from the resulting objects
+	// strip ObjectNamePrefix from the resulting objects
 	if info.SubDirectory != "" {
 		f.Path = strings.TrimPrefix(info.SubDirectory, string(s.ObjectNamePrefix))
 		f.IsDirectory = true
@@ -320,7 +320,7 @@ func (s *SwiftLocation) GetFile(_ context.Context, path string, requestHeaders s
 		return nil, FileState{}, err
 	}
 	//NOTE: Download() uses a GET request, so object metadata has already been
-	//received and cached, so Headers() is cheap now and will never fail.
+	// received and cached, so Headers() is cheap now and will never fail.
 	hdr, err := object.Headers()
 	if err != nil {
 		body.Close()

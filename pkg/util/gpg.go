@@ -66,7 +66,7 @@ func NewGPGKeyRing(cntr *schwift.Container, keyserverURLPatterns []string) *GPGK
 			"https://pgp.mit.edu/pks/lookup?search=0x{keyid}&options=mr&op=get")
 	}
 
-	//Get cached public keys from Swift container.
+	// Get cached public keys from Swift container.
 	var entityList openpgp.EntityList
 	if cntr != nil {
 		logg.Info("restoring GPG public keys from %s", cntr.Name())
@@ -153,7 +153,7 @@ func (k *GPGKeyRing) verifyGPGSignature(ctx context.Context, message []byte, sig
 			return fmt.Errorf("invalid OpenPGP packet type: expected %q, got %T", "*packet.Signature", p)
 		}
 
-		//only download the public key if not found in the existing key ring
+		// only download the public key if not found in the existing key ring
 		k.Mux.RLock()
 		foundKeys := k.EntityList.KeysById(issuerKeyID)
 		k.Mux.RUnlock()
@@ -166,7 +166,7 @@ func (k *GPGKeyRing) verifyGPGSignature(ctx context.Context, message []byte, sig
 		}
 	}
 
-	//add the downloaded keys to the existing key ring
+	// add the downloaded keys to the existing key ring
 	if len(publicKeyBytes) != 0 {
 		el, err := openpgp.ReadArmoredKeyRing(bytes.NewReader(publicKeyBytes))
 		if err != nil {
@@ -188,7 +188,7 @@ func (k *GPGKeyRing) getPublicKey(ctx context.Context, id string) ([]byte, error
 	logg.Info("retrieving public key for ID %q", id)
 
 	for i, v := range k.KeyserverURLPatterns {
-		url := strings.Replace(v, "{keyid}", id, -1)
+		url := strings.ReplaceAll(v, "{keyid}", id)
 		buf, err := getPublicKeyFromServer(ctx, url)
 		if err == nil {
 			return uploadPublicKey(k.SwiftContainer, buf)

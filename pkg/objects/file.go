@@ -48,11 +48,11 @@ type FileSpec struct {
 	// different from the Path variable which denotes their actual file path.
 	DownloadPath string
 	IsDirectory  bool
-	//only set for files in Swift and GitHub release sources (otherwise nil)
+	// only set for files in Swift and GitHub release sources (otherwise nil)
 	LastModified *time.Time
-	//only set for symlinks (refers to a path below the ObjectPrefix in the same container)
+	// only set for symlinks (refers to a path below the ObjectPrefix in the same container)
 	SymlinkTargetPath string
-	//results of GET on this file
+	// results of GET on this file
 	Contents []byte
 	Headers  http.Header
 }
@@ -66,13 +66,13 @@ func (f File) TargetObject() *schwift.Object {
 type TransferResult uint
 
 const (
-	//TransferSuccess means that the file was newer on the source and was sent
-	//to the target.
+	// TransferSuccess means that the file was newer on the source and was sent
+	// to the target.
 	TransferSuccess TransferResult = iota
-	//TransferSkipped means that the file was the same on both sides and
-	//nothing was transferred.
+	// TransferSkipped means that the file was the same on both sides and
+	// nothing was transferred.
 	TransferSkipped
-	//TransferFailed means that an error occurred and was logged.
+	// TransferFailed means that an error occurred and was logged.
 	TransferFailed
 )
 
@@ -82,7 +82,7 @@ const (
 func (f File) PerformTransfer(ctx context.Context) (transferResult TransferResult, _ int64) {
 	object := f.TargetObject()
 
-	//check if this file needs transfer
+	// check if this file needs transfer
 	if f.Job.Matcher.ImmutableFileRx != nil && f.Job.Matcher.ImmutableFileRx.MatchString(f.Spec.Path) {
 		if f.Job.Target.FileExists[object.Name()] {
 			logg.Debug("skipping %s: already transferred", object.FullName())
@@ -90,7 +90,7 @@ func (f File) PerformTransfer(ctx context.Context) (transferResult TransferResul
 		}
 	}
 
-	//can only transfer as a symlink if the target server supports it
+	// can only transfer as a symlink if the target server supports it
 	capabilities, err := f.Job.Target.Container.Account().Capabilities()
 	if err != nil {
 		logg.Fatal("query /info on target failed: %s", err.Error())
@@ -99,13 +99,13 @@ func (f File) PerformTransfer(ctx context.Context) (transferResult TransferResul
 		f.Spec.SymlinkTargetPath = ""
 	}
 
-	//symlinks are safe to use only if the target object is also included in this job
-	//(TODO extend validation to allow for target to be transferred by any job,
-	//e.g. by adding a new actor between scraper and transferor that has access
-	//to the full list of jobs)
-	//(FIXME we should give something non-nil for the second argument of
-	//CheckRecursive(), otherwise symlinks might interact with the not_older_than
-	//filter in surprising ways)
+	// symlinks are safe to use only if the target object is also included in this job
+	// (TODO extend validation to allow for target to be transferred by any job,
+	// e.g. by adding a new actor between scraper and transferor that has access
+	// to the full list of jobs)
+	// (FIXME we should give something non-nil for the second argument of
+	// CheckRecursive(), otherwise symlinks might interact with the not_older_than
+	// filter in surprising ways)
 	if f.Spec.SymlinkTargetPath != "" {
 		if f.Job.Matcher.CheckRecursive(f.Spec.SymlinkTargetPath, nil) != nil {
 			f.Spec.SymlinkTargetPath = ""
@@ -114,16 +114,16 @@ func (f File) PerformTransfer(ctx context.Context) (transferResult TransferResul
 
 	logg.Debug("considering transfer of %s", object.FullName())
 
-	//query the file metadata at the target
+	// query the file metadata at the target
 	hdr, currentSymlinkTarget, err := object.SymlinkHeaders()
 	if err != nil {
 		if schwift.Is(err, http.StatusNotFound) {
 			hdr = schwift.NewObjectHeaders()
 			currentSymlinkTarget = nil
 		} else {
-			//log all other errors and skip the file (we don't want to waste
-			//bandwidth downloading stuff if there is reasonable doubt that we will
-			//not be able to upload it to Swift)
+			// log all other errors and skip the file (we don't want to waste
+			// bandwidth downloading stuff if there is reasonable doubt that we will
+			// not be able to upload it to Swift)
 			logg.Error("skipping target %s: HEAD failed: %s",
 				object.FullName(), err.Error(),
 			)
@@ -131,13 +131,13 @@ func (f File) PerformTransfer(ctx context.Context) (transferResult TransferResul
 		}
 	}
 
-	//if we want to upload a symlink, we can skip the whole Last-Modified/Etag
-	//shebang and straight-up compare the symlink target
+	// if we want to upload a symlink, we can skip the whole Last-Modified/Etag
+	// shebang and straight-up compare the symlink target
 	if f.Spec.SymlinkTargetPath != "" {
 		return f.uploadSymlink(currentSymlinkTarget, hdr.IsLargeObject()), 0
 	}
 
-	//retrieve object from source, taking advantage of Etag and Last-Modified where possible
+	// retrieve object from source, taking advantage of Etag and Last-Modified where possible
 	requestHeaders := schwift.NewObjectHeaders()
 	if f.Job.Matcher.SimplisticComparison != nil && *f.Job.Matcher.SimplisticComparison {
 		if val := hdr.Get("Last-Modified"); val != "" {
@@ -182,8 +182,8 @@ func (f File) PerformTransfer(ctx context.Context) (transferResult TransferResul
 		logg.Info("transferring to %s", object.FullName())
 	}
 
-	//store some headers from the source to later identify whether this
-	//resource has changed
+	// store some headers from the source to later identify whether this
+	// resource has changed
 	uploadHeaders := schwift.NewObjectHeaders()
 	uploadHeaders.ContentType().Set(sourceState.ContentType)
 	if sourceState.Etag != "" {
@@ -197,7 +197,7 @@ func (f File) PerformTransfer(ctx context.Context) (transferResult TransferResul
 		uploadHeaders.ExpiresAt().Set(sourceState.ExpiryTime.Add(delay))
 	}
 
-	//upload file to target
+	// upload file to target
 	var ok bool
 	size := sourceState.SizeBytes
 	if f.Job.Segmenting != nil && size > 0 && uint64(size) >= f.Job.Segmenting.MinObjectSize {
@@ -249,7 +249,7 @@ func (s FileSpec) toTransferFormat(requestHeaders schwift.ObjectHeaders) (io.Rea
 	if targetState.Etag != "" && sourceState.Etag != "" {
 		sourceState.SkipTransfer = targetState.Etag == sourceState.Etag
 	} else if targetState.LastModified != "" && sourceState.LastModified != "" {
-		//need to parse Last-Modified timestamps to compare between target and source
+		// need to parse Last-Modified timestamps to compare between target and source
 		targetMtime, err := http.ParseTime(targetState.LastModified)
 		if err != nil {
 			return nil, sourceState, err
@@ -280,8 +280,8 @@ func (f File) uploadNormalObject(body io.Reader, hdr schwift.ObjectHeaders, clea
 	logg.Error("PUT %s failed: %s", object.FullName(), err.Error())
 
 	if schwift.Is(err, StatusSwiftRateLimit) {
-		//upload failed due to rate limit, object is definitely not uploaded
-		//prevent additional rate limit caused by an unnecessary delete request
+		// upload failed due to rate limit, object is definitely not uploaded
+		// prevent additional rate limit caused by an unnecessary delete request
 		return false
 	}
 
@@ -317,13 +317,13 @@ func (f File) uploadLargeObject(body io.Reader, hdr schwift.ObjectHeaders, clean
 
 	logg.Error("PUT %s as Static Large Object failed: %s", object.FullName(), err.Error())
 
-	//file was not transferred correctly - cleanup manifest and segments
+	// file was not transferred correctly - cleanup manifest and segments
 	cleanupFailedUpload(object)
 	return false
 }
 
 func cleanupFailedUpload(object *schwift.Object) {
-	//file was not transferred correctly - cleanup manifest and segments
+	// file was not transferred correctly - cleanup manifest and segments
 	err := object.Delete(&schwift.DeleteOptions{
 		DeleteSegments: true,
 	}, nil)
