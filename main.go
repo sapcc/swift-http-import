@@ -103,7 +103,7 @@ func runPipeline(ctx context.Context, config *objects.Configuration, report chan
 		Report: report,
 	}, &wg)
 
-	for i := uint(0); i < config.WorkerCounts.Transfer; i++ {
+	for range config.WorkerCounts.Transfer {
 		actors.Start(ctx, &actors.Transferor{
 			Input:  queue1,
 			Output: queue2,
