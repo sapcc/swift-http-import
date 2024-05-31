@@ -7,7 +7,7 @@ github.com/google/go-github/v62/github
 # github.com/google/go-querystring v1.1.0
 ## explicit; go 1.10
 github.com/google/go-querystring/query
-# github.com/gophercloud/gophercloud v1.11.0
+# github.com/gophercloud/gophercloud v1.12.0
 ## explicit; go 1.14
 github.com/gophercloud/gophercloud
 github.com/gophercloud/gophercloud/openstack
@@ -35,7 +35,7 @@ github.com/majewsky/schwift/internal/errext
 # github.com/sapcc/go-api-declarations v1.11.2
 ## explicit; go 1.21
 github.com/sapcc/go-api-declarations/bininfo
-# github.com/sapcc/go-bits v0.0.0-20240516084938-1c041b7a84ce
+# github.com/sapcc/go-bits v0.0.0-20240530080859-f4579fb3a074
 ## explicit; go 1.22
 github.com/sapcc/go-bits/errext
 github.com/sapcc/go-bits/httpext
