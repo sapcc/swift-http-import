@@ -360,7 +360,7 @@ func (u URLSource) GetFile(ctx context.Context, filePath string, requestHeaders 
 		return nil, FileState{}, fmt.Errorf("skipping %s: GET failed: %s", uri, err.Error())
 	}
 
-	if response.StatusCode != 200 && response.StatusCode != 304 {
+	if response.StatusCode != http.StatusOK && response.StatusCode != http.StatusNotModified {
 		return nil, FileState{}, fmt.Errorf(
 			"skipping %s: GET returned unexpected status code: expected 200 or 304, but got %d",
 			uri, response.StatusCode,
@@ -372,7 +372,7 @@ func (u URLSource) GetFile(ctx context.Context, filePath string, requestHeaders 
 		LastModified: response.Header.Get("Last-Modified"),
 		SizeBytes:    response.ContentLength,
 		ExpiryTime:   nil, // no way to get this information via HTTP only
-		SkipTransfer: response.StatusCode == 304,
+		SkipTransfer: response.StatusCode == http.StatusNotModified,
 		ContentType:  response.Header.Get("Content-Type"),
 	}, nil
 }
