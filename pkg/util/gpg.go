@@ -63,6 +63,7 @@ func NewGPGKeyRing(cntr *schwift.Container, keyserverURLPatterns []string) *GPGK
 	if len(ksURLPatterns) == 0 {
 		ksURLPatterns = append(ksURLPatterns,
 			"https://keyserver.ubuntu.com/pks/lookup?search=0x{keyid}&options=mr&op=get",
+			"https://keys.openpgp.org/pks/lookup?search=0x{keyid}&options=mr&op=get",
 			"https://pgp.mit.edu/pks/lookup?search=0x{keyid}&options=mr&op=get")
 	}
 
