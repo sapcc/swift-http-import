@@ -23,7 +23,7 @@ import (
 	"context"
 	"sort"
 
-	"github.com/majewsky/schwift"
+	"github.com/majewsky/schwift/v2"
 	"github.com/sapcc/go-bits/errext"
 	"github.com/sapcc/go-bits/logg"
 
@@ -97,12 +97,12 @@ func (c *Cleaner) Run(ctx context.Context) {
 			return
 		}
 		if !isJobFailed[job] {
-			c.performCleanup(job, transferred)
+			c.performCleanup(ctx, job, transferred)
 		}
 	}
 }
 
-func (c *Cleaner) performCleanup(job *objects.Job, isFileTransferred map[string]bool) {
+func (c *Cleaner) performCleanup(ctx context.Context, job *objects.Job, isFileTransferred map[string]bool) {
 	// collect objects to cleanup
 	var objs []*schwift.Object
 	for objectName := range job.Target.FileExists {
@@ -127,7 +127,7 @@ func (c *Cleaner) performCleanup(job *objects.Job, isFileTransferred map[string]
 		}
 
 	case objects.DeleteUnknownFiles:
-		numDeleted, _, err := job.Target.Container.Account().BulkDelete(objs, nil, nil)
+		numDeleted, _, err := job.Target.Container.Account().BulkDelete(ctx, objs, nil, nil)
 		c.Report <- ReportEvent{IsCleanup: true, CleanedUpObjectCount: int64(numDeleted)}
 		if err != nil {
 			logg.Error("cleanup of %d objects on target side failed: %s", (len(objs) - numDeleted), err.Error())

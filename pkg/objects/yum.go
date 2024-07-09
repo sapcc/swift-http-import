@@ -27,7 +27,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/majewsky/schwift"
+	"github.com/majewsky/schwift/v2"
 	"github.com/sapcc/go-bits/logg"
 
 	"github.com/sapcc/swift-http-import/pkg/util"
@@ -67,8 +67,8 @@ func (s *YumSource) Validate(name string) []error {
 }
 
 // Connect implements the Source interface.
-func (s *YumSource) Connect(name string) error {
-	return s.urlSource.Connect(name)
+func (s *YumSource) Connect(ctx context.Context, name string) error {
+	return s.urlSource.Connect(ctx, name)
 }
 
 // ListEntries implements the Source interface.

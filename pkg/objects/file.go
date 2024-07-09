@@ -26,7 +26,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/majewsky/schwift"
+	"github.com/majewsky/schwift/v2"
 	"github.com/sapcc/go-bits/logg"
 
 	"github.com/sapcc/swift-http-import/pkg/util"
@@ -91,7 +91,7 @@ func (f File) PerformTransfer(ctx context.Context) (transferResult TransferResul
 	}
 
 	// can only transfer as a symlink if the target server supports it
-	capabilities, err := f.Job.Target.Container.Account().Capabilities()
+	capabilities, err := f.Job.Target.Container.Account().Capabilities(ctx)
 	if err != nil {
 		logg.Fatal("query /info on target failed: %s", err.Error())
 	}
@@ -115,7 +115,7 @@ func (f File) PerformTransfer(ctx context.Context) (transferResult TransferResul
 	logg.Debug("considering transfer of %s", object.FullName())
 
 	// query the file metadata at the target
-	hdr, currentSymlinkTarget, err := object.SymlinkHeaders()
+	hdr, currentSymlinkTarget, err := object.SymlinkHeaders(ctx)
 	if err != nil {
 		if schwift.Is(err, http.StatusNotFound) {
 			hdr = schwift.NewObjectHeaders()
@@ -134,7 +134,7 @@ func (f File) PerformTransfer(ctx context.Context) (transferResult TransferResul
 	// if we want to upload a symlink, we can skip the whole Last-Modified/Etag
 	// shebang and straight-up compare the symlink target
 	if f.Spec.SymlinkTargetPath != "" {
-		return f.uploadSymlink(currentSymlinkTarget, hdr.IsLargeObject()), 0
+		return f.uploadSymlink(ctx, currentSymlinkTarget, hdr.IsLargeObject()), 0
 	}
 
 	// retrieve object from source, taking advantage of Etag and Last-Modified where possible
@@ -201,9 +201,9 @@ func (f File) PerformTransfer(ctx context.Context) (transferResult TransferResul
 	var ok bool
 	size := sourceState.SizeBytes
 	if f.Job.Segmenting != nil && size > 0 && uint64(size) >= f.Job.Segmenting.MinObjectSize {
-		ok = f.uploadLargeObject(body, uploadHeaders, hdr.IsLargeObject())
+		ok = f.uploadLargeObject(ctx, body, uploadHeaders, hdr.IsLargeObject())
 	} else {
-		ok = f.uploadNormalObject(body, uploadHeaders, hdr.IsLargeObject())
+		ok = f.uploadNormalObject(ctx, body, uploadHeaders, hdr.IsLargeObject())
 	}
 
 	if ok {
@@ -212,7 +212,7 @@ func (f File) PerformTransfer(ctx context.Context) (transferResult TransferResul
 	return TransferFailed, 0
 }
 
-func (f File) uploadSymlink(previousTarget *schwift.Object, cleanupOldSegments bool) TransferResult {
+func (f File) uploadSymlink(ctx context.Context, previousTarget *schwift.Object, cleanupOldSegments bool) TransferResult {
 	object := f.TargetObject()
 	newTarget := f.Job.Target.ObjectAtPath(f.Spec.SymlinkTargetPath)
 
@@ -221,14 +221,14 @@ func (f File) uploadSymlink(previousTarget *schwift.Object, cleanupOldSegments b
 		return TransferSkipped
 	}
 
-	err := object.SymlinkTo(newTarget, &schwift.SymlinkOptions{
+	err := object.SymlinkTo(ctx, newTarget, &schwift.SymlinkOptions{
 		DeleteSegments: cleanupOldSegments,
 	}, nil)
 	if err == nil {
 		return TransferSuccess
 	}
 
-	cleanupFailedUpload(object)
+	cleanupFailedUpload(ctx, object)
 	return TransferFailed
 }
 
@@ -268,9 +268,9 @@ func (s FileSpec) toTransferFormat(requestHeaders schwift.ObjectHeaders) (io.Rea
 // indicate Too Many Requests.
 const StatusSwiftRateLimit = 498
 
-func (f File) uploadNormalObject(body io.Reader, hdr schwift.ObjectHeaders, cleanupOldSegments bool) (ok bool) {
+func (f File) uploadNormalObject(ctx context.Context, body io.Reader, hdr schwift.ObjectHeaders, cleanupOldSegments bool) (ok bool) {
 	object := f.TargetObject()
-	err := object.Upload(body, &schwift.UploadOptions{
+	err := object.Upload(ctx, body, &schwift.UploadOptions{
 		DeleteSegments: cleanupOldSegments,
 	}, hdr.ToOpts())
 	if err == nil {
@@ -285,14 +285,14 @@ func (f File) uploadNormalObject(body io.Reader, hdr schwift.ObjectHeaders, clea
 		return false
 	}
 
-	cleanupFailedUpload(object)
+	cleanupFailedUpload(ctx, object)
 	return false
 }
 
-func (f File) uploadLargeObject(body io.Reader, hdr schwift.ObjectHeaders, cleanupOldSegments bool) (ok bool) {
+func (f File) uploadLargeObject(ctx context.Context, body io.Reader, hdr schwift.ObjectHeaders, cleanupOldSegments bool) bool {
 	object := f.TargetObject()
 
-	lo, err := object.AsNewLargeObject(schwift.SegmentingOptions{
+	lo, err := object.AsNewLargeObject(ctx, schwift.SegmentingOptions{
 		SegmentContainer: f.Job.Segmenting.Container,
 		Strategy:         schwift.StaticLargeObject,
 	}, &schwift.TruncateOptions{
@@ -303,10 +303,10 @@ func (f File) uploadLargeObject(body io.Reader, hdr schwift.ObjectHeaders, clean
 		if hdr.ExpiresAt().Exists() {
 			XDeleteAtHeader.ExpiresAt().Set(hdr.ExpiresAt().Get())
 		}
-		err = lo.Append(body, int64(f.Job.Segmenting.SegmentSize), XDeleteAtHeader.ToOpts())
+		err = lo.Append(ctx, body, int64(f.Job.Segmenting.SegmentSize), XDeleteAtHeader.ToOpts())
 	}
 	if err == nil {
-		err = lo.WriteManifest(hdr.ToOpts())
+		err = lo.WriteManifest(ctx, hdr.ToOpts())
 	}
 	if err == nil {
 		logg.Info("PUT %s has created a Static Large Object with segments in %s/%s/",
@@ -318,13 +318,13 @@ func (f File) uploadLargeObject(body io.Reader, hdr schwift.ObjectHeaders, clean
 	logg.Error("PUT %s as Static Large Object failed: %s", object.FullName(), err.Error())
 
 	// file was not transferred correctly - cleanup manifest and segments
-	cleanupFailedUpload(object)
+	cleanupFailedUpload(ctx, object)
 	return false
 }
 
-func cleanupFailedUpload(object *schwift.Object) {
+func cleanupFailedUpload(ctx context.Context, object *schwift.Object) {
 	// file was not transferred correctly - cleanup manifest and segments
-	err := object.Delete(&schwift.DeleteOptions{
+	err := object.Delete(ctx, &schwift.DeleteOptions{
 		DeleteSegments: true,
 	}, nil)
 	if err != nil && !schwift.Is(err, http.StatusNotFound) {

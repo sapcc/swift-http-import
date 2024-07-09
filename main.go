@@ -45,6 +45,9 @@ func main() {
 	undoMaxprocs := must.Return(maxprocs.Set(maxprocs.Logger(logg.Debug)))
 	defer undoMaxprocs()
 
+	// setup a context that shuts down all pipeline actors when an interrupt signal is received
+	ctx := httpext.ContextWithSIGINT(context.Background(), 1*time.Second)
+
 	wrap := httpext.WrapTransport(&http.DefaultTransport)
 	wrap.SetInsecureSkipVerify(osext.GetenvBool("INSECURE")) // for debugging with mitmproxy etc. (DO NOT SET IN PRODUCTION)
 	wrap.SetOverrideUserAgent(bininfo.Component(), bininfo.VersionOr("dev"))
@@ -61,7 +64,7 @@ func main() {
 	}
 
 	// read configuration
-	config, errs := objects.ReadConfiguration(os.Args[1])
+	config, errs := objects.ReadConfiguration(ctx, os.Args[1])
 	if len(errs) > 0 {
 		for _, err := range errs {
 			logg.Error(err.Error())
@@ -77,8 +80,6 @@ func main() {
 		StartTime: startTime,
 	}
 	var wgReport sync.WaitGroup
-	// setup a context that shuts down all pipeline actors when an interrupt signal is received
-	ctx := httpext.ContextWithSIGINT(context.Background(), 1*time.Second)
 	actors.Start(ctx, &report, &wgReport)
 
 	// do the work
