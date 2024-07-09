@@ -30,7 +30,7 @@ import (
 	"time"
 
 	"github.com/google/go-github/v62/github"
-	"github.com/majewsky/schwift"
+	"github.com/majewsky/schwift/v2"
 	"github.com/sapcc/go-api-declarations/bininfo"
 	"github.com/sapcc/go-bits/secrets"
 	"golang.org/x/oauth2"
@@ -103,11 +103,11 @@ func (s *GithubReleaseSource) Validate(name string) []error {
 }
 
 // Connect implements the Source interface.
-func (s *GithubReleaseSource) Connect(name string) error {
+func (s *GithubReleaseSource) Connect(ctx context.Context, name string) error {
 	c := http.DefaultClient
 	if s.Token != "" {
 		src := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: string(s.Token)})
-		c = oauth2.NewClient(context.Background(), src)
+		c = oauth2.NewClient(ctx, src)
 	}
 	if s.url.Hostname() != "github.com" {
 		// baseURL is s.url without the Path (/<owner>/<repo>).
@@ -132,8 +132,8 @@ func (s *GithubReleaseSource) ListEntries(_ context.Context, directoryPath strin
 }
 
 // ListAllFiles implements the Source interface.
-func (s *GithubReleaseSource) ListAllFiles(_ context.Context, out chan<- FileSpec) *ListEntriesError {
-	releases, err := s.getReleases()
+func (s *GithubReleaseSource) ListAllFiles(ctx context.Context, out chan<- FileSpec) *ListEntriesError {
+	releases, err := s.getReleases(ctx)
 	if err != nil {
 		return &ListEntriesError{
 			Location: s.url.String(),
@@ -217,7 +217,7 @@ func (s *GithubReleaseSource) GetFile(_ context.Context, path string, requestHea
 	}, nil
 }
 
-func (s *GithubReleaseSource) getReleases() ([]*github.RepositoryRelease, error) {
+func (s *GithubReleaseSource) getReleases(ctx context.Context) ([]*github.RepositoryRelease, error) {
 	var result []*github.RepositoryRelease
 
 	// Set higher value than default (30) for results per page to avoid exceeding API rate limit.
@@ -229,7 +229,7 @@ func (s *GithubReleaseSource) getReleases() ([]*github.RepositoryRelease, error)
 			err error
 		)
 		listOpts.Page = resp.NextPage
-		rL, resp, err = s.client.Repositories.ListReleases(context.Background(), s.owner, s.repo, listOpts)
+		rL, resp, err = s.client.Repositories.ListReleases(ctx, s.owner, s.repo, listOpts)
 		if err != nil {
 			return nil, err
 		}

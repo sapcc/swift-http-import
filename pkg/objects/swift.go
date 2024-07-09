@@ -28,11 +28,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gophercloud/gophercloud"
-	"github.com/gophercloud/gophercloud/openstack"
-	"github.com/gophercloud/utils/client"
-	"github.com/majewsky/schwift"
-	"github.com/majewsky/schwift/gopherschwift"
+	"github.com/gophercloud/gophercloud/v2"
+	"github.com/gophercloud/gophercloud/v2/openstack"
+	"github.com/gophercloud/utils/v2/client"
+	"github.com/majewsky/schwift/v2"
+	"github.com/majewsky/schwift/v2/gopherschwift"
 	"github.com/sapcc/go-api-declarations/bininfo"
 	"github.com/sapcc/go-bits/logg"
 	"github.com/sapcc/go-bits/secrets"
@@ -157,7 +157,7 @@ func (l logger) Printf(format string, args ...interface{}) {
 }
 
 // Connect implements the Source interface. It establishes the connection to Swift.
-func (s *SwiftLocation) Connect(name string) error {
+func (s *SwiftLocation) Connect(ctx context.Context, name string) error {
 	if s.Account != nil {
 		return nil
 	}
@@ -206,7 +206,7 @@ func (s *SwiftLocation) Connect(name string) error {
 			}
 		}
 
-		err = openstack.Authenticate(provider, authOptions)
+		err = openstack.Authenticate(ctx, provider, authOptions)
 		if err != nil {
 			if authOptions.ApplicationCredentialSecret != "" {
 				return fmt.Errorf("cannot authenticate to %s using application credential: %s",
@@ -246,7 +246,7 @@ func (s *SwiftLocation) Connect(name string) error {
 		return nil
 	}
 	var err error
-	s.Container, err = s.Account.Container(string(s.ContainerName)).EnsureExists()
+	s.Container, err = s.Account.Container(string(s.ContainerName)).EnsureExists(ctx)
 	return err
 }
 
@@ -258,7 +258,7 @@ func (s *SwiftLocation) ObjectAtPath(path string) *schwift.Object {
 }
 
 // ListAllFiles implements the Source interface.
-func (s *SwiftLocation) ListAllFiles(_ context.Context, out chan<- FileSpec) *ListEntriesError {
+func (s *SwiftLocation) ListAllFiles(ctx context.Context, out chan<- FileSpec) *ListEntriesError {
 	objectPath := string(s.ObjectNamePrefix)
 	if objectPath != "" && !strings.HasSuffix(objectPath, "/") {
 		objectPath += "/"
@@ -267,7 +267,7 @@ func (s *SwiftLocation) ListAllFiles(_ context.Context, out chan<- FileSpec) *Li
 
 	iter := s.Container.Objects()
 	iter.Prefix = objectPath
-	err := iter.ForeachDetailed(func(info schwift.ObjectInfo) error {
+	err := iter.ForeachDetailed(ctx, func(info schwift.ObjectInfo) error {
 		out <- s.getFileSpec(info)
 		return nil
 	})
@@ -309,10 +309,10 @@ func (s *SwiftLocation) getFileSpec(info schwift.ObjectInfo) FileSpec {
 }
 
 // GetFile implements the Source interface.
-func (s *SwiftLocation) GetFile(_ context.Context, path string, requestHeaders schwift.ObjectHeaders) (io.ReadCloser, FileState, error) {
+func (s *SwiftLocation) GetFile(ctx context.Context, path string, requestHeaders schwift.ObjectHeaders) (io.ReadCloser, FileState, error) {
 	object := s.ObjectAtPath(path)
 
-	body, err := object.Download(requestHeaders.ToOpts()).AsReadCloser()
+	body, err := object.Download(ctx, requestHeaders.ToOpts()).AsReadCloser()
 	if schwift.Is(err, http.StatusNotModified) {
 		return nil, FileState{SkipTransfer: true}, nil
 	}
@@ -321,7 +321,7 @@ func (s *SwiftLocation) GetFile(_ context.Context, path string, requestHeaders s
 	}
 	//NOTE: Download() uses a GET request, so object metadata has already been
 	// received and cached, so Headers() is cheap now and will never fail.
-	hdr, err := object.Headers()
+	hdr, err := object.Headers(ctx)
 	if err != nil {
 		body.Close()
 		return nil, FileState{}, err
@@ -348,7 +348,7 @@ func (s *SwiftLocation) GetFile(_ context.Context, path string, requestHeaders s
 //
 // The given Matcher is used to find out which files are to be considered as
 // belonging to the transfer job in question.
-func (s *SwiftLocation) DiscoverExistingFiles(matcher Matcher) error {
+func (s *SwiftLocation) DiscoverExistingFiles(ctx context.Context, matcher Matcher) error {
 	prefix := string(s.ObjectNamePrefix)
 	if prefix != "" && !strings.HasSuffix(prefix, "/") {
 		prefix += "/"
@@ -364,7 +364,7 @@ func (s *SwiftLocation) DiscoverExistingFiles(matcher Matcher) error {
 	iter := s.Container.Objects()
 	iter.Prefix = prefix
 	s.FileExists = make(map[string]bool)
-	err := iter.Foreach(func(object *schwift.Object) error {
+	err := iter.Foreach(ctx, func(object *schwift.Object) error {
 		s.FileExists[object.Name()] = true
 		return nil
 	})

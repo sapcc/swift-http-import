@@ -37,7 +37,7 @@ import (
 	"golang.org/x/net/html"
 	"golang.org/x/net/html/atom"
 
-	"github.com/majewsky/schwift"
+	"github.com/majewsky/schwift/v2"
 	"github.com/sapcc/go-api-declarations/bininfo"
 	"github.com/sapcc/go-bits/logg"
 
@@ -49,7 +49,7 @@ type Source interface {
 	// Validate reports errors if this source is malspecified.
 	Validate(name string) []error
 	// Connect performs source-specific one-time setup.
-	Connect(name string) error
+	Connect(ctx context.Context, name string) error
 	// ListAllFiles returns all files in the source (as paths relative to the
 	// source's root). If this returns ErrListAllFilesNotSupported, ListEntries
 	// must be used instead.
@@ -183,7 +183,7 @@ func (u *URLSource) Validate(name string) (result []error) {
 }
 
 // Connect implements the Source interface.
-func (u *URLSource) Connect(name string) error {
+func (u *URLSource) Connect(_ context.Context, name string) error {
 	tlsConfig := &tls.Config{} //nolint:gosec // only used in HTTP client, where stdlib auto-chooses strong TLS versions
 
 	if u.ClientCertificatePath != "" {

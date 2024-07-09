@@ -33,7 +33,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/majewsky/schwift"
+	"github.com/majewsky/schwift/v2"
 	"github.com/sapcc/go-bits/logg"
 
 	//nolint:staticcheck // We cannot switch to the Protonmail fork because we need support for old v3 signatures as found in SLES12 packages.
@@ -58,7 +58,7 @@ type GPGKeyRing struct {
 }
 
 // NewGPGKeyRing creates a new GPGKeyRing instance.
-func NewGPGKeyRing(cntr *schwift.Container, keyserverURLPatterns []string) *GPGKeyRing {
+func NewGPGKeyRing(ctx context.Context, cntr *schwift.Container, keyserverURLPatterns []string) *GPGKeyRing {
 	ksURLPatterns := keyserverURLPatterns
 	if len(ksURLPatterns) == 0 {
 		ksURLPatterns = append(ksURLPatterns,
@@ -70,8 +70,8 @@ func NewGPGKeyRing(cntr *schwift.Container, keyserverURLPatterns []string) *GPGK
 	var entityList openpgp.EntityList
 	if cntr != nil {
 		logg.Info("restoring GPG public keys from %s", cntr.Name())
-		err := cntr.Objects().Foreach(func(obj *schwift.Object) error {
-			r, err := obj.Download(nil).AsReadCloser()
+		err := cntr.Objects().Foreach(ctx, func(obj *schwift.Object) error {
+			r, err := obj.Download(ctx, nil).AsReadCloser()
 			if err != nil {
 				return err
 			}
@@ -191,7 +191,7 @@ func (k *GPGKeyRing) getPublicKey(ctx context.Context, id string) ([]byte, error
 		url := strings.ReplaceAll(v, "{keyid}", id)
 		buf, err := getPublicKeyFromServer(ctx, url)
 		if err == nil {
-			return uploadPublicKey(k.SwiftContainer, buf)
+			return uploadPublicKey(ctx, k.SwiftContainer, buf)
 		}
 
 		if i == len(k.KeyserverURLPatterns)-1 {
@@ -231,13 +231,13 @@ func getPublicKeyFromServer(ctx context.Context, uri string) ([]byte, error) {
 	return b, nil
 }
 
-func uploadPublicKey(cntr *schwift.Container, b []byte) ([]byte, error) {
+func uploadPublicKey(ctx context.Context, cntr *schwift.Container, b []byte) ([]byte, error) {
 	if cntr == nil {
 		return b, nil
 	}
 	n := fmt.Sprintf("%x.asc", sha256.Sum256(b))
 	obj := cntr.Object(n)
-	err := obj.Upload(bytes.NewReader(b), nil, nil)
+	err := obj.Upload(ctx, bytes.NewReader(b), nil, nil)
 	if err == nil && LogIndividualTransfers {
 		logg.Info("transferring GPG key to cache at %s", obj.FullName())
 	}

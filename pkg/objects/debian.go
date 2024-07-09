@@ -27,7 +27,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/majewsky/schwift"
+	"github.com/majewsky/schwift/v2"
 	"github.com/sapcc/go-bits/logg"
 	"pault.ag/go/debian/control"
 
@@ -79,8 +79,8 @@ func (s *DebianSource) Validate(name string) []error {
 }
 
 // Connect implements the Source interface.
-func (s *DebianSource) Connect(name string) error {
-	return s.urlSource.Connect(name)
+func (s *DebianSource) Connect(ctx context.Context, name string) error {
+	return s.urlSource.Connect(ctx, name)
 }
 
 // ListEntries implements the Source interface.

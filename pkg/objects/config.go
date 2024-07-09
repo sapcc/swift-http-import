@@ -20,12 +20,13 @@
 package objects
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"regexp"
 	"time"
 
-	"github.com/majewsky/schwift"
+	"github.com/majewsky/schwift/v2"
 	yaml "gopkg.in/yaml.v2"
 
 	"github.com/sapcc/go-bits/secrets"
@@ -46,7 +47,7 @@ type Configuration struct {
 }
 
 // ReadConfiguration reads the configuration file.
-func ReadConfiguration(path string) (*Configuration, []error) {
+func ReadConfiguration(ctx context.Context, path string) (*Configuration, []error) {
 	configBytes, err := os.ReadFile(path)
 	if err != nil {
 		return nil, []error{err}
@@ -80,21 +81,18 @@ func ReadConfiguration(path string) (*Configuration, []error) {
 		sl := cfg.Swift
 		sl.ContainerName = secrets.FromEnv(cntrName)
 		sl.ObjectNamePrefix = ""
-		err := sl.Connect(cntrName)
+		err := sl.Connect(ctx, cntrName)
 		if err == nil {
 			gpgCacheContainer = sl.Container
 		} else {
 			errors = append(errors, err)
 		}
 	}
-	gpgKeyRing := util.NewGPGKeyRing(gpgCacheContainer, cfg.GPG.KeyserverURLPatterns)
+	gpgKeyRing := util.NewGPGKeyRing(ctx, gpgCacheContainer, cfg.GPG.KeyserverURLPatterns)
 
 	for idx, jobConfig := range cfg.JobConfigs {
 		jobConfig.gpgKeyRing = gpgKeyRing
-		job, jobErrors := jobConfig.Compile(
-			fmt.Sprintf("swift.jobs[%d]", idx),
-			cfg.Swift,
-		)
+		job, jobErrors := jobConfig.Compile(ctx, fmt.Sprintf("swift.jobs[%d]", idx), cfg.Swift)
 		cfg.Jobs = append(cfg.Jobs, job)
 		errors = append(errors, jobErrors...)
 	}
@@ -223,7 +221,7 @@ type Job struct {
 }
 
 // Compile validates the given JobConfiguration, then creates and prepares a Job from it.
-func (cfg JobConfiguration) Compile(name string, swift SwiftLocation) (job *Job, errors []error) {
+func (cfg JobConfiguration) Compile(ctx context.Context, name string, swift SwiftLocation) (job *Job, errors []error) {
 	jobSrc := cfg.Source.Source
 	if jobSrc == nil {
 		errors = append(errors, fmt.Errorf("missing value for %s.from", name))
@@ -334,22 +332,22 @@ func (cfg JobConfiguration) Compile(name string, swift SwiftLocation) (job *Job,
 	}
 
 	// ensure that connection to Swift exists and that target container(s) is/are available
-	err := job.Source.Connect(name + ".from")
+	err := job.Source.Connect(ctx, name+".from")
 	if err != nil {
 		errors = append(errors, err)
 	}
-	err = job.Target.Connect(name + ".to")
+	err = job.Target.Connect(ctx, name+".to")
 	if err != nil {
 		errors = append(errors, err)
 	}
 	if job.Target.Account != nil && job.Segmenting != nil {
-		job.Segmenting.Container, err = job.Target.Account.Container(job.Segmenting.ContainerName).EnsureExists()
+		job.Segmenting.Container, err = job.Target.Account.Container(job.Segmenting.ContainerName).EnsureExists(ctx)
 		if err != nil {
 			errors = append(errors, err)
 		}
 	}
 
-	err = job.Target.DiscoverExistingFiles(job.Matcher)
+	err = job.Target.DiscoverExistingFiles(ctx, job.Matcher)
 	if err != nil {
 		errors = append(errors, err)
 	}
