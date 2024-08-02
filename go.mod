@@ -8,8 +8,8 @@ require (
 	github.com/gophercloud/gophercloud/v2 v2.1.0
 	github.com/gophercloud/utils/v2 v2.0.0-20240725072607-4241c98875fa
 	github.com/majewsky/schwift/v2 v2.0.0
-	github.com/sapcc/go-api-declarations v1.12.0
-	github.com/sapcc/go-bits v0.0.0-20240725082021-261f0bf53c79
+	github.com/sapcc/go-api-declarations v1.12.1
+	github.com/sapcc/go-bits v0.0.0-20240801093859-8ef04d19f38d
 	github.com/ulikunitz/xz v0.5.12
 	go.uber.org/automaxprocs v1.5.3
 	golang.org/x/crypto v0.25.0

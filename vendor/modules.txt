@@ -32,10 +32,10 @@ github.com/majewsky/schwift/v2
 github.com/majewsky/schwift/v2/capabilities
 github.com/majewsky/schwift/v2/gopherschwift
 github.com/majewsky/schwift/v2/internal/errext
-# github.com/sapcc/go-api-declarations v1.12.0
+# github.com/sapcc/go-api-declarations v1.12.1
 ## explicit; go 1.21
 github.com/sapcc/go-api-declarations/bininfo
-# github.com/sapcc/go-bits v0.0.0-20240725082021-261f0bf53c79
+# github.com/sapcc/go-bits v0.0.0-20240801093859-8ef04d19f38d
 ## explicit; go 1.22
 github.com/sapcc/go-bits/errext
 github.com/sapcc/go-bits/httpext
