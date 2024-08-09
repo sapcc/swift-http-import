@@ -18,7 +18,7 @@ github.com/gophercloud/gophercloud/v2/openstack/identity/v3/oauth1
 github.com/gophercloud/gophercloud/v2/openstack/identity/v3/tokens
 github.com/gophercloud/gophercloud/v2/openstack/utils
 github.com/gophercloud/gophercloud/v2/pagination
-# github.com/gophercloud/utils/v2 v2.0.0-20240725072607-4241c98875fa
+# github.com/gophercloud/utils/v2 v2.0.0-20240807081201-990d90b23c70
 ## explicit; go 1.22
 github.com/gophercloud/utils/v2/client
 # github.com/jpillora/longestcommon v0.0.0-20161227235612-adb9d91ee629
@@ -35,7 +35,7 @@ github.com/majewsky/schwift/v2/internal/errext
 # github.com/sapcc/go-api-declarations v1.12.1
 ## explicit; go 1.21
 github.com/sapcc/go-api-declarations/bininfo
-# github.com/sapcc/go-bits v0.0.0-20240801093859-8ef04d19f38d
+# github.com/sapcc/go-bits v0.0.0-20240808095728-a371e948855b
 ## explicit; go 1.22
 github.com/sapcc/go-bits/errext
 github.com/sapcc/go-bits/httpext
