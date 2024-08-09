@@ -6,15 +6,15 @@ require (
 	github.com/cactus/go-statsd-client/v5 v5.1.0
 	github.com/google/go-github/v63 v63.0.0
 	github.com/gophercloud/gophercloud/v2 v2.1.0
-	github.com/gophercloud/utils/v2 v2.0.0-20240725072607-4241c98875fa
+	github.com/gophercloud/utils/v2 v2.0.0-20240807081201-990d90b23c70
 	github.com/majewsky/schwift/v2 v2.0.0
 	github.com/sapcc/go-api-declarations v1.12.1
 	github.com/sapcc/go-bits v0.0.0-20240801093859-8ef04d19f38d
 	github.com/ulikunitz/xz v0.5.12
 	go.uber.org/automaxprocs v1.5.3
-	golang.org/x/crypto v0.25.0
-	golang.org/x/net v0.27.0
-	golang.org/x/oauth2 v0.21.0
+	golang.org/x/crypto v0.26.0
+	golang.org/x/net v0.28.0
+	golang.org/x/oauth2 v0.22.0
 	gopkg.in/yaml.v2 v2.4.0
 	pault.ag/go/debian v0.16.0
 )
