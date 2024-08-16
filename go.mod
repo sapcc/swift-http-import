@@ -6,10 +6,10 @@ require (
 	github.com/cactus/go-statsd-client/v5 v5.1.0
 	github.com/google/go-github/v63 v63.0.0
 	github.com/gophercloud/gophercloud/v2 v2.1.0
-	github.com/gophercloud/utils/v2 v2.0.0-20240809055823-c3c26a732379
+	github.com/gophercloud/utils/v2 v2.0.0-20240812072210-8ce1fc0f2894
 	github.com/majewsky/schwift/v2 v2.0.0
-	github.com/sapcc/go-api-declarations v1.12.1
-	github.com/sapcc/go-bits v0.0.0-20240808095728-a371e948855b
+	github.com/sapcc/go-api-declarations v1.12.4
+	github.com/sapcc/go-bits v0.0.0-20240815085238-fce0691187a2
 	github.com/ulikunitz/xz v0.5.12
 	go.uber.org/automaxprocs v1.5.3
 	golang.org/x/crypto v0.26.0
