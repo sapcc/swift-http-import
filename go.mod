@@ -4,7 +4,7 @@ go 1.23
 
 require (
 	github.com/cactus/go-statsd-client/v5 v5.1.0
-	github.com/google/go-github/v63 v63.0.0
+	github.com/google/go-github/v64 v64.0.0
 	github.com/gophercloud/gophercloud/v2 v2.1.0
 	github.com/gophercloud/utils/v2 v2.0.0-20240812072210-8ce1fc0f2894
 	github.com/majewsky/schwift/v2 v2.0.0
