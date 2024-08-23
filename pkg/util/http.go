@@ -24,6 +24,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -43,8 +44,8 @@ func EnhancedGet(ctx context.Context, client *http.Client, uri string, requestHe
 		Client:         client,
 		URI:            uri,
 		RequestHeaders: requestHeaders,
-		SegmentBytes:   int64(segmentBytes),
-		BytesTotal:     -1,
+		SegmentBytes:   segmentBytes,
+		BytesTotal:     nil,
 		ctx:            ctx,
 	}
 
@@ -73,11 +74,11 @@ func EnhancedGet(ctx context.Context, client *http.Client, uri string, requestHe
 	}
 
 	// actual response is 206, but we simulate the behavior of a 200 response
-	resp.Status = "200 OK"
-	resp.StatusCode = 200
+	resp.Status = fmt.Sprintf("%d %s", http.StatusOK, http.StatusText(http.StatusOK))
+	resp.StatusCode = http.StatusOK
 
 	// if the current chunk contains the entire file, we do not need to hijack the body
-	if d.BytesTotal > 0 && headers.ContentRangeLength == d.BytesTotal {
+	if d.BytesTotal != nil && *d.BytesTotal > 0 && *d.BytesTotal == headers.ContentRangeLength {
 		return resp, err
 	}
 
@@ -90,8 +91,11 @@ func EnhancedGet(ctx context.Context, client *http.Client, uri string, requestHe
 	resp.Body = &FullReader{&d}
 	// 2. report the total file size in the response, so that the caller can
 	// decide whether to PUT this directly or as a large object
-	if d.BytesTotal > 0 {
-		resp.ContentLength = d.BytesTotal
+	if *d.BytesTotal > 0 {
+		if *d.BytesTotal > math.MaxInt64 {
+			return resp, errors.New("total bytes exceed int64")
+		}
+		resp.ContentLength = int64(*d.BytesTotal) //nolint:gosec // we check this two lines above
 	}
 	return resp, err
 }
@@ -107,23 +111,23 @@ type downloader struct {
 	Client         *http.Client
 	URI            string
 	RequestHeaders http.Header
-	SegmentBytes   int64
+	SegmentBytes   uint64
 	// this object's internal state
 	Etag       string          // we track the source URL's Etag to detect changes mid-transfer
-	BytesRead  int64           // how many bytes have already been read out of this Reader
-	BytesTotal int64           // the total Content-Length the file, or -1 if not known
+	BytesRead  uint64          // how many bytes have already been read out of this Reader
+	BytesTotal *uint64         // the total Content-Length the file, if known
 	Reader     io.ReadCloser   // current, not-yet-exhausted, response.Body, or nil after EOF or error
 	Err        error           // non-nil after error
 	ctx        context.Context //nolint:containedctx // we cannot supply it any other way for the Read() function because the interface does not allow it
 	// retry handling
-	LastErrorAtBytesRead int64 // at which offset the last read error occurred
-	LastErrorRetryCount  int   // retry counter for said offset, or 0 if no error occurred before
-	TotalRetryCount      int   // retry counter for all read errors encountered at any offset
+	LastErrorAtBytesRead uint64 // at which offset the last read error occurred
+	LastErrorRetryCount  int    // retry counter for said offset, or 0 if no error occurred before
+	TotalRetryCount      int    // retry counter for all read errors encountered at any offset
 }
 
 type parsedResponseHeaders struct {
-	ContentRangeStart  int64
-	ContentRangeLength int64
+	ContentRangeStart  uint64
+	ContentRangeLength uint64
 }
 
 func (d *downloader) buildRequest(ctx context.Context) (*http.Request, error) {
@@ -146,8 +150,8 @@ func (d *downloader) getNextChunk(ctx context.Context) (*http.Response, *parsedR
 	// add Range header
 	start := d.BytesRead
 	end := start + d.SegmentBytes
-	if d.BytesTotal > 0 && end > d.BytesTotal {
-		end = d.BytesTotal
+	if d.BytesTotal != nil && *d.BytesTotal > 0 && end > *d.BytesTotal {
+		end = *d.BytesTotal
 	}
 	req.Header.Set("Range", fmt.Sprintf("bytes=%d-%d", start, end-1)) // end index is inclusive!
 
@@ -177,7 +181,7 @@ func (d *downloader) getNextChunk(ctx context.Context) (*http.Response, *parsedR
 		}
 		headers.ContentRangeStart = start
 		headers.ContentRangeLength = stop - start + 1 // stop index is inclusive!
-		if d.BytesTotal == -1 {
+		if d.BytesTotal == nil {
 			d.BytesTotal = total
 		} else if d.BytesTotal != total {
 			resp.Body.Close()
@@ -192,27 +196,28 @@ func (d *downloader) getNextChunk(ctx context.Context) (*http.Response, *parsedR
 // successful range responses (i.e. HTTP status code 206, not 416).
 var contentRangeRx = regexp.MustCompile(`^bytes ([0-9]+)-([0-9]+)/(\*|[0-9]+)$`)
 
-func parseContentRange(headerValue string) (start, stop, total int64, ok bool) {
+func parseContentRange(headerValue string) (start, stop uint64, total *uint64, ok bool) {
 	match := contentRangeRx.FindStringSubmatch(headerValue)
 	if match == nil {
-		return 0, 0, 0, false
+		return 0, 0, nil, false
 	}
 
 	var err error
-	start, err = strconv.ParseInt(match[1], 10, 64)
+	start, err = strconv.ParseUint(match[1], 10, 64)
 	if err != nil {
-		return 0, 0, 0, false
+		return 0, 0, nil, false
 	}
-	stop, err = strconv.ParseInt(match[2], 10, 64)
+	stop, err = strconv.ParseUint(match[2], 10, 64)
 	if err != nil || stop < start {
-		return 0, 0, 0, false
+		return 0, 0, nil, false
 	}
-	total = -1
+	total = nil
 	if match[3] != "*" {
-		total, err = strconv.ParseInt(match[3], 10, 64)
+		totalValue, err := strconv.ParseUint(match[3], 10, 64)
 		if err != nil {
-			return 0, 0, 0, false
+			return 0, 0, nil, false
 		}
+		total = &totalValue
 	}
 	return start, stop, total, true
 }
@@ -226,7 +231,7 @@ func (d *downloader) Read(buf []byte) (int, error) {
 
 	// read from the current response body
 	bytesRead, err := d.Reader.Read(buf)
-	d.BytesRead += int64(bytesRead)
+	d.BytesRead += uint64(bytesRead)
 	switch {
 	case err == nil:
 		return bytesRead, nil
@@ -256,7 +261,7 @@ func (d *downloader) Read(buf []byte) (int, error) {
 	}
 
 	// is there a next chunk?
-	if d.BytesRead == d.BytesTotal {
+	if d.BytesTotal != nil && d.BytesRead == *d.BytesTotal {
 		return bytesRead, io.EOF
 	}
 

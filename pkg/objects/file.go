@@ -79,7 +79,7 @@ const (
 // PerformTransfer transfers this file from the source to the target.
 // It returns the TransferResult (which indicates if the transfer finished successfully)
 // and the number of bytes transferred.
-func (f File) PerformTransfer(ctx context.Context) (transferResult TransferResult, _ int64) {
+func (f File) PerformTransfer(ctx context.Context) (transferResult TransferResult, _ uint64) {
 	object := f.TargetObject()
 
 	// check if this file needs transfer
@@ -200,14 +200,14 @@ func (f File) PerformTransfer(ctx context.Context) (transferResult TransferResul
 	// upload file to target
 	var ok bool
 	size := sourceState.SizeBytes
-	if f.Job.Segmenting != nil && size > 0 && uint64(size) >= f.Job.Segmenting.MinObjectSize {
+	if f.Job.Segmenting != nil && size != nil && *size > 0 && *size >= f.Job.Segmenting.MinObjectSize {
 		ok = f.uploadLargeObject(ctx, body, uploadHeaders, hdr.IsLargeObject())
 	} else {
 		ok = f.uploadNormalObject(ctx, body, uploadHeaders, hdr.IsLargeObject())
 	}
 
 	if ok {
-		return TransferSuccess, size
+		return TransferSuccess, *size
 	}
 	return TransferFailed, 0
 }
@@ -238,10 +238,12 @@ func (s FileSpec) toTransferFormat(requestHeaders schwift.ObjectHeaders) (io.Rea
 		LastModified: requestHeaders.Get("If-Modified-Since"),
 	}
 
+	sizeBytes := uint64(len(s.Contents))
+
 	sourceState := FileState{
 		Etag:         s.Headers.Get("Etag"),
 		LastModified: s.Headers.Get("Last-Modified"),
-		SizeBytes:    int64(len(s.Contents)),
+		SizeBytes:    &sizeBytes,
 		ExpiryTime:   nil,
 		ContentType:  s.Headers.Get("Content-Type"),
 	}
@@ -303,7 +305,7 @@ func (f File) uploadLargeObject(ctx context.Context, body io.Reader, hdr schwift
 		if hdr.ExpiresAt().Exists() {
 			XDeleteAtHeader.ExpiresAt().Set(hdr.ExpiresAt().Get())
 		}
-		err = lo.Append(ctx, body, int64(f.Job.Segmenting.SegmentSize), XDeleteAtHeader.ToOpts())
+		err = lo.Append(ctx, body, int64(f.Job.Segmenting.SegmentSize), XDeleteAtHeader.ToOpts()) //nolint:gosec // Schwift API demands this for now
 	}
 	if err == nil {
 		err = lo.WriteManifest(ctx, hdr.ToOpts())

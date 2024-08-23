@@ -41,7 +41,7 @@ type ReportEvent struct {
 
 	IsFile             bool
 	FileTransferResult objects.TransferResult
-	FileTransferBytes  int64
+	FileTransferBytes  uint64
 
 	IsCleanup            bool
 	CleanedUpObjectCount int64
@@ -115,7 +115,7 @@ func (r *Report) Run(ctx context.Context) {
 			switch mark.FileTransferResult {
 			case objects.TransferSuccess:
 				r.stats.FilesTransferred++
-				r.stats.BytesTransferred += mark.FileTransferBytes
+				r.stats.BytesTransferred += int64(mark.FileTransferBytes) //nolint:gosec // prometheus metrics require int type
 			case objects.TransferFailed:
 				r.stats.FilesFailed++
 			}

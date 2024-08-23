@@ -207,10 +207,18 @@ func (s *GithubReleaseSource) GetFile(_ context.Context, path string, requestHea
 		)
 	}
 
+	var sizeBytes *uint64
+	if resp.ContentLength < 0 {
+		sizeBytes = nil
+	} else {
+		s := uint64(resp.ContentLength)
+		sizeBytes = &s
+	}
+
 	return resp.Body, FileState{
 		Etag:         resp.Header.Get("Etag"),
 		LastModified: resp.Header.Get("Last-Modified"),
-		SizeBytes:    resp.ContentLength,
+		SizeBytes:    sizeBytes,
 		ExpiryTime:   nil, // no way to get this information via HTTP only
 		SkipTransfer: resp.StatusCode == http.StatusNotModified,
 		ContentType:  resp.Header.Get("Content-Type"),
