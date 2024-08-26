@@ -21,6 +21,7 @@ package actors
 
 import (
 	"context"
+	"math"
 	"strconv"
 	"time"
 
@@ -44,7 +45,7 @@ type ReportEvent struct {
 	FileTransferBytes  uint64
 
 	IsCleanup            bool
-	CleanedUpObjectCount int64
+	CleanedUpObjectCount uint64
 }
 
 // Report is an actor that counts scraped directories and transferred files.
@@ -66,14 +67,14 @@ type Report struct {
 
 // Stats contains the report statistics
 type Stats struct {
-	DirectoriesScanned int64
-	DirectoriesFailed  int64
-	FilesFound         int64
-	FilesFailed        int64
-	FilesTransferred   int64
-	FilesCleanedUp     int64
-	BytesTransferred   int64
-	JobsSkipped        int64
+	DirectoriesScanned uint64
+	DirectoriesFailed  uint64
+	FilesFound         uint64
+	FilesFailed        uint64
+	FilesTransferred   uint64
+	FilesCleanedUp     uint64
+	BytesTransferred   uint64
+	JobsSkipped        uint64
 	Duration           time.Duration
 }
 
@@ -115,7 +116,7 @@ func (r *Report) Run(ctx context.Context) {
 			switch mark.FileTransferResult {
 			case objects.TransferSuccess:
 				r.stats.FilesTransferred++
-				r.stats.BytesTransferred += int64(mark.FileTransferBytes) //nolint:gosec // prometheus metrics require int type
+				r.stats.BytesTransferred += mark.FileTransferBytes
 			case objects.TransferFailed:
 				r.stats.FilesFailed++
 			}
@@ -129,25 +130,38 @@ func (r *Report) Run(ctx context.Context) {
 	}
 
 	// send statistics
-	var gauge func(string, int64, float32, ...statsd.Tag) error
+	var (
+		gaugeI64 = func(string, int64) {}
+		gaugeU64 = func(string, uint64) {}
+	)
 	if statter != nil {
-		gauge = statter.Gauge
-	} else {
-		gauge = func(bucket string, value int64, rate float32, tags ...statsd.Tag) error { return nil }
+		gaugeI64 = func(bucket string, value int64) {
+			err := statter.Gauge(bucket, value, 1.0) // 1.0 is the `rate` argument
+			if err != nil {
+				logg.Error("statsd: could not submit value %d for bucket %q: %s", value, bucket, err.Error())
+			}
+		}
+		gaugeU64 = func(bucket string, value uint64) {
+			if value > math.MaxInt64 {
+				logg.Error("statsd: value %d for bucket %q is out of range for int64", value, bucket)
+			}
+			gaugeI64(bucket, int64(value)) //nolint:gosec // the linter is stupid, it complains about the integer conversion that we literally just checked
+		}
 	}
-	gauge("last_run.jobs_skipped", r.stats.JobsSkipped, 1.0)          //nolint:errcheck
-	gauge("last_run.dirs_scanned", r.stats.DirectoriesScanned, 1.0)   //nolint:errcheck
-	gauge("last_run.files_found", r.stats.FilesFound, 1.0)            //nolint:errcheck
-	gauge("last_run.files_transfered", r.stats.FilesTransferred, 1.0) //nolint:errcheck
-	gauge("last_run.files_failed", r.stats.FilesFailed, 1.0)          //nolint:errcheck
-	gauge("last_run.files_cleaned_up", r.stats.FilesCleanedUp, 1.0)   //nolint:errcheck
-	gauge("last_run.bytes_transfered", r.stats.BytesTransferred, 1.0) //nolint:errcheck
+
+	gaugeU64("last_run.jobs_skipped", r.stats.JobsSkipped)
+	gaugeU64("last_run.dirs_scanned", r.stats.DirectoriesScanned)
+	gaugeU64("last_run.files_found", r.stats.FilesFound)
+	gaugeU64("last_run.files_transfered", r.stats.FilesTransferred)
+	gaugeU64("last_run.files_failed", r.stats.FilesFailed)
+	gaugeU64("last_run.files_cleaned_up", r.stats.FilesCleanedUp)
+	gaugeU64("last_run.bytes_transfered", r.stats.BytesTransferred)
 	if r.stats.FilesFailed > 0 || r.stats.DirectoriesFailed > 0 {
-		gauge("last_run.success", 0, 1.0) //nolint:errcheck
+		gaugeU64("last_run.success", 0)
 		r.ExitCode = 1
 	} else {
-		gauge("last_run.success", 1, 1.0)                           //nolint:errcheck
-		gauge("last_run.success_timestamp", time.Now().Unix(), 1.0) //nolint:errcheck
+		gaugeU64("last_run.success", 1)
+		gaugeI64("last_run.success_timestamp", time.Now().Unix())
 		r.ExitCode = 0
 	}
 
@@ -165,6 +179,6 @@ func (r *Report) Run(ctx context.Context) {
 	logg.Info("%d bytes transferred", r.stats.BytesTransferred)
 
 	r.stats.Duration = time.Since(r.StartTime)
-	gauge("last_run.duration_seconds", int64(r.stats.Duration.Seconds()), 1.0) //nolint:errcheck
+	gaugeI64("last_run.duration_seconds", int64(r.stats.Duration.Seconds()))
 	logg.Info("finished in %s", r.stats.Duration.String())
 }
