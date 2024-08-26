@@ -71,7 +71,7 @@ LOOP:
 	}
 	for _, file := range filesToRetry {
 		result := objects.TransferFailed
-		var size int64
+		var size uint64
 		// ...but only if we were not aborted (this is checked in every loop
 		// iteration because the abort signal (i.e. Ctrl-C) could also happen
 		// during this loop)

@@ -128,7 +128,10 @@ func (c *Cleaner) performCleanup(ctx context.Context, job *objects.Job, isFileTr
 
 	case objects.DeleteUnknownFiles:
 		numDeleted, _, err := job.Target.Container.Account().BulkDelete(ctx, objs, nil, nil)
-		c.Report <- ReportEvent{IsCleanup: true, CleanedUpObjectCount: int64(numDeleted)}
+		if numDeleted < 0 {
+			numDeleted = 0
+		}
+		c.Report <- ReportEvent{IsCleanup: true, CleanedUpObjectCount: uint64(numDeleted)}
 		if err != nil {
 			logg.Error("cleanup of %d objects on target side failed: %s", (len(objs) - numDeleted), err.Error())
 			if berr, ok := errext.As[schwift.BulkError](err); ok {

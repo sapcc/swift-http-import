@@ -333,10 +333,12 @@ func (s *SwiftLocation) GetFile(ctx context.Context, path string, requestHeaders
 		expiryTime = &t
 	}
 
+	sizeBytes := hdr.SizeBytes().Get()
+
 	return body, FileState{
 		Etag:         hdr.Etag().Get(),
 		LastModified: hdr.Get("Last-Modified"),
-		SizeBytes:    int64(hdr.SizeBytes().Get()),
+		SizeBytes:    &sizeBytes,
 		ExpiryTime:   expiryTime,
 		ContentType:  hdr.ContentType().Get(),
 	}, nil

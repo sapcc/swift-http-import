@@ -108,7 +108,7 @@ var ErrListEntriesNotSupported = &ListEntriesError{
 type FileState struct {
 	Etag         string
 	LastModified string
-	SizeBytes    int64      //-1 if not known
+	SizeBytes    *uint64
 	ExpiryTime   *time.Time // nil if not set
 	// the following fields are only used in `sourceState`, not `targetState`
 	SkipTransfer bool
@@ -343,9 +343,9 @@ func (u URLSource) GetFile(ctx context.Context, filePath string, requestHeaders 
 	requestHeaders.Set("User-Agent", "swift-http-import/"+bininfo.VersionOr("dev"))
 
 	// retrieve file from source
-	var response *http.Response
+	var resp *http.Response
 	if u.Segmenting {
-		response, err = util.EnhancedGet(ctx, u.HTTPClient, uri, requestHeaders.ToHTTP(), u.SegmentSize) //nolint:bodyclose // response.Body is returned and can't be closed yet
+		resp, err = util.EnhancedGet(ctx, u.HTTPClient, uri, requestHeaders.ToHTTP(), u.SegmentSize) //nolint:bodyclose // response.Body is returned and can't be closed yet
 	} else {
 		var req *http.Request
 		req, err = http.NewRequestWithContext(ctx, http.MethodGet, uri, http.NoBody)
@@ -353,27 +353,35 @@ func (u URLSource) GetFile(ctx context.Context, filePath string, requestHeaders 
 			for key, val := range requestHeaders.Headers {
 				req.Header.Set(key, val)
 			}
-			response, err = u.HTTPClient.Do(req) //nolint:bodyclose // response.Body is returned and can't be closed yet
+			resp, err = u.HTTPClient.Do(req) //nolint:bodyclose // response.Body is returned and can't be closed yet
 		}
 	}
 	if err != nil {
 		return nil, FileState{}, fmt.Errorf("skipping %s: GET failed: %s", uri, err.Error())
 	}
 
-	if response.StatusCode != http.StatusOK && response.StatusCode != http.StatusNotModified {
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNotModified {
 		return nil, FileState{}, fmt.Errorf(
 			"skipping %s: GET returned unexpected status code: expected 200 or 304, but got %d",
-			uri, response.StatusCode,
+			uri, resp.StatusCode,
 		)
 	}
 
-	return response.Body, FileState{
-		Etag:         response.Header.Get("Etag"),
-		LastModified: response.Header.Get("Last-Modified"),
-		SizeBytes:    response.ContentLength,
+	var sizeBytes *uint64
+	if resp.ContentLength < 0 {
+		sizeBytes = nil
+	} else {
+		s := uint64(resp.ContentLength)
+		sizeBytes = &s
+	}
+
+	return resp.Body, FileState{
+		Etag:         resp.Header.Get("Etag"),
+		LastModified: resp.Header.Get("Last-Modified"),
+		SizeBytes:    sizeBytes,
 		ExpiryTime:   nil, // no way to get this information via HTTP only
-		SkipTransfer: response.StatusCode == http.StatusNotModified,
-		ContentType:  response.Header.Get("Content-Type"),
+		SkipTransfer: resp.StatusCode == http.StatusNotModified,
+		ContentType:  resp.Header.Get("Content-Type"),
 	}, nil
 }
 
