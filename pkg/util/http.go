@@ -183,9 +183,9 @@ func (d *downloader) getNextChunk(ctx context.Context) (*http.Response, *parsedR
 		headers.ContentRangeLength = stop - start + 1 // stop index is inclusive!
 		if d.BytesTotal == nil {
 			d.BytesTotal = total
-		} else if d.BytesTotal != total {
+		} else if *d.BytesTotal != *total {
 			resp.Body.Close()
-			return nil, nil, fmt.Errorf("Content-Length has changed mid-transfer: %d -> %d", d.BytesTotal, total)
+			return nil, nil, fmt.Errorf("Content-Length has changed mid-transfer: %d -> %d", *d.BytesTotal, *total)
 		}
 	}
 
