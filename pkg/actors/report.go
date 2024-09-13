@@ -145,7 +145,7 @@ func (r *Report) Run(ctx context.Context) {
 			if value > math.MaxInt64 {
 				logg.Error("statsd: value %d for bucket %q is out of range for int64", value, bucket)
 			}
-			gaugeI64(bucket, int64(value)) //nolint:gosec // the linter is stupid, it complains about the integer conversion that we literally just checked
+			gaugeI64(bucket, int64(value))
 		}
 	}
 

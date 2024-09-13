@@ -28,6 +28,7 @@ import (
 	"github.com/sapcc/go-bits/logg"
 
 	"github.com/sapcc/swift-http-import/pkg/objects"
+	"github.com/sapcc/swift-http-import/pkg/util"
 )
 
 // FileInfoForCleaner contains information about a transferred file for the Cleaner actor.
@@ -131,7 +132,7 @@ func (c *Cleaner) performCleanup(ctx context.Context, job *objects.Job, isFileTr
 		if numDeleted < 0 {
 			numDeleted = 0
 		}
-		c.Report <- ReportEvent{IsCleanup: true, CleanedUpObjectCount: uint64(numDeleted)}
+		c.Report <- ReportEvent{IsCleanup: true, CleanedUpObjectCount: util.AtLeastZero(numDeleted)}
 		if err != nil {
 			logg.Error("cleanup of %d objects on target side failed: %s", (len(objs) - numDeleted), err.Error())
 			if berr, ok := errext.As[schwift.BulkError](err); ok {

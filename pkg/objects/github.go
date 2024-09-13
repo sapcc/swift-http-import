@@ -34,6 +34,8 @@ import (
 	"github.com/sapcc/go-api-declarations/bininfo"
 	"github.com/sapcc/go-bits/secrets"
 	"golang.org/x/oauth2"
+
+	"github.com/sapcc/swift-http-import/pkg/util"
 )
 
 type GithubReleaseSource struct {
@@ -211,8 +213,7 @@ func (s *GithubReleaseSource) GetFile(_ context.Context, path string, requestHea
 	if resp.ContentLength < 0 {
 		sizeBytes = nil
 	} else {
-		s := uint64(resp.ContentLength)
-		sizeBytes = &s
+		sizeBytes = util.PointerTo(util.AtLeastZero(resp.ContentLength))
 	}
 
 	return resp.Body, FileState{
