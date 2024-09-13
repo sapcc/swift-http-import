@@ -371,8 +371,7 @@ func (u URLSource) GetFile(ctx context.Context, filePath string, requestHeaders 
 	if resp.ContentLength < 0 {
 		sizeBytes = nil
 	} else {
-		s := uint64(resp.ContentLength)
-		sizeBytes = &s
+		sizeBytes = util.PointerTo(util.AtLeastZero(resp.ContentLength))
 	}
 
 	return resp.Body, FileState{

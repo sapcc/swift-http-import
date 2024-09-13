@@ -231,7 +231,7 @@ func (d *downloader) Read(buf []byte) (int, error) {
 
 	// read from the current response body
 	bytesRead, err := d.Reader.Read(buf)
-	d.BytesRead += uint64(bytesRead)
+	d.BytesRead += AtLeastZero(bytesRead)
 	switch {
 	case err == nil:
 		return bytesRead, nil
