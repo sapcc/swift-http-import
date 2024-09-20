@@ -12,8 +12,8 @@ github.com/google/go-querystring v1.1.0 h1:AnCroh3fv4ZBgVIf1Iwtovgjaw/GiKJo8M8yD
 github.com/google/go-querystring v1.1.0/go.mod h1:Kcdr2DB4koayq7X8pmAG4sNG59So17icRSOU623lUBU=
 github.com/gophercloud/gophercloud/v2 v2.1.1 h1:KUeVTUoq6um/CijR+hl1JRZ35SXRY62LiYUbgp4qqKw=
 github.com/gophercloud/gophercloud/v2 v2.1.1/go.mod h1:f2hMRC7Kakbv5vM7wSGHrIPZh6JZR60GVHryJlF/K44=
-github.com/gophercloud/utils/v2 v2.0.0-20240912080913-c094a6e5b7da h1:hdJBhN3o3qB5v3J2LIwBEEiI05VglnEyr4VaU4cwNHI=
-github.com/gophercloud/utils/v2 v2.0.0-20240912080913-c094a6e5b7da/go.mod h1:/4yWChzaUdzjyEElr6rHfasccBJBjlHeszNIj3aLaHg=
+github.com/gophercloud/utils/v2 v2.0.0-20240919072936-a66ae2ba6ef0 h1:XRegl05kkQNfzAn46YNB4u2OniVAd3rni75Zr8uN9yc=
+github.com/gophercloud/utils/v2 v2.0.0-20240919072936-a66ae2ba6ef0/go.mod h1:qqrX/CvSZOpIAZpRAdSZy4cyIY8NQc0LYUMMzg30aXU=
 github.com/jessevdk/go-flags v1.4.0/go.mod h1:4FA24M0QyGHXBuZZK/XkWh8h0e1EYbRYJSGM75WSRxI=
 github.com/jpillora/longestcommon v0.0.0-20161227235612-adb9d91ee629 h1:1dSBUfGlorLAua2CRx0zFN7kQsTpE2DQSmr7rrTNgY8=
 github.com/jpillora/longestcommon v0.0.0-20161227235612-adb9d91ee629/go.mod h1:mb5nS4uRANwOJSZj8rlCWAfAcGi72GGMIXx+xGOjA7M=
