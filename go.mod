@@ -11,7 +11,7 @@ require (
 	github.com/sapcc/go-api-declarations v1.12.6
 	github.com/sapcc/go-bits v0.0.0-20240925150026-37945f71a03e
 	github.com/ulikunitz/xz v0.5.12
-	go.uber.org/automaxprocs v1.5.3
+	go.uber.org/automaxprocs v1.6.0
 	golang.org/x/crypto v0.27.0
 	golang.org/x/net v0.29.0
 	golang.org/x/oauth2 v0.23.0
