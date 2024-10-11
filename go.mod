@@ -12,8 +12,8 @@ require (
 	github.com/sapcc/go-bits v0.0.0-20241010083035-71b8c70d91ad
 	github.com/ulikunitz/xz v0.5.12
 	go.uber.org/automaxprocs v1.6.0
-	golang.org/x/crypto v0.27.0
-	golang.org/x/net v0.29.0
+	golang.org/x/crypto v0.28.0
+	golang.org/x/net v0.30.0
 	golang.org/x/oauth2 v0.23.0
 	gopkg.in/yaml.v2 v2.4.0
 	pault.ag/go/debian v0.16.0
