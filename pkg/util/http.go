@@ -95,7 +95,7 @@ func EnhancedGet(ctx context.Context, client *http.Client, uri string, requestHe
 		if *d.BytesTotal > math.MaxInt64 {
 			return resp, errors.New("total bytes exceed int64")
 		}
-		resp.ContentLength = int64(*d.BytesTotal) //nolint:gosec // we check this two lines above
+		resp.ContentLength = int64(*d.BytesTotal)
 	}
 	return resp, err
 }
