@@ -9,11 +9,11 @@ require (
 	github.com/gophercloud/utils/v2 v2.0.0-20241108144456-f4302a5ad8c6
 	github.com/majewsky/schwift/v2 v2.0.0
 	github.com/sapcc/go-api-declarations v1.13.0
-	github.com/sapcc/go-bits v0.0.0-20241128180218-03123d6bae9b
+	github.com/sapcc/go-bits v0.0.0-20241205120930-d112494283ba
 	github.com/ulikunitz/xz v0.5.12
 	go.uber.org/automaxprocs v1.6.0
-	golang.org/x/crypto v0.29.0
-	golang.org/x/net v0.31.0
+	golang.org/x/crypto v0.30.0
+	golang.org/x/net v0.32.0
 	golang.org/x/oauth2 v0.24.0
 	gopkg.in/yaml.v2 v2.4.0
 	pault.ag/go/debian v0.17.0
