@@ -5,8 +5,8 @@ go 1.23
 require (
 	github.com/cactus/go-statsd-client/v5 v5.1.0
 	github.com/google/go-github/v67 v67.0.0
-	github.com/gophercloud/gophercloud/v2 v2.3.0
-	github.com/gophercloud/utils/v2 v2.0.0-20241209100706-e3a3b7c07d26
+	github.com/gophercloud/gophercloud/v2 v2.4.0
+	github.com/gophercloud/utils/v2 v2.0.0-20241220104409-2e0af06694a1
 	github.com/majewsky/schwift/v2 v2.0.0
 	github.com/sapcc/go-api-declarations v1.13.1
 	github.com/sapcc/go-bits v0.0.0-20241212142854-05ca4ed3590b
@@ -16,7 +16,7 @@ require (
 	golang.org/x/net v0.32.0
 	golang.org/x/oauth2 v0.24.0
 	gopkg.in/yaml.v2 v2.4.0
-	pault.ag/go/debian v0.17.0
+	pault.ag/go/debian v0.18.0
 )
 
 require (
