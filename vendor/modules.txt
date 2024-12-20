@@ -7,7 +7,7 @@ github.com/google/go-github/v67/github
 # github.com/google/go-querystring v1.1.0
 ## explicit; go 1.10
 github.com/google/go-querystring/query
-# github.com/gophercloud/gophercloud/v2 v2.3.0
+# github.com/gophercloud/gophercloud/v2 v2.4.0
 ## explicit; go 1.22
 github.com/gophercloud/gophercloud/v2
 github.com/gophercloud/gophercloud/v2/openstack
@@ -18,7 +18,7 @@ github.com/gophercloud/gophercloud/v2/openstack/identity/v3/oauth1
 github.com/gophercloud/gophercloud/v2/openstack/identity/v3/tokens
 github.com/gophercloud/gophercloud/v2/openstack/utils
 github.com/gophercloud/gophercloud/v2/pagination
-# github.com/gophercloud/utils/v2 v2.0.0-20241209100706-e3a3b7c07d26
+# github.com/gophercloud/utils/v2 v2.0.0-20241220104409-2e0af06694a1
 ## explicit; go 1.22
 github.com/gophercloud/utils/v2/client
 # github.com/jpillora/longestcommon v0.0.0-20161227235612-adb9d91ee629
@@ -75,7 +75,7 @@ golang.org/x/oauth2/internal
 # gopkg.in/yaml.v2 v2.4.0
 ## explicit; go 1.15
 gopkg.in/yaml.v2
-# pault.ag/go/debian v0.17.0
+# pault.ag/go/debian v0.18.0
 ## explicit; go 1.19
 pault.ag/go/debian/control
 pault.ag/go/debian/dependency
