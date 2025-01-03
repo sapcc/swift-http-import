@@ -345,7 +345,7 @@ func (u URLSource) GetFile(ctx context.Context, filePath string, requestHeaders 
 	// retrieve file from source
 	var resp *http.Response
 	if u.Segmenting {
-		resp, err = util.EnhancedGet(ctx, u.HTTPClient, uri, requestHeaders.ToHTTP(), u.SegmentSize) //nolint:bodyclose // response.Body is returned and can't be closed yet
+		resp, err = util.EnhancedGet(ctx, u.HTTPClient, uri, requestHeaders.ToHTTP(), u.SegmentSize)
 	} else {
 		var req *http.Request
 		req, err = http.NewRequestWithContext(ctx, http.MethodGet, uri, http.NoBody)
@@ -353,7 +353,7 @@ func (u URLSource) GetFile(ctx context.Context, filePath string, requestHeaders 
 			for key, val := range requestHeaders.Headers {
 				req.Header.Set(key, val)
 			}
-			resp, err = u.HTTPClient.Do(req) //nolint:bodyclose // response.Body is returned and can't be closed yet
+			resp, err = u.HTTPClient.Do(req)
 		}
 	}
 	if err != nil {
