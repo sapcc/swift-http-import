@@ -4,17 +4,17 @@ go 1.23
 
 require (
 	github.com/cactus/go-statsd-client/v5 v5.1.0
-	github.com/google/go-github/v67 v67.0.0
+	github.com/google/go-github/v68 v68.0.0
 	github.com/gophercloud/gophercloud/v2 v2.4.0
-	github.com/gophercloud/utils/v2 v2.0.0-20241220104409-2e0af06694a1
+	github.com/gophercloud/utils/v2 v2.0.0-20250106080359-c8704d65b4fa
 	github.com/majewsky/schwift/v2 v2.0.0
 	github.com/sapcc/go-api-declarations v1.13.2
-	github.com/sapcc/go-bits v0.0.0-20250103114947-94e7d6a69f41
+	github.com/sapcc/go-bits v0.0.0-20250106143146-7dd7037a9917
 	github.com/ulikunitz/xz v0.5.12
 	go.uber.org/automaxprocs v1.6.0
-	golang.org/x/crypto v0.31.0
+	golang.org/x/crypto v0.32.0
 	golang.org/x/net v0.33.0
-	golang.org/x/oauth2 v0.24.0
+	golang.org/x/oauth2 v0.25.0
 	gopkg.in/yaml.v2 v2.4.0
 	pault.ag/go/debian v0.18.0
 )

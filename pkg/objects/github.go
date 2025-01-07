@@ -29,7 +29,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/google/go-github/v67/github"
+	"github.com/google/go-github/v68/github"
 	"github.com/majewsky/schwift/v2"
 	"github.com/sapcc/go-api-declarations/bininfo"
 	"github.com/sapcc/go-bits/secrets"
