@@ -18,7 +18,7 @@ github.com/gophercloud/gophercloud/v2/openstack/identity/v3/oauth1
 github.com/gophercloud/gophercloud/v2/openstack/identity/v3/tokens
 github.com/gophercloud/gophercloud/v2/openstack/utils
 github.com/gophercloud/gophercloud/v2/pagination
-# github.com/gophercloud/utils/v2 v2.0.0-20250106080359-c8704d65b4fa
+# github.com/gophercloud/utils/v2 v2.0.0-20250205065254-a1bff20237e7
 ## explicit; go 1.22
 github.com/gophercloud/utils/v2/client
 # github.com/jpillora/longestcommon v0.0.0-20161227235612-adb9d91ee629
@@ -68,7 +68,7 @@ golang.org/x/crypto/openpgp/s2k
 ## explicit; go 1.18
 golang.org/x/net/html
 golang.org/x/net/html/atom
-# golang.org/x/oauth2 v0.25.0
+# golang.org/x/oauth2 v0.26.0
 ## explicit; go 1.18
 golang.org/x/oauth2
 golang.org/x/oauth2/internal
