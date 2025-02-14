@@ -5,14 +5,14 @@ go 1.24
 require (
 	github.com/cactus/go-statsd-client/v5 v5.1.0
 	github.com/google/go-github/v68 v68.0.0
-	github.com/gophercloud/gophercloud/v2 v2.4.0
+	github.com/gophercloud/gophercloud/v2 v2.5.0
 	github.com/gophercloud/utils/v2 v2.0.0-20250205065254-a1bff20237e7
 	github.com/majewsky/schwift/v2 v2.0.0
 	github.com/sapcc/go-api-declarations v1.13.2
-	github.com/sapcc/go-bits v0.0.0-20250206180558-fe2bd84778b9
+	github.com/sapcc/go-bits v0.0.0-20250213094036-fb2a5df7b9f3
 	github.com/ulikunitz/xz v0.5.12
 	go.uber.org/automaxprocs v1.6.0
-	golang.org/x/crypto v0.32.0
+	golang.org/x/crypto v0.33.0
 	golang.org/x/net v0.34.0
 	golang.org/x/oauth2 v0.26.0
 	gopkg.in/yaml.v2 v2.4.0
