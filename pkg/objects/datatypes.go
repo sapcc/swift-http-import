@@ -84,7 +84,7 @@ func (a *AgeSpec) UnmarshalYAML(unmarshal func(interface{}) error) error {
 		return fmt.Errorf("unknown unit %q", match[2])
 	}
 
-	*a = AgeSpec(unit * time.Duration(count)) //nolint:gosec // count fits in uint16, checked by ParseUint
+	*a = AgeSpec(unit * time.Duration(count))
 	return nil
 }
 
