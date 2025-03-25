@@ -86,8 +86,8 @@ func (s *Scraper) Run(ctx context.Context) {
 		// list entries for the directory. At the top level, try ListAllFiles if
 		// supported by job.Source.
 		var err *objects.ListEntriesError
-		switch {
-		case directory.Path == "/":
+		switch directory.Path {
+		case "/":
 			c := make(chan objects.FileSpec, 10)
 			var wg sync.WaitGroup
 			wg.Add(1)

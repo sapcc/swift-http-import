@@ -54,7 +54,7 @@ func (c *Cleaner) Run(ctx context.Context) {
 	// interrupted, main() will close our Input and we will move on)
 	for info := range c.Input {
 		// ignore all files in jobs where no cleanup is configured
-		job := info.File.Job
+		job := info.Job
 		if job.Cleanup.Strategy == objects.KeepUnknownFiles {
 			continue
 		}
