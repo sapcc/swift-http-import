@@ -139,9 +139,6 @@ linters:
       enable-all: true
     nolintlint:
       require-specific: true
-    misspell:
-      ignore-words:
-        - transfered
     staticcheck:
       dot-import-whitelist:
         - github.com/majewsky/gg/option

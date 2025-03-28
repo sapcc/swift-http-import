@@ -46,10 +46,6 @@ renovate:
     - majewsky
     - SuperSandro2000
 
-spellCheck:
-  ignoreWords:
-    - transfered # typo in metrics names
-
 verbatim: |
   functional-test:
     ./test/run.sh all

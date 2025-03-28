@@ -46,7 +46,7 @@ jobs:
           exclude: ./vendor/*
           fail_on_error: true
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          ignore: importas,transfered
+          ignore: importas
           reporter: github-check
       - name: Check if source code files have license header
         run: make check-license-headers
