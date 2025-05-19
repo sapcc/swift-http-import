@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# SPDX-FileCopyrightText: 2025 SAP SE or an SAP affiliate company
+# SPDX-License-Identifier: Apache-2.0
+
 # exit early if we already sourced the lib
 [[ ${LIB_SOURCED:-} == 1 ]] && return
 

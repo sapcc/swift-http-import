@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: 2025 SAP SE or an SAP affiliate company
+SPDX-License-Identifier: Apache-2.0
+-->
+
 # swift-http-import
 
 * [Why this instead of rclone?](#why-this-instead-of-rclone)

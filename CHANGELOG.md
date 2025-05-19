@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: 2025 SAP SE or an SAP affiliate company
+SPDX-License-Identifier: Apache-2.0
+-->
+
 ## v2.10.1 - 2023-12-06
 
 Changes:

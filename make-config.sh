@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# SPDX-FileCopyrightText: 2025 SAP SE or an SAP affiliate company
+# SPDX-License-Identifier: Apache-2.0
+
 # This helper script can be used to quickly generate an initial config.yaml for
 # swift-http-import. AuthN parameters are read from the usual OS_* environment
 # variables, and the source and target for the first sync job can be given as

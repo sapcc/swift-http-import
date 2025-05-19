@@ -46,6 +46,13 @@ renovate:
     - majewsky
     - SuperSandro2000
 
+reuse:
+  annotations:
+    - paths:
+      - examples/*.yaml
+      SPDX-FileCopyrightText: SAP SE
+      SPDX-License-Identifier: Apache-2.0
+
 verbatim: |
   functional-test:
     ./test/run.sh all
