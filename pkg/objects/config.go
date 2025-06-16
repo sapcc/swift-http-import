@@ -162,7 +162,7 @@ type SourceUnmarshaler struct {
 }
 
 // UnmarshalYAML implements the yaml.Unmarshaler interface.
-func (u *SourceUnmarshaler) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (u *SourceUnmarshaler) UnmarshalYAML(unmarshal func(any) error) error {
 	// unmarshal a few indicative fields
 	var probe struct {
 		URL  string `yaml:"url"`

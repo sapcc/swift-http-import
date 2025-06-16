@@ -134,8 +134,8 @@ type logger struct {
 	Prefix string
 }
 
-func (l logger) Printf(format string, args ...interface{}) {
-	for _, v := range strings.Split(fmt.Sprintf(format, args...), "\n") {
+func (l logger) Printf(format string, args ...any) {
+	for v := range strings.SplitSeq(fmt.Sprintf(format, args...), "\n") {
 		logg.Debug("[%s] %s", l.Prefix, v)
 	}
 }

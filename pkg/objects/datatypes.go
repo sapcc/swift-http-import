@@ -46,7 +46,7 @@ var (
 )
 
 // UnmarshalYAML implements the yaml.Unmarshaler interface.
-func (a *AgeSpec) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (a *AgeSpec) UnmarshalYAML(unmarshal func(any) error) error {
 	var input string
 	err := unmarshal(&input)
 	if err != nil {

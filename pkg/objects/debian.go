@@ -258,7 +258,7 @@ func (s *DebianSource) listDistFiles(ctx context.Context, distRootPath string, c
 }
 
 // Helper function for DebianSource.ListAllFiles().
-func (s *DebianSource) downloadAndParseDCF(ctx context.Context, path string, data interface{}, cache map[string]FileSpec) (contents []byte, uri string, e *ListEntriesError) {
+func (s *DebianSource) downloadAndParseDCF(ctx context.Context, path string, data any, cache map[string]FileSpec) (contents []byte, uri string, e *ListEntriesError) {
 	buf, uri, lerr := s.urlSource.getFileContents(ctx, path, cache)
 	if lerr != nil {
 		return nil, uri, lerr
