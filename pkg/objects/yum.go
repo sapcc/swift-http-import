@@ -9,6 +9,7 @@ import (
 	"encoding/xml"
 	"io"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/majewsky/schwift/v2"
@@ -206,16 +207,11 @@ func (s *YumSource) handlesArchitecture(arch string) bool {
 	if len(s.Architectures) == 0 || arch == "" {
 		return true
 	}
-	for _, val := range s.Architectures {
-		if val == arch {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(s.Architectures, arch)
 }
 
 // Helper function for YumSource.ListAllFiles().
-func (s *YumSource) downloadAndParseXML(ctx context.Context, path string, data interface{}, cache map[string]FileSpec) (contents []byte, uri string, e *ListEntriesError) {
+func (s *YumSource) downloadAndParseXML(ctx context.Context, path string, data any, cache map[string]FileSpec) (contents []byte, uri string, e *ListEntriesError) {
 	buf, uri, lerr := s.urlSource.getFileContents(ctx, path, cache)
 	if lerr != nil {
 		return nil, uri, lerr
