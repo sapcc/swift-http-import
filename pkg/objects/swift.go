@@ -284,8 +284,8 @@ func (s *SwiftLocation) getFileSpec(info schwift.ObjectInfo) FileSpec {
 
 		if info.SymlinkTarget != nil && info.SymlinkTarget.Container().IsEqualTo(s.Container) {
 			targetPath := info.SymlinkTarget.Name()
-			if after, ok := strings.CutPrefix(targetPath, string(s.ObjectNamePrefix)); ok {
-				f.SymlinkTargetPath = after
+			if symlinkTargetPath, ok := strings.CutPrefix(targetPath, string(s.ObjectNamePrefix)); ok {
+				f.SymlinkTargetPath = symlinkTargetPath
 			}
 		}
 	}
