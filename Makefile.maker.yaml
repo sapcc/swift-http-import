@@ -20,6 +20,7 @@ dockerfile:
   withLinkerdAwait: true
 
 golang:
+  autoupdateableDeps: ^github.com/(?:sapcc|sap-cloud-infrastructure)/
   enableVendoring: true
   setGoModVersion: true
 
