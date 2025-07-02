@@ -8,7 +8,7 @@
 # variables, and the source and target for the first sync job can be given as
 # arguments.
 
-if [ $# -lt 2 -o $# -gt 3 ]; then
+if [ $# -ne 3 ]; then
     echo "Usage: $0 <from-url> <to-container> [<object-prefix>]" >&2
     exit 1
 fi
