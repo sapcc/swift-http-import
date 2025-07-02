@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/klauspost/compress/zstd"
 	"github.com/ulikunitz/xz"
 )
 
@@ -103,6 +104,24 @@ func decompressXZArchive(buf []byte) ([]byte, error) {
 	decompBuf, err := io.ReadAll(reader)
 	if err != nil {
 		return nil, errors.New("error while decompressing XZ archive: " + err.Error())
+	}
+
+	return decompBuf, nil
+}
+
+var zstdMagicNumber = []byte{0x28, 0xb5, 0x2f, 0xfd}
+
+// decompressZSTDArchive decompresses and returns the contents of a slice of
+// zstd compressed bytes.
+func decompressZSTDArchive(buf []byte) ([]byte, error) {
+	reader, err := zstd.NewReader(bytes.NewReader(buf))
+	if err != nil {
+		return nil, errors.New("error while decompressing zstd archive: " + err.Error())
+	}
+
+	decompBuf, err := io.ReadAll(reader)
+	if err != nil {
+		return nil, errors.New("error while decompressing zstd archive: " + err.Error())
 	}
 
 	return decompBuf, nil

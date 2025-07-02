@@ -17,6 +17,8 @@ github.com/gophercloud/utils/v2 v2.0.0-20250617123236-b0c67de63928/go.mod h1:/P5
 github.com/jessevdk/go-flags v1.4.0/go.mod h1:4FA24M0QyGHXBuZZK/XkWh8h0e1EYbRYJSGM75WSRxI=
 github.com/jpillora/longestcommon v0.0.0-20161227235612-adb9d91ee629 h1:1dSBUfGlorLAua2CRx0zFN7kQsTpE2DQSmr7rrTNgY8=
 github.com/jpillora/longestcommon v0.0.0-20161227235612-adb9d91ee629/go.mod h1:mb5nS4uRANwOJSZj8rlCWAfAcGi72GGMIXx+xGOjA7M=
+github.com/klauspost/compress v1.18.0 h1:c/Cqfb0r+Yi+JtIEq73FWXVkRonBlf0CRNYc8Zttxdo=
+github.com/klauspost/compress v1.18.0/go.mod h1:2Pp+KzxcywXVXMr50+X0Q/Lsb43OQHYWRCY2AiWywWQ=
 github.com/kr/pretty v0.1.0 h1:L/CwN0zerZDmRFUapSPitk6f+Q3+0za1rQkzVuMiMFI=
 github.com/kr/pretty v0.1.0/go.mod h1:dAy3ld7l9f0ibDNOQOHHMYYIIbhfbHSm3C4ZsoJORNo=
 github.com/kr/text v0.2.0 h1:5Nx0Ya0ZqY2ygV366QzturHI13Jq95ApcVaJBhpS+AY=
