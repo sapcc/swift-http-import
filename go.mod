@@ -7,6 +7,7 @@ require (
 	github.com/google/go-github/v73 v73.0.0
 	github.com/gophercloud/gophercloud/v2 v2.7.0
 	github.com/gophercloud/utils/v2 v2.0.0-20250617123236-b0c67de63928
+	github.com/klauspost/compress v1.18.0
 	github.com/majewsky/schwift/v2 v2.0.0
 	github.com/sapcc/go-api-declarations v1.16.0
 	github.com/sapcc/go-bits v0.0.0-20250626145224-6afa1101f97e

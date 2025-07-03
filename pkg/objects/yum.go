@@ -235,6 +235,15 @@ func (s *YumSource) downloadAndParseXML(ctx context.Context, path string, data a
 		}
 	}
 
+	// if `buf` has the magic number for zstd, decompress before parsing as XML
+	if bytes.HasPrefix(buf, zstdMagicNumber) {
+		var err error
+		buf, err = decompressZSTDArchive(buf)
+		if err != nil {
+			return nil, uri, &ListEntriesError{Location: uri, Message: "cannot decompress zstd stream", Inner: err}
+		}
+	}
+
 	err := xml.Unmarshal(buf, data)
 	if err != nil {
 		return nil, uri, &ListEntriesError{
