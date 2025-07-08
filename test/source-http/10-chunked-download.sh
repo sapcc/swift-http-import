@@ -75,7 +75,7 @@ Line number 5
 EOF
 
 SEGMENT_COUNT="$(swift list "${CONTAINER_BASE}-test10-segments" | wc -l)"
-if [ "${SEGMENT_COUNT}" -ne 5 ]; then
+if [[ $SEGMENT_COUNT -ne 5 ]]; then
   printf "\e[1;31m>>\e[0;31m Expected SLO to have 5 segments, but got %s instead:\e[0m\n" "$SEGMENT_COUNT"
   dump test10-segments
   exit 1
