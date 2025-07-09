@@ -25,7 +25,7 @@ trap 'for pid in "${pids[@]}"; do kill "$pid" &>/dev/null || true; done; cleanup
 
 start_test() {
   # NOTE: running tests in parallel appears to be unstable, so do not do it by default
-  if [ "${PARALLEL:-false}" = true ]; then
+  if [[ ${PARALLEL:-false} = true ]]; then
     bash -c "export SOURCE_TYPE=$SOURCE_TYPE && source lib.sh && setup && source $1" &
     pids+=($!)
   else
@@ -36,7 +36,7 @@ start_test() {
 case "$1" in
 all)
   for source in http swift; do
-    if [ "${PARALLEL:-false}" = true ]; then
+    if [[ ${PARALLEL:-false} = true ]]; then
       ./run.sh "$source" &
       pids+=($!)
     else

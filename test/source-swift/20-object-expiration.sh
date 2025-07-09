@@ -47,7 +47,7 @@ EOF
 
 for OBJECT_NAME in expires.txt expires-with-segments.txt; do
   EXPIRY_TIMESTAMP="$(swift stat "${CONTAINER_BASE}-test20" "${OBJECT_NAME}" | awk '/X-Delete-At:/ { print $2 }')"
-  if [ "${EXPIRY_TIMESTAMP}" != 2000000042 ]; then
+  if [[ $EXPIRY_TIMESTAMP != 2000000042 ]]; then
     printf "\e[1;31m>>\e[0;31m Expected file \"%s\" to expire at timestamp 2000000042, but expires at timestamp '%s' instead.\e[0m\n" "$OBJECT_NAME" "$EXPIRY_TIMESTAMP"
     exit 1
   fi
@@ -56,7 +56,7 @@ done
 # also check that expiration dates are applied to the segments as well
 swift list "${CONTAINER_BASE}-test20-segments" | while read -r OBJECT_NAME; do
   EXPIRY_TIMESTAMP="$(swift stat "${CONTAINER_BASE}-test20-segments" "${OBJECT_NAME}" | awk '/X-Delete-At:/ { print $2 }')"
-  if [ "${EXPIRY_TIMESTAMP}" != 2000000042 ]; then
+  if [[ $EXPIRY_TIMESTAMP != 2000000042 ]]; then
     printf "\e[1;31m>>\e[0;31m Expected segment '%s' to expire at timestamp 2000000042, but expires at timestamp '%s' instead.\e[0m\n" "$OBJECT_NAME" "$EXPIRY_TIMESTAMP"
     exit 1
   fi
