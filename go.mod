@@ -9,8 +9,8 @@ require (
 	github.com/gophercloud/utils/v2 v2.0.0-20250710092215-8f6f0255f600
 	github.com/klauspost/compress v1.18.0
 	github.com/majewsky/schwift/v2 v2.0.0
-	github.com/sapcc/go-api-declarations v1.16.0
-	github.com/sapcc/go-bits v0.0.0-20250710190843-788fa8ba727b
+	github.com/sapcc/go-api-declarations v1.17.1
+	github.com/sapcc/go-bits v0.0.0-20250717162732-01df4e41958b
 	github.com/ulikunitz/xz v0.5.12
 	go.uber.org/automaxprocs v1.6.0
 	golang.org/x/crypto v0.40.0
