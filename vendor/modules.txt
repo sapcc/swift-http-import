@@ -18,7 +18,7 @@ github.com/gophercloud/gophercloud/v2/openstack/identity/v3/oauth1
 github.com/gophercloud/gophercloud/v2/openstack/identity/v3/tokens
 github.com/gophercloud/gophercloud/v2/openstack/utils
 github.com/gophercloud/gophercloud/v2/pagination
-# github.com/gophercloud/utils/v2 v2.0.0-20250710092215-8f6f0255f600
+# github.com/gophercloud/utils/v2 v2.0.0-20250711132455-9770683b100a
 ## explicit; go 1.23.0
 github.com/gophercloud/utils/v2/client
 # github.com/jpillora/longestcommon v0.0.0-20161227235612-adb9d91ee629
