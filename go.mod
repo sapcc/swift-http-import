@@ -17,7 +17,7 @@ require (
 	golang.org/x/net v0.42.0
 	golang.org/x/oauth2 v0.30.0
 	gopkg.in/yaml.v2 v2.4.0
-	pault.ag/go/debian v0.18.0
+	pault.ag/go/debian v0.19.0
 )
 
 require (
