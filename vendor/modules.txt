@@ -42,7 +42,7 @@ github.com/majewsky/schwift/v2
 github.com/majewsky/schwift/v2/capabilities
 github.com/majewsky/schwift/v2/gopherschwift
 github.com/majewsky/schwift/v2/internal/errext
-# github.com/sapcc/go-api-declarations v1.17.1
+# github.com/sapcc/go-api-declarations v1.17.2
 ## explicit; go 1.24
 github.com/sapcc/go-api-declarations/bininfo
 # github.com/sapcc/go-bits v0.0.0-20250722084227-7a82273f02ae
