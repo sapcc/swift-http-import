@@ -1,6 +1,6 @@
 module github.com/sapcc/swift-http-import
 
-go 1.24
+go 1.25
 
 require (
 	github.com/cactus/go-statsd-client/v5 v5.1.0
