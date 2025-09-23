@@ -28,7 +28,7 @@ SPDX-License-Identifier = "Apache-2.0"
 
 [[annotations]]
 path = [
-  "vendor/github.com/cactus/go-statsd-client/v5/**",
+  "vendor/github.com/cactus/go-statsd-client/v6/**",
 ]
 precedence = "aggregate"
 SPDX-FileCopyrightText = "Other"
