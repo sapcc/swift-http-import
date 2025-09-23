@@ -1,6 +1,6 @@
-# github.com/cactus/go-statsd-client/v5 v5.1.0
-## explicit; go 1.11
-github.com/cactus/go-statsd-client/v5/statsd
+# github.com/cactus/go-statsd-client/v6 v6.0.0
+## explicit; go 1.13
+github.com/cactus/go-statsd-client/v6/statsd
 # github.com/google/go-github/v74 v74.0.0
 ## explicit; go 1.23.0
 github.com/google/go-github/v74/github
@@ -18,7 +18,7 @@ github.com/gophercloud/gophercloud/v2/openstack/identity/v3/oauth1
 github.com/gophercloud/gophercloud/v2/openstack/identity/v3/tokens
 github.com/gophercloud/gophercloud/v2/openstack/utils
 github.com/gophercloud/gophercloud/v2/pagination
-# github.com/gophercloud/utils/v2 v2.0.0-20250819195638-e4fc39f0eda4
+# github.com/gophercloud/utils/v2 v2.0.0-20250908160916-88fadeedd0ca
 ## explicit; go 1.23.0
 github.com/gophercloud/utils/v2/client
 # github.com/jpillora/longestcommon v0.0.0-20161227235612-adb9d91ee629
@@ -45,7 +45,7 @@ github.com/majewsky/schwift/v2/internal/errext
 # github.com/sapcc/go-api-declarations v1.17.4
 ## explicit; go 1.24
 github.com/sapcc/go-api-declarations/bininfo
-# github.com/sapcc/go-bits v0.0.0-20250923124349-47cc042a32b4
+# github.com/sapcc/go-bits v0.0.0-20250923125804-74150ab82271
 ## explicit; go 1.24
 github.com/sapcc/go-bits/errext
 github.com/sapcc/go-bits/httpext
@@ -64,8 +64,8 @@ github.com/ulikunitz/xz/lzma
 go.uber.org/automaxprocs/internal/cgroups
 go.uber.org/automaxprocs/internal/runtime
 go.uber.org/automaxprocs/maxprocs
-# golang.org/x/crypto v0.41.0
-## explicit; go 1.23.0
+# golang.org/x/crypto v0.42.0
+## explicit; go 1.24.0
 golang.org/x/crypto/cast5
 golang.org/x/crypto/openpgp
 golang.org/x/crypto/openpgp/armor
@@ -74,12 +74,12 @@ golang.org/x/crypto/openpgp/elgamal
 golang.org/x/crypto/openpgp/errors
 golang.org/x/crypto/openpgp/packet
 golang.org/x/crypto/openpgp/s2k
-# golang.org/x/net v0.43.0
-## explicit; go 1.23.0
+# golang.org/x/net v0.44.0
+## explicit; go 1.24.0
 golang.org/x/net/html
 golang.org/x/net/html/atom
-# golang.org/x/oauth2 v0.30.0
-## explicit; go 1.23.0
+# golang.org/x/oauth2 v0.31.0
+## explicit; go 1.24.0
 golang.org/x/oauth2
 golang.org/x/oauth2/internal
 # gopkg.in/yaml.v2 v2.4.0
