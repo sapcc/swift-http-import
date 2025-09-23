@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/cactus/go-statsd-client/v5/statsd"
+	"github.com/cactus/go-statsd-client/v6/statsd"
 	"github.com/sapcc/go-bits/logg"
 
 	"github.com/sapcc/swift-http-import/pkg/objects"
