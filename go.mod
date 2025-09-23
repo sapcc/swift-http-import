@@ -10,7 +10,7 @@ require (
 	github.com/klauspost/compress v1.18.0
 	github.com/majewsky/schwift/v2 v2.0.0
 	github.com/sapcc/go-api-declarations v1.17.4
-	github.com/sapcc/go-bits v0.0.0-20250911190512-4d3226a57454
+	github.com/sapcc/go-bits v0.0.0-20250923124349-47cc042a32b4
 	github.com/ulikunitz/xz v0.5.15
 	go.uber.org/automaxprocs v1.6.0
 	golang.org/x/crypto v0.41.0
