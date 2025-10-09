@@ -45,8 +45,8 @@ github.com/majewsky/schwift/v2/internal/errext
 # github.com/sapcc/go-api-declarations v1.17.4
 ## explicit; go 1.24
 github.com/sapcc/go-api-declarations/bininfo
-# github.com/sapcc/go-bits v0.0.0-20251006091626-c8e55520bad5
-## explicit; go 1.24
+# github.com/sapcc/go-bits v0.0.0-20251009112313-51a4d641ae65
+## explicit; go 1.24.0
 github.com/sapcc/go-bits/errext
 github.com/sapcc/go-bits/httpext
 github.com/sapcc/go-bits/logg
@@ -64,7 +64,7 @@ github.com/ulikunitz/xz/lzma
 go.uber.org/automaxprocs/internal/cgroups
 go.uber.org/automaxprocs/internal/runtime
 go.uber.org/automaxprocs/maxprocs
-# golang.org/x/crypto v0.42.0
+# golang.org/x/crypto v0.43.0
 ## explicit; go 1.24.0
 golang.org/x/crypto/cast5
 golang.org/x/crypto/openpgp
@@ -74,7 +74,7 @@ golang.org/x/crypto/openpgp/elgamal
 golang.org/x/crypto/openpgp/errors
 golang.org/x/crypto/openpgp/packet
 golang.org/x/crypto/openpgp/s2k
-# golang.org/x/net v0.45.0
+# golang.org/x/net v0.46.0
 ## explicit; go 1.24.0
 golang.org/x/net/html
 golang.org/x/net/html/atom
