@@ -74,13 +74,11 @@ func (s *Scraper) Run(ctx context.Context) {
 		case "/":
 			c := make(chan objects.FileSpec, 10)
 			var wg sync.WaitGroup
-			wg.Add(1)
-			go func() {
+			wg.Go(func() {
 				for entry := range c {
 					handleFileSpec(entry)
 				}
-				wg.Done()
-			}()
+			})
 
 			err = job.Source.ListAllFiles(ctx, c)
 			close(c)  // terminate receiver loop
