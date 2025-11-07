@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"math"
 	"net/http"
 	"regexp"
@@ -119,9 +120,7 @@ func (d *downloader) buildRequest(ctx context.Context) (*http.Request, error) {
 	if err != nil {
 		return nil, err
 	}
-	for key, val := range d.RequestHeaders {
-		req.Header[key] = val
-	}
+	maps.Copy(req.Header, d.RequestHeaders)
 	return req, nil
 }
 
