@@ -10,6 +10,8 @@ binaries:
 
 dockerfile:
   enabled: true
+  checkEnv:
+    - CHECK_SKIPS_FUNCTIONAL_TEST=true
   extraIgnores:
     - examples/
     - make-config.sh
