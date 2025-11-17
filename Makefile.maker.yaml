@@ -12,6 +12,10 @@ dockerfile:
   enabled: true
   checkEnv:
     - CHECK_SKIPS_FUNCTIONAL_TEST=true
+  extraBuildDirectives:
+    # If ihe CI has supplied additional CA certificates, include them in the CA bundle
+    - 'COPY certs/*.crt /usr/local/share/ca-certificates/'
+    - 'RUN update-ca-certificates'
   extraIgnores:
     - examples/
     - make-config.sh
@@ -52,6 +56,8 @@ renovate:
 reuse:
   annotations:
     - paths:
+      - certs/*.crt
+      - certs/README.md
       - examples/*.yaml
       SPDX-FileCopyrightText: SAP SE or an SAP affiliate company
       SPDX-License-Identifier: Apache-2.0
