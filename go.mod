@@ -5,12 +5,12 @@ go 1.25
 require (
 	github.com/cactus/go-statsd-client/v6 v6.0.0
 	github.com/google/go-github/v75 v75.0.0
-	github.com/gophercloud/gophercloud/v2 v2.8.0
+	github.com/gophercloud/gophercloud/v2 v2.9.0
 	github.com/gophercloud/utils/v2 v2.0.0-20251103115625-7dba497d90f8
 	github.com/klauspost/compress v1.18.1
 	github.com/majewsky/schwift/v2 v2.0.0
 	github.com/sapcc/go-api-declarations v1.17.4
-	github.com/sapcc/go-bits v0.0.0-20251113131016-b7245870e76e
+	github.com/sapcc/go-bits v0.0.0-20251119215428-a048ca8f6eba
 	github.com/ulikunitz/xz v0.5.15
 	go.uber.org/automaxprocs v1.6.0
 	golang.org/x/crypto v0.45.0
