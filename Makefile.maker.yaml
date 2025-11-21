@@ -46,6 +46,10 @@ githubWorkflow:
     enabled: true
   securityChecks:
     enabled: true
+  
+spellCheck:
+  ignoreWords: ["transfered"]
+
 
 renovate:
   enabled: true
