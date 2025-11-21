@@ -116,6 +116,8 @@ The first paragraph contains the authentication parameters for
 OpenStack's Identity v3 API. Optionally a `region_name` can be specified, but this is only
 required if there are multiple regions to choose from. You can also specify the `tls_client_certificate_file` and `tls_client_key_file` for creating a TLS client.
 
+Additionally, you can specify a `service_type` to select which object storage service to use from the service catalog. This defaults to `object-store` for native Swift, but can be set to `object-store-ceph` when using Ceph's Swift-compatible API.
+
 You can use the `fromEnv` special syntax for the `to.container`, `to.object_prefix`, and
 the Swift fields (options under the `swift` key).
 See [specifying sensitive info as environment variables](#specifying-sensitive-info-as-environment-variables) for more details.

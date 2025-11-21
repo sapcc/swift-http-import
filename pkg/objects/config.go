@@ -226,6 +226,7 @@ func (cfg JobConfiguration) Compile(ctx context.Context, name string, swift Swif
 		cfg.Target.ApplicationCredentialName = swift.ApplicationCredentialName
 		cfg.Target.ApplicationCredentialSecret = swift.ApplicationCredentialSecret
 		cfg.Target.RegionName = swift.RegionName
+		cfg.Target.ServiceType = swift.ServiceType
 		errors = append(errors, cfg.Target.Validate(name+".to")...)
 	}
 

@@ -37,6 +37,7 @@ type SwiftLocation struct {
 	TLSClientCertificateFile    secrets.FromEnv `yaml:"tls_client_certificate_file"`
 	TLSClientKeyFile            secrets.FromEnv `yaml:"tls_client_key_file"`
 	RegionName                  secrets.FromEnv `yaml:"region_name"`
+	ServiceType                 secrets.FromEnv `yaml:"service_type"`
 	ContainerName               secrets.FromEnv `yaml:"container"`
 	ObjectNamePrefix            secrets.FromEnv `yaml:"object_prefix"`
 	// configuration for Validate()
@@ -61,6 +62,7 @@ func (s SwiftLocation) cacheKey(name string) string {
 		string(s.ApplicationCredentialName),
 		string(s.ApplicationCredentialSecret),
 		string(s.RegionName),
+		string(s.ServiceType),
 	}
 	if logg.ShowDebug {
 		v = append(v, name)
@@ -208,7 +210,12 @@ func (s *SwiftLocation) Connect(ctx context.Context, name string) error {
 			)
 		}
 
+		serviceType := string(s.ServiceType)
+		if serviceType == "" {
+			serviceType = "object-store"
+		}
 		serviceClient, err := openstack.NewObjectStorageV1(provider, gophercloud.EndpointOpts{
+			Type:   serviceType,
 			Region: string(s.RegionName),
 		})
 		if err != nil {
