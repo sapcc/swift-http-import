@@ -3,6 +3,19 @@ SPDX-FileCopyrightText: 2025 SAP SE or an SAP affiliate company
 SPDX-License-Identifier: Apache-2.0
 -->
 
+## v2.11.0 - 2025-11-21
+
+New features:
+- The new `service_type` attribute on Swift connection parameters allows interacting
+  with Swift APIs that are not advertised under the default service type `object-store`.
+- During `docker build`, CA certificates that have been placed at `certs/*.crt` within
+  the repository will automatically be added to the root CA bundle of the final image.
+
+Changes:
+- When syncing Yum repos containing RPM packages, repository metadata using the
+  zstd compression format is now properly understood.
+- Updated all dependencies to their latest versions.
+
 ## v2.10.1 - 2023-12-06
 
 Changes:
