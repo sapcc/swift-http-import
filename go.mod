@@ -4,7 +4,7 @@ go 1.25
 
 require (
 	github.com/cactus/go-statsd-client/v6 v6.0.0
-	github.com/google/go-github/v75 v75.0.0
+	github.com/google/go-github/v79 v79.0.0
 	github.com/gophercloud/gophercloud/v2 v2.9.0
 	github.com/gophercloud/utils/v2 v2.0.0-20251103115625-7dba497d90f8
 	github.com/klauspost/compress v1.18.1
