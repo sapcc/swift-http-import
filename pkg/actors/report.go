@@ -136,10 +136,10 @@ func (r *Report) Run(ctx context.Context) {
 	gaugeU64("last_run.jobs_skipped", r.stats.JobsSkipped)
 	gaugeU64("last_run.dirs_scanned", r.stats.DirectoriesScanned)
 	gaugeU64("last_run.files_found", r.stats.FilesFound)
-	gaugeU64("last_run.files_transfered", r.stats.FilesTransferred) //nolint:misspell // cannot be easily renamed as it is publicly exposed
+	gaugeU64("last_run.files_transfered", r.stats.FilesTransferred) // cannot be easily renamed as it is publicly exposed
 	gaugeU64("last_run.files_failed", r.stats.FilesFailed)
 	gaugeU64("last_run.files_cleaned_up", r.stats.FilesCleanedUp)
-	gaugeU64("last_run.bytes_transfered", r.stats.BytesTransferred) //nolint:misspell // cannot be easily renamed as it is publicly exposed
+	gaugeU64("last_run.bytes_transfered", r.stats.BytesTransferred) // cannot be easily renamed as it is publicly exposed
 	if r.stats.FilesFailed > 0 || r.stats.DirectoriesFailed > 0 {
 		gaugeU64("last_run.success", 0)
 		r.ExitCode = 1
