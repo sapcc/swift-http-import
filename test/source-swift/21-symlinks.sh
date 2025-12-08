@@ -22,7 +22,7 @@ upload_file_from_stdin just/some/files/2.txt <<-EOF
   Hello Second World.
 EOF
 
-# Uploading a symlink requires curl because python-swiftclient has not catched up with Swift yet.
+# Uploading a symlink requires curl because python-swiftclient has not caught up with Swift yet.
 curl -H "X-Auth-Token: ${OS_AUTH_TOKEN}" -X PUT -d '' -H "Content-Type: application/symlink" -H "X-Symlink-Target: ${CONTAINER_PUBLIC}/${DISAMBIGUATOR}/just/some/files/1.txt" "${SOURCE_URL}/just/a/symlink.txt"
 sleep "$SLEEP" # wait for container listing to get updated
 
