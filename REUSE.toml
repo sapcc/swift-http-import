@@ -38,7 +38,7 @@ SPDX-License-Identifier = "MIT"
 
 [[annotations]]
 path = [
-  "vendor/github.com/google/go-github/v79/**",
+  "vendor/github.com/google/go-github/v80/**",
 ]
 precedence = "aggregate"
 SPDX-FileCopyrightText = "Other"
