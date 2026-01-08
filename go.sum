@@ -10,8 +10,8 @@ github.com/google/go-github/v80 v80.0.0 h1:BTyk3QOHekrk5VF+jIGz1TNEsmeoQG9K/UWaa
 github.com/google/go-github/v80 v80.0.0/go.mod h1:pRo4AIMdHW83HNMGfNysgSAv0vmu+/pkY8nZO9FT9Yo=
 github.com/google/go-querystring v1.1.0 h1:AnCroh3fv4ZBgVIf1Iwtovgjaw/GiKJo8M8yD/fhyJ8=
 github.com/google/go-querystring v1.1.0/go.mod h1:Kcdr2DB4koayq7X8pmAG4sNG59So17icRSOU623lUBU=
-github.com/gophercloud/gophercloud/v2 v2.9.0 h1:Y9OMrwKF9EDERcHFSOTpf/6XGoAI0yOxmsLmQki4LPM=
-github.com/gophercloud/gophercloud/v2 v2.9.0/go.mod h1:Ki/ILhYZr/5EPebrPL9Ej+tUg4lqx71/YH2JWVeU+Qk=
+github.com/gophercloud/gophercloud/v2 v2.10.0 h1:NRadC0aHNvy4iMoFXj5AFiPmut/Sj3hAPAo9B59VMGc=
+github.com/gophercloud/gophercloud/v2 v2.10.0/go.mod h1:Ki/ILhYZr/5EPebrPL9Ej+tUg4lqx71/YH2JWVeU+Qk=
 github.com/gophercloud/utils/v2 v2.0.0-20251121145439-0a38d66a3d88 h1:zyPxc6TsfPYsE903357+LpZ3P6vxbIMejXnrkXFY5bw=
 github.com/gophercloud/utils/v2 v2.0.0-20251121145439-0a38d66a3d88/go.mod h1:V71HTEkIqYH/FsQle8lMzA/5iCcCAYyGHURSgVhpOu0=
 github.com/jpillora/longestcommon v0.0.0-20161227235612-adb9d91ee629 h1:1dSBUfGlorLAua2CRx0zFN7kQsTpE2DQSmr7rrTNgY8=
@@ -30,8 +30,8 @@ github.com/prashantv/gostub v1.1.0 h1:BTyx3RfQjRHnUWaGF9oQos79AlQ5k8WNktv7VGvVH4
 github.com/prashantv/gostub v1.1.0/go.mod h1:A5zLQHz7ieHGG7is6LLXLz7I8+3LZzsrV0P1IAHhP5U=
 github.com/sapcc/go-api-declarations v1.18.0 h1:I73wuBKJEAeAI7nYuB4tHY9n9pydj5mgM7Zn+9fryAA=
 github.com/sapcc/go-api-declarations v1.18.0/go.mod h1:N2klk2oDNa1lsS6gUBnCDJedHy/c2vmwJ1sryckRW40=
-github.com/sapcc/go-bits v0.0.0-20260106192349-033e785101fd h1:V0SMdmo7dEdFLl/8glQ2kaeHzliK/wSmYp77nwO9p20=
-github.com/sapcc/go-bits v0.0.0-20260106192349-033e785101fd/go.mod h1:/4xXSAuH6QpwA8fdg+igq6SNsHaayjxXXOwvQvrNr08=
+github.com/sapcc/go-bits v0.0.0-20260108094740-cc8ce5be6ba2 h1:B69sIiRCQIkR6SC8js2uJTMybHzwxOSvieFHfAaFpfk=
+github.com/sapcc/go-bits v0.0.0-20260108094740-cc8ce5be6ba2/go.mod h1:PTOltBW0r8IPP4rZZWPkykuB2vVAFVdCo1A914IyAE0=
 github.com/sergi/go-diff v1.4.0 h1:n/SP9D5ad1fORl+llWyN+D6qoUETXNZARKjyY2/KVCw=
 github.com/sergi/go-diff v1.4.0/go.mod h1:A0bzQcvG0E7Rwjx0REVgAGH58e96+X0MeOfepqsbeW4=
 github.com/stretchr/testify v1.7.1 h1:5TQK59W5E3v0r2duFAb7P95B6hEeOyEnHRa8MjYSMTY=
