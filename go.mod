@@ -6,7 +6,7 @@ require (
 	github.com/cactus/go-statsd-client/v6 v6.0.0
 	github.com/google/go-github/v80 v80.0.0
 	github.com/gophercloud/gophercloud/v2 v2.10.0
-	github.com/gophercloud/utils/v2 v2.0.0-20251121145439-0a38d66a3d88
+	github.com/gophercloud/utils/v2 v2.0.0-20260107124036-1d7954eb9711
 	github.com/klauspost/compress v1.18.2
 	github.com/majewsky/schwift/v2 v2.0.0
 	github.com/sapcc/go-api-declarations v1.18.0
