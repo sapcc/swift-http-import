@@ -3,6 +3,12 @@ SPDX-FileCopyrightText: 2025 SAP SE or an SAP affiliate company
 SPDX-License-Identifier: Apache-2.0
 -->
 
+## v2.12.0 - TBD
+
+Changes:
+- Removed the dependency on <https://github.com/google/go-github>.
+  We now use our own code to interact with the GitHub API for listing releases.
+
 ## v2.11.0 - 2025-11-21
 
 New features:
