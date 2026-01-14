@@ -3,7 +3,11 @@
 
 package objects
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/sapcc/go-bits/assert"
+)
 
 // TestDebianReleasePackagesEntryRx tests the regular expression that is used to
 // match an entry in a 'Release' debian control file that represents the path
@@ -47,12 +51,8 @@ func TestDebianReleasePackagesEntryRx(t *testing.T) {
 	}
 
 	for _, tc := range tt {
-		if match := debReleasePackagesEntryRx.MatchString(tc.in); match != tc.match {
-			if tc.match {
-				t.Errorf("'%s' did not match the regular expression. Was expected to match.\n", tc.in)
-			} else {
-				t.Errorf("'%s' matched the regular expression. Was expected not to match.\n", tc.in)
-			}
-		}
+		t.Run(tc.in, func(t *testing.T) {
+			assert.Equal(t, debReleasePackagesEntryRx.MatchString(tc.in), tc.match)
+		})
 	}
 }

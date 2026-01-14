@@ -21,5 +21,6 @@ require (
 require (
 	github.com/jpillora/longestcommon v0.0.0-20161227235612-adb9d91ee629 // indirect
 	github.com/kr/text v0.2.0 // indirect
+	github.com/sergi/go-diff v1.4.0 // indirect
 	pault.ag/go/topsort v0.1.1 // indirect
 )
