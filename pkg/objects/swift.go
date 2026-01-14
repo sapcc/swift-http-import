@@ -169,14 +169,14 @@ func (s *SwiftLocation) Connect(ctx context.Context, name string) error {
 
 		provider, err := openstack.NewClient(authOptions.IdentityEndpoint)
 		if err != nil {
-			return fmt.Errorf("cannot create OpenStack client: %s", err.Error())
+			return fmt.Errorf("cannot create OpenStack client: %w", err)
 		}
 
 		transport := &http.Transport{}
 		if s.TLSClientCertificateFile != "" && s.TLSClientKeyFile != "" {
 			cert, err := tls.LoadX509KeyPair(string(s.TLSClientCertificateFile), string(s.TLSClientKeyFile))
 			if err != nil {
-				return fmt.Errorf("failed to load x509 key pair: %s", err.Error())
+				return fmt.Errorf("failed to load x509 key pair: %w", err)
 			}
 			transport.TLSClientConfig = &tls.Config{
 				Certificates: []tls.Certificate{cert},
@@ -195,18 +195,15 @@ func (s *SwiftLocation) Connect(ctx context.Context, name string) error {
 		err = openstack.Authenticate(ctx, provider, authOptions)
 		if err != nil {
 			if authOptions.ApplicationCredentialSecret != "" {
-				return fmt.Errorf("cannot authenticate to %s using application credential: %s",
-					s.AuthURL,
-					err.Error(),
-				)
+				return fmt.Errorf("cannot authenticate to %s using application credential: %w", s.AuthURL, err)
 			}
-			return fmt.Errorf("cannot authenticate to %s in %s@%s as %s@%s: %s",
+			return fmt.Errorf("cannot authenticate to %s in %s@%s as %s@%s: %w",
 				s.AuthURL,
 				s.ProjectName,
 				s.ProjectDomainName,
 				s.UserName,
 				s.UserDomainName,
-				err.Error(),
+				err,
 			)
 		}
 
@@ -219,13 +216,13 @@ func (s *SwiftLocation) Connect(ctx context.Context, name string) error {
 			Region: string(s.RegionName),
 		})
 		if err != nil {
-			return fmt.Errorf("cannot create Swift client: %s", err.Error())
+			return fmt.Errorf("cannot create Swift client: %w", err)
 		}
 		s.Account, err = gopherschwift.Wrap(serviceClient, &gopherschwift.Options{
 			UserAgent: "swift-http-import/" + bininfo.VersionOr("dev"),
 		})
 		if err != nil {
-			return fmt.Errorf("cannot wrap Swift client: %s", err.Error())
+			return fmt.Errorf("cannot wrap Swift client: %w", err)
 		}
 
 		accountCache[key] = s.Account
@@ -362,10 +359,7 @@ func (s *SwiftLocation) DiscoverExistingFiles(ctx context.Context, matcher Match
 		return nil
 	})
 	if err != nil {
-		return fmt.Errorf(
-			"could not list objects in Swift at %s/%s: %s",
-			s.ContainerName, prefix, err.Error(),
-		)
+		return fmt.Errorf("could not list objects in Swift at %s/%s: %w", s.ContainerName, prefix, err)
 	}
 
 	return nil

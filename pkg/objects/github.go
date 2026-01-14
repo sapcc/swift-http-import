@@ -181,7 +181,7 @@ func (s *GithubReleaseSource) GetFile(ctx context.Context, path string, requestH
 	// response.
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return nil, FileState{}, fmt.Errorf("skipping %s: GET failed: %s", req.URL.String(), err.Error())
+		return nil, FileState{}, fmt.Errorf("skipping %s: GET failed: %w", req.URL.String(), err)
 	}
 
 	if resp.StatusCode != http.StatusOK &&

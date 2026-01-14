@@ -293,7 +293,7 @@ func (cfg JobConfiguration) Compile(ctx context.Context, name string, swift Swif
 		}
 		rx, err := regexp.Compile(pattern)
 		if err != nil {
-			errors = append(errors, fmt.Errorf("malformed regex in %s.%s: %s", name, key, err.Error()))
+			errors = append(errors, fmt.Errorf("malformed regex in %s.%s: %w", name, key, err))
 		}
 		return rx
 	}
