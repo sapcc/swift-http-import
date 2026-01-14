@@ -5,19 +5,18 @@ package objects
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"regexp"
-	"strconv"
+	"strings"
 	"time"
 
-	"github.com/google/go-github/v80/github"
 	"github.com/majewsky/schwift/v2"
 	"github.com/sapcc/go-api-declarations/bininfo"
 	"github.com/sapcc/go-bits/secrets"
-	"golang.org/x/oauth2"
 
 	"github.com/sapcc/swift-http-import/pkg/util"
 )
@@ -31,11 +30,9 @@ type GithubReleaseSource struct {
 	IncludePrerelease bool            `yaml:"include_prerelease"`
 
 	// Compiled configuration.
-	url       *url.URL       `yaml:"-"`
-	client    *github.Client `yaml:"-"`
-	owner     string         `yaml:"-"` // repository owner
-	repo      string         `yaml:"-"`
-	tagNameRx *regexp.Regexp `yaml:"-"`
+	repoURL            *url.URL       `yaml:"-"`
+	releaseEndpointURL *url.URL       `yaml:"-"`
+	tagNameRx          *regexp.Regexp `yaml:"-"`
 	// notOlderThan is used to limit release listing to prevent excess API requests.
 	notOlderThan *time.Time `yaml:"-"`
 }
@@ -51,28 +48,51 @@ var githubRepoRx = regexp.MustCompile(`^/([^\s/]+)/([^\s/]+)/?$`)
 // Validate implements the Source interface.
 func (s *GithubReleaseSource) Validate(name string) []error {
 	var err error
-	s.url, err = url.Parse(s.URLString)
+	s.repoURL, err = url.Parse(s.URLString)
 	if err != nil {
-		return []error{fmt.Errorf("could not parse %s.url: %s", name, err.Error())}
+		return []error{fmt.Errorf("could not parse %s.url: %w", name, err)}
 	}
 
-	// Validate URL.
+	// validate s.repoURL
 	errInvalidURL := fmt.Errorf("invalid value for %s.url: expected a url in the format %q, got: %q",
 		name, "http(s)://<hostname>/<owner>/<repo>", s.URLString)
-	if s.url.Scheme != "http" && s.url.Scheme != "https" {
+	if s.repoURL.Scheme != "http" && s.repoURL.Scheme != "https" {
 		return []error{errInvalidURL}
 	}
-	if s.url.RawQuery != "" || s.url.Fragment != "" {
+	if s.repoURL.RawQuery != "" || s.repoURL.Fragment != "" {
 		return []error{errInvalidURL}
 	}
-	mL := githubRepoRx.FindStringSubmatch(s.url.Path)
-	if mL == nil {
+	match := githubRepoRx.FindStringSubmatch(s.repoURL.Path)
+	if match == nil {
 		return []error{errInvalidURL}
 	}
-	s.owner = mL[1]
-	s.repo = mL[2]
+	ownerName, repoName := match[1], match[2]
 
-	if s.url.Hostname() != "github.com" {
+	// derive apiBaseURL from s.repoURL
+	var apiBaseURL *url.URL
+	if s.repoURL.Hostname() == "github.com" {
+		apiBaseURL, err = url.Parse("https://api.github.com/")
+		if err != nil {
+			return []error{fmt.Errorf("could not build apiBaseURL: %w", err)}
+		}
+	} else {
+		repoURLCloned := *s.repoURL
+		repoURLCloned.Path = "/api/v3/"
+		repoURLCloned.RawPath = "/api/v3/"
+		apiBaseURL = &repoURLCloned
+	}
+
+	// derive endpoint URL for release listing
+	// (this sets a higher page size than the default of 30 to avoid exceeding the API rate limit)
+	const pageSize = 50
+	endpointPath := fmt.Sprintf("repos/%s/%s/releases?per_page=%d", ownerName, repoName, pageSize)
+	s.releaseEndpointURL, err = apiBaseURL.Parse(endpointPath)
+	if err != nil {
+		return []error{fmt.Errorf("could not build URL for releases of %s: %w", s.repoURL.String(), err)}
+	}
+
+	// validate s.Token
+	if s.repoURL.Hostname() != "github.com" {
 		if s.Token == "" {
 			return []error{fmt.Errorf("%s.token is required for repositories hosted on GitHub Enterprise", name)}
 		}
@@ -81,7 +101,7 @@ func (s *GithubReleaseSource) Validate(name string) []error {
 	if s.TagNamePattern != "" {
 		s.tagNameRx, err = regexp.Compile(s.TagNamePattern)
 		if err != nil {
-			return []error{fmt.Errorf("could not parse %s.tag_name_pattern: %s", name, err.Error())}
+			return []error{fmt.Errorf("could not parse %s.tag_name_pattern: %w", name, err)}
 		}
 	}
 
@@ -90,25 +110,6 @@ func (s *GithubReleaseSource) Validate(name string) []error {
 
 // Connect implements the Source interface.
 func (s *GithubReleaseSource) Connect(ctx context.Context, name string) error {
-	c := http.DefaultClient
-	if s.Token != "" {
-		src := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: string(s.Token)})
-		c = oauth2.NewClient(ctx, src)
-	}
-	if s.url.Hostname() != "github.com" {
-		// baseURL is s.url without the Path (/<owner>/<repo>).
-		baseURL := *s.url
-		baseURL.Path = ""
-		baseURL.RawPath = ""
-		baseURLStr := baseURL.String()
-		var err error
-		s.client, err = github.NewClient(c).WithEnterpriseURLs(baseURLStr, baseURLStr)
-		if err != nil {
-			return err
-		}
-	} else {
-		s.client = github.NewClient(c)
-	}
 	return nil
 }
 
@@ -122,35 +123,28 @@ func (s *GithubReleaseSource) ListAllFiles(ctx context.Context, out chan<- FileS
 	releases, err := s.getReleases(ctx)
 	if err != nil {
 		return &ListEntriesError{
-			Location: s.url.String(),
+			Location: s.repoURL.String(),
 			Message:  "could not list releases",
 			Inner:    err,
 		}
 	}
 
 	for _, r := range releases {
-		if !s.IncludeDraft && r.GetDraft() {
+		if !s.IncludeDraft && r.IsDraft {
 			continue
 		}
-		if !s.IncludePrerelease && r.GetPrerelease() {
+		if !s.IncludePrerelease && r.IsPrerelease {
 			continue
 		}
-		tagName := r.GetTagName()
-		if s.TagNamePattern != "" && !s.tagNameRx.MatchString(tagName) {
+		if s.TagNamePattern != "" && !s.tagNameRx.MatchString(r.TagName) {
 			continue
 		}
 
 		for _, a := range r.Assets {
 			fs := FileSpec{
-				Path: fmt.Sprintf("%s/%s", tagName, a.GetName()),
-				// Technically, DownloadPath is supposed to be a file path but since we
-				// only need asset ID to download the asset in GetFile() therefore we can
-				// simply use the asset ID here instead.
-				DownloadPath: strconv.FormatInt(a.GetID(), 10),
-			}
-			if a.UpdatedAt != nil {
-				updatedAtTime := a.UpdatedAt.Time
-				fs.LastModified = &updatedAtTime
+				Path:         fmt.Sprintf("%s/%s", r.TagName, a.Name),
+				DownloadPath: a.DownloadURL,
+				LastModified: util.PointerTo(a.UpdatedAt),
 			}
 			out <- fs
 		}
@@ -159,21 +153,26 @@ func (s *GithubReleaseSource) ListAllFiles(ctx context.Context, out chan<- FileS
 	return nil
 }
 
-// GetFile implements the Source interface.
-func (s *GithubReleaseSource) GetFile(_ context.Context, path string, requestHeaders schwift.ObjectHeaders) (io.ReadCloser, FileState, error) {
-	u := fmt.Sprintf("repos/%s/%s/releases/assets/%s", s.owner, s.repo, path)
-	req, err := s.client.NewRequest(http.MethodGet, u, nil)
-	if err != nil {
-		return nil, FileState{}, fmt.Errorf("skipping: could not create URL for %s: %s", u, err.Error())
-	}
+const (
+	githubHeaderAPIVersion  = "X-Github-Api-Version"
+	githubDefaultAPIVersion = "2022-11-28"
+	githubMediaType         = "application/vnd.github.v3+json"
+)
 
+// GetFile implements the Source interface.
+func (s *GithubReleaseSource) GetFile(ctx context.Context, path string, requestHeaders schwift.ObjectHeaders) (io.ReadCloser, FileState, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, path, http.NoBody)
+	if err != nil {
+		return nil, FileState{}, fmt.Errorf("skipping: could not create request for %s: %w", path, err)
+	}
 	for key, val := range requestHeaders.Headers {
 		req.Header.Set(key, val)
 	}
+	req.Header.Set(githubHeaderAPIVersion, githubDefaultAPIVersion)
 	req.Header.Set("User-Agent", "swift-http-import/"+bininfo.VersionOr("dev"))
 	req.Header.Set("Accept", "application/octet-stream")
 	if s.Token != "" {
-		req.Header.Set("Authorization", fmt.Sprintf("token %s", s.Token))
+		req.Header.Set("Authorization", "Bearer "+string(s.Token))
 	}
 
 	// We use http.DefaultClient explicitly instead of retrieving (s.client.Client()) the
@@ -210,29 +209,93 @@ func (s *GithubReleaseSource) GetFile(_ context.Context, path string, requestHea
 	}, nil
 }
 
-func (s *GithubReleaseSource) getReleases(ctx context.Context) ([]*github.RepositoryRelease, error) {
-	var result []*github.RepositoryRelease
+type githubRelease struct {
+	TagName      string    `json:"tag_name"`
+	IsDraft      bool      `json:"draft"`
+	IsPrerelease bool      `json:"prerelease"`
+	PublishedAt  time.Time `json:"published_at"`
+	Assets       []struct {
+		DownloadURL string    `json:"url"`
+		Name        string    `json:"name"`
+		UpdatedAt   time.Time `json:"updated_at"`
+	} `json:"assets"`
+}
 
-	// Set higher value than default (30) for results per page to avoid exceeding API rate limit.
-	listOpts := &github.ListOptions{PerPage: 50}
-	resp := &github.Response{NextPage: 1}
-	for resp.NextPage != 0 {
-		var (
-			rL  []*github.RepositoryRelease
-			err error
-		)
-		listOpts.Page = resp.NextPage
-		rL, resp, err = s.client.Repositories.ListReleases(ctx, s.owner, s.repo, listOpts)
+func (s *GithubReleaseSource) getReleases(ctx context.Context) ([]githubRelease, error) {
+	var result []githubRelease
+
+	endpointURLString := s.releaseEndpointURL.String()
+	for endpointURLString != "" {
+		// build request
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpointURLString, http.NoBody)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("could not create request for %s: %w", endpointURLString, err)
 		}
-		result = append(result, rL...)
+		req.Header.Set(githubHeaderAPIVersion, githubDefaultAPIVersion)
+		req.Header.Set("User-Agent", "swift-http-import/"+bininfo.VersionOr("dev"))
+		req.Header.Set("Accept", githubMediaType)
+		if s.Token != "" {
+			req.Header.Set("Authorization", "Bearer "+string(s.Token))
+		}
+
+		// execute request
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			return nil, fmt.Errorf("could not GET %s: %w", endpointURLString, err)
+		}
+		defer resp.Body.Close()
+
+		// expect status code 200 OK
+		if resp.StatusCode != http.StatusOK {
+			var respBody string
+			buf, err := io.ReadAll(resp.Body)
+			if err == nil {
+				respBody = string(buf)
+			} else {
+				respBody = "could not read body: " + err.Error()
+			}
+			return nil, fmt.Errorf("could not GET %s: expected 200 OK, but got %s (response was: %s)", endpointURLString, resp.Status, respBody)
+		}
+
+		// decode response body
+		var page []githubRelease
+		err = json.NewDecoder(resp.Body).Decode(&page)
+		if err != nil {
+			return nil, fmt.Errorf("could not GET %s: while parsing JSON response body: %w", endpointURLString, err)
+		}
+		result = append(result, page...)
 
 		// Check if the last release in the result slice is newer than the notOlderThan
 		// time. If not, then we don't need to get further releases.
 		if s.notOlderThan != nil {
 			lastRelease := result[len(result)-1]
-			if s.notOlderThan.After(lastRelease.PublishedAt.Time) {
+			if s.notOlderThan.After(lastRelease.PublishedAt) {
+				break
+			}
+		}
+
+		// URL for next page is in `Link` header, looking like `<https://...>; rel="next"`
+		endpointURLString = "" // if we do not find one below, we are on the last page and need to break the loop
+		if linkHeader := resp.Header.Get("Link"); linkHeader != "" {
+			for link := range strings.SplitSeq(linkHeader, ",") {
+				href, metadata, ok := strings.Cut(strings.TrimSpace(link), ";")
+				if !ok {
+					continue
+				}
+				if strings.TrimSpace(metadata) != `rel="next"` {
+					continue
+				}
+
+				href, ok = strings.CutPrefix(href, "<")
+				if !ok {
+					continue
+				}
+				href, ok = strings.CutSuffix(href, ">")
+				if !ok {
+					continue
+				}
+
+				endpointURLString = href
 				break
 			}
 		}
