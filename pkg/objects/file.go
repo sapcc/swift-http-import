@@ -67,7 +67,7 @@ func (f File) PerformTransfer(ctx context.Context) (transferResult TransferResul
 	object := f.TargetObject()
 
 	// check if this file needs transfer
-	if f.Job.Matcher.ImmutableFileRx != nil && f.Job.Matcher.ImmutableFileRx.MatchString(f.Spec.Path) {
+	if rx, ok := f.Job.Matcher.ImmutableFileRx.Unpack(); ok && rx.MatchString(f.Spec.Path) {
 		if f.Job.Target.FileExists[object.Name()] {
 			logg.Debug("skipping %s: already transferred", object.FullName())
 			return TransferSkipped, 0

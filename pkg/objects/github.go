@@ -16,6 +16,7 @@ import (
 
 	"github.com/majewsky/schwift/v2"
 	"github.com/sapcc/go-api-declarations/bininfo"
+	"github.com/sapcc/go-bits/regexpext"
 	"github.com/sapcc/go-bits/secrets"
 
 	"github.com/sapcc/swift-http-import/pkg/util"
@@ -23,16 +24,15 @@ import (
 
 type GithubReleaseSource struct {
 	// Options from config file.
-	URLString         string          `yaml:"url"`
-	Token             secrets.FromEnv `yaml:"token"`
-	TagNamePattern    string          `yaml:"tag_name_pattern"`
-	IncludeDraft      bool            `yaml:"include_draft"`
-	IncludePrerelease bool            `yaml:"include_prerelease"`
+	URLString         string                `yaml:"url"`
+	Token             secrets.FromEnv       `yaml:"token"`
+	TagNamePattern    regexpext.PlainRegexp `yaml:"tag_name_pattern"`
+	IncludeDraft      bool                  `yaml:"include_draft"`
+	IncludePrerelease bool                  `yaml:"include_prerelease"`
 
 	// Compiled configuration.
-	repoURL            *url.URL       `yaml:"-"`
-	releaseEndpointURL *url.URL       `yaml:"-"`
-	tagNameRx          *regexp.Regexp `yaml:"-"`
+	repoURL            *url.URL `yaml:"-"`
+	releaseEndpointURL *url.URL `yaml:"-"`
 	// notOlderThan is used to limit release listing to prevent excess API requests.
 	notOlderThan *time.Time `yaml:"-"`
 }
@@ -98,13 +98,6 @@ func (s *GithubReleaseSource) Validate(name string) []error {
 		}
 	}
 
-	if s.TagNamePattern != "" {
-		s.tagNameRx, err = regexp.Compile(s.TagNamePattern)
-		if err != nil {
-			return []error{fmt.Errorf("could not parse %s.tag_name_pattern: %w", name, err)}
-		}
-	}
-
 	return nil
 }
 
@@ -136,7 +129,7 @@ func (s *GithubReleaseSource) ListAllFiles(ctx context.Context, out chan<- FileS
 		if !s.IncludePrerelease && r.IsPrerelease {
 			continue
 		}
-		if s.TagNamePattern != "" && !s.tagNameRx.MatchString(r.TagName) {
+		if !s.TagNamePattern.MatchString(r.TagName) {
 			continue
 		}
 
