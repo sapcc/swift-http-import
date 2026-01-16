@@ -10,7 +10,7 @@ require (
 	github.com/majewsky/gg v1.5.0
 	github.com/majewsky/schwift/v2 v2.0.0
 	github.com/sapcc/go-api-declarations v1.18.0
-	github.com/sapcc/go-bits v0.0.0-20260108094740-cc8ce5be6ba2
+	github.com/sapcc/go-bits v0.0.0-20260116110244-dee8151c1378
 	github.com/ulikunitz/xz v0.5.15
 	go.uber.org/automaxprocs v1.6.0
 	golang.org/x/crypto v0.47.0
