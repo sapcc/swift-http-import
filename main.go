@@ -14,9 +14,7 @@ import (
 	"github.com/sapcc/go-api-declarations/bininfo"
 	"github.com/sapcc/go-bits/httpext"
 	"github.com/sapcc/go-bits/logg"
-	"github.com/sapcc/go-bits/must"
 	"github.com/sapcc/go-bits/osext"
-	"go.uber.org/automaxprocs/maxprocs"
 
 	"github.com/sapcc/swift-http-import/pkg/actors"
 	"github.com/sapcc/swift-http-import/pkg/objects"
@@ -26,8 +24,6 @@ func main() {
 	startTime := time.Now()
 
 	logg.ShowDebug = osext.GetenvBool("DEBUG")
-	undoMaxprocs := must.Return(maxprocs.Set(maxprocs.Logger(logg.Debug)))
-	defer undoMaxprocs()
 
 	// setup a context that shuts down all pipeline actors when an interrupt signal is received
 	ctx := httpext.ContextWithSIGINT(context.Background(), 1*time.Second)
@@ -40,7 +36,7 @@ func main() {
 	if len(os.Args) != 2 {
 		fmt.Fprintln(os.Stderr, "usage: swift-http-import <config-file>")
 		fmt.Fprintln(os.Stderr, "   or: swift-http-import --version")
-		os.Exit(1) //nolint:gocritic // it doesn't really matter if we run undoMaxprocs here or not
+		os.Exit(1)
 	}
 	if os.Args[1] == "--version" {
 		fmt.Println("swift-http-import " + bininfo.VersionOr("dev"))

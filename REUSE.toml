@@ -108,14 +108,6 @@ SPDX-License-Identifier = "BSD-3-Clause"
 
 [[annotations]]
 path = [
-  "vendor/go.uber.org/automaxprocs/**",
-]
-precedence = "aggregate"
-SPDX-FileCopyrightText = "Other"
-SPDX-License-Identifier = "MIT"
-
-[[annotations]]
-path = [
   "vendor/golang.org/x/crypto/**",
 ]
 precedence = "aggregate"
@@ -193,14 +185,6 @@ path = [
 precedence = "aggregate"
 SPDX-FileCopyrightText = "Other"
 SPDX-License-Identifier = "BSD-3-Clause"
-
-[[annotations]]
-path = [
-  "vendor/github.com/prashantv/gostub/**",
-]
-precedence = "aggregate"
-SPDX-FileCopyrightText = "Other"
-SPDX-License-Identifier = "MIT"
 
 [[annotations]]
 path = [
