@@ -6,16 +6,18 @@ package objects
 import (
 	"fmt"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"time"
+
+	. "github.com/majewsky/gg/option"
+	"github.com/sapcc/go-bits/regexpext"
 )
 
 // Matcher determines if files shall be included or excluded in a transfer.
 type Matcher struct {
-	ExcludeRx            *regexp.Regexp // pointers because nil signifies absence
-	IncludeRx            *regexp.Regexp
-	ImmutableFileRx      *regexp.Regexp
+	ExcludeRx            Option[regexpext.PlainRegexp]
+	IncludeRx            Option[regexpext.PlainRegexp]
+	ImmutableFileRx      Option[regexpext.PlainRegexp]
 	NotOlderThan         *time.Time
 	SimplisticComparison *bool
 }
@@ -54,11 +56,11 @@ func (m Matcher) Check(path string, lastModified *time.Time) error {
 		}
 	}
 
-	if m.ExcludeRx != nil && m.ExcludeRx.MatchString(path) {
-		return MatchError{Path: path, Reason: fmt.Sprintf("is excluded by `%s`", m.ExcludeRx.String())}
+	if rx, ok := m.ExcludeRx.Unpack(); ok && rx.MatchString(path) {
+		return MatchError{Path: path, Reason: fmt.Sprintf("is excluded by `%s`", string(rx))}
 	}
-	if m.IncludeRx != nil && !m.IncludeRx.MatchString(path) {
-		return MatchError{Path: path, Reason: fmt.Sprintf("is not included by `%s`", m.IncludeRx.String())}
+	if rx, ok := m.IncludeRx.Unpack(); ok && !rx.MatchString(path) {
+		return MatchError{Path: path, Reason: fmt.Sprintf("is not included by `%s`", string(rx))}
 	}
 	return nil
 }

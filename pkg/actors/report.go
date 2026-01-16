@@ -11,6 +11,7 @@ import (
 
 	"github.com/cactus/go-statsd-client/v6/statsd"
 	"github.com/sapcc/go-bits/logg"
+	"github.com/sapcc/go-bits/must"
 
 	"github.com/sapcc/swift-http-import/pkg/objects"
 )
@@ -73,17 +74,10 @@ func (r *Report) Run(ctx context.Context) {
 
 	// initialize statsd client
 	if r.Statsd.HostName != "" {
-		var err error
-		statter, err = statsd.NewClientWithConfig(&statsd.ClientConfig{
+		statter = must.Return(statsd.NewClientWithConfig(&statsd.ClientConfig{
 			Address: r.Statsd.HostName + ":" + strconv.Itoa(r.Statsd.Port),
 			Prefix:  r.Statsd.Prefix,
-		})
-		// handle any errors
-		if err != nil {
-			logg.Fatal(err.Error())
-		}
-
-		// make sure to clean up
+		}))
 		defer statter.Close()
 	}
 

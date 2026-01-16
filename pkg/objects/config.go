@@ -7,13 +7,13 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"regexp"
 	"time"
 
+	. "github.com/majewsky/gg/option"
 	"github.com/majewsky/schwift/v2"
-	yaml "gopkg.in/yaml.v2"
-
+	"github.com/sapcc/go-bits/regexpext"
 	"github.com/sapcc/go-bits/secrets"
+	yaml "gopkg.in/yaml.v2"
 
 	"github.com/sapcc/swift-http-import/pkg/util"
 )
@@ -105,13 +105,13 @@ type JobConfiguration struct {
 	Source SourceUnmarshaler `yaml:"from"`
 	Target *SwiftLocation    `yaml:"to"`
 	// behavior options
-	ExcludePattern       string                   `yaml:"except"`
-	IncludePattern       string                   `yaml:"only"`
-	ImmutableFilePattern string                   `yaml:"immutable"`
-	Match                MatchConfiguration       `yaml:"match"`
-	Segmenting           *SegmentingConfiguration `yaml:"segmenting"`
-	Expiration           ExpirationConfiguration  `yaml:"expiration"`
-	Cleanup              CleanupConfiguration     `yaml:"cleanup"`
+	ExcludePattern       Option[regexpext.PlainRegexp] `yaml:"except"`
+	IncludePattern       Option[regexpext.PlainRegexp] `yaml:"only"`
+	ImmutableFilePattern Option[regexpext.PlainRegexp] `yaml:"immutable"`
+	Match                MatchConfiguration            `yaml:"match"`
+	Segmenting           *SegmentingConfiguration      `yaml:"segmenting"`
+	Expiration           ExpirationConfiguration       `yaml:"expiration"`
+	Cleanup              CleanupConfiguration          `yaml:"cleanup"`
 	// gpgKeyRing is the common key ring cache that is passed on to the
 	// custom source type Job(s).
 	gpgKeyRing *util.GPGKeyRing
@@ -279,36 +279,25 @@ func (cfg JobConfiguration) Compile(ctx context.Context, name string, swift Swif
 	}
 
 	job = &Job{
-		Source:     jobSrc,
-		Target:     cfg.Target,
+		Source: jobSrc,
+		Target: cfg.Target,
+		Matcher: Matcher{
+			ExcludeRx:            cfg.ExcludePattern,
+			IncludeRx:            cfg.IncludePattern,
+			ImmutableFileRx:      cfg.ImmutableFilePattern,
+			SimplisticComparison: cfg.Match.SimplisticComparison,
+		},
 		Segmenting: cfg.Segmenting,
 		Expiration: cfg.Expiration,
 		Cleanup:    cfg.Cleanup,
 	}
-
-	// compile patterns into regexes
-	compileOptionalRegex := func(key, pattern string) *regexp.Regexp {
-		if pattern == "" {
-			return nil
-		}
-		rx, err := regexp.Compile(pattern)
-		if err != nil {
-			errors = append(errors, fmt.Errorf("malformed regex in %s.%s: %s", name, key, err.Error()))
-		}
-		return rx
-	}
-	job.Matcher.ExcludeRx = compileOptionalRegex("except", cfg.ExcludePattern)
-	job.Matcher.IncludeRx = compileOptionalRegex("only", cfg.IncludePattern)
-	job.Matcher.ImmutableFileRx = compileOptionalRegex("immutable", cfg.ImmutableFilePattern)
 	if cfg.Match.NotOlderThan != nil {
 		age := time.Duration(*cfg.Match.NotOlderThan)
 		cutoff := time.Now().Add(-age)
 		job.Matcher.NotOlderThan = &cutoff
 	}
-	job.Matcher.SimplisticComparison = cfg.Match.SimplisticComparison
-	_, isGitHubReleaseSource := jobSrc.(*GithubReleaseSource)
-	if isGitHubReleaseSource {
-		jobSrc.(*GithubReleaseSource).notOlderThan = job.Matcher.NotOlderThan
+	if githubSrc, ok := jobSrc.(*GithubReleaseSource); ok {
+		githubSrc.notOlderThan = job.Matcher.NotOlderThan
 	}
 
 	// do not try connecting to Swift if credentials are invalid etc.

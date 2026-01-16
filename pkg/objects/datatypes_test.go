@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/sapcc/go-bits/assert"
+	"github.com/sapcc/go-bits/must"
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -19,15 +21,12 @@ func TestAgeSpecDemarshal(t *testing.T) {
 	}
 
 	for input, expected := range testcases {
-		var actual struct {
-			Age AgeSpec `yaml:"age"`
-		}
-		err := yaml.Unmarshal([]byte("age: "+input), &actual)
-		if err != nil {
-			t.Errorf("unexpected unmarshal error for input %q: %s", input, err.Error())
-		}
-		if actual.Age != expected {
-			t.Errorf("expected %q to parse into %d, but got %d", input, expected, actual.Age)
-		}
+		t.Run("parse "+input, func(t *testing.T) {
+			var actual struct {
+				Age AgeSpec `yaml:"age"`
+			}
+			must.SucceedT(t, yaml.Unmarshal([]byte("age: "+input), &actual))
+			assert.Equal(t, actual.Age, expected)
+		})
 	}
 }

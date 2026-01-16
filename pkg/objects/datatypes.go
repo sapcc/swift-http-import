@@ -6,7 +6,6 @@ package objects
 import (
 	"bytes"
 	"compress/gzip"
-	"errors"
 	"fmt"
 	"io"
 	"regexp"
@@ -80,12 +79,12 @@ var gzipMagicNumber = []byte{0x1f, 0x8b, 0x08}
 func decompressGZipArchive(buf []byte) ([]byte, error) {
 	reader, err := gzip.NewReader(bytes.NewReader(buf))
 	if err != nil {
-		return nil, errors.New("error while decompressing GZip archive: " + err.Error())
+		return nil, fmt.Errorf("while decompressing GZip archive: %w", err)
 	}
 
 	decompBuf, err := io.ReadAll(reader)
 	if err != nil {
-		return nil, errors.New("error while decompressing GZip archive: " + err.Error())
+		return nil, fmt.Errorf("while decompressing GZip archive: %w", err)
 	}
 
 	return decompBuf, nil
@@ -98,12 +97,12 @@ var xzMagicNumber = []byte{0xfd, 0x37, 0x7a, 0x58, 0x5a, 0x00}
 func decompressXZArchive(buf []byte) ([]byte, error) {
 	reader, err := xz.NewReader(bytes.NewReader(buf))
 	if err != nil {
-		return nil, errors.New("error while decompressing XZ archive: " + err.Error())
+		return nil, fmt.Errorf("while decompressing XZ archive: %w", err)
 	}
 
 	decompBuf, err := io.ReadAll(reader)
 	if err != nil {
-		return nil, errors.New("error while decompressing XZ archive: " + err.Error())
+		return nil, fmt.Errorf("while decompressing XZ archive: %w", err)
 	}
 
 	return decompBuf, nil
@@ -116,12 +115,12 @@ var zstdMagicNumber = []byte{0x28, 0xb5, 0x2f, 0xfd}
 func decompressZSTDArchive(buf []byte) ([]byte, error) {
 	reader, err := zstd.NewReader(bytes.NewReader(buf))
 	if err != nil {
-		return nil, errors.New("error while decompressing zstd archive: " + err.Error())
+		return nil, fmt.Errorf("while decompressing zstd archive: %w", err)
 	}
 
 	decompBuf, err := io.ReadAll(reader)
 	if err != nil {
-		return nil, errors.New("error while decompressing zstd archive: " + err.Error())
+		return nil, fmt.Errorf("while decompressing zstd archive: %w", err)
 	}
 
 	return decompBuf, nil

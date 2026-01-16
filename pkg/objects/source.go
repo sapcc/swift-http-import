@@ -127,7 +127,7 @@ func (u *URLSource) Validate(name string) (result []error) {
 		var err error
 		u.URL, err = url.Parse(u.URLString)
 		if err != nil {
-			result = append(result, fmt.Errorf("invalid value for %s.url: %s", name, err.Error()))
+			result = append(result, fmt.Errorf("invalid value for %s.url: %w", name, err))
 		}
 
 		// URL must refer to a directory, i.e. have a trailing slash
@@ -174,7 +174,7 @@ func (u *URLSource) Connect(_ context.Context, name string) error {
 		// Load client cert
 		clientCertificate, err := tls.LoadX509KeyPair(u.ClientCertificatePath, u.ClientCertificateKeyPath)
 		if err != nil {
-			return fmt.Errorf("cannot load client certificate from %s: %s", u.ClientCertificatePath, err.Error())
+			return fmt.Errorf("cannot load client certificate from %s: %w", u.ClientCertificatePath, err)
 		}
 
 		logg.Debug("Client certificate %s loaded", u.ClientCertificatePath)
@@ -185,7 +185,7 @@ func (u *URLSource) Connect(_ context.Context, name string) error {
 		// Load server CA cert
 		serverCA, err := os.ReadFile(u.ServerCAPath)
 		if err != nil {
-			return fmt.Errorf("cannot load CA certificate from %s: %s", u.ServerCAPath, err.Error())
+			return fmt.Errorf("cannot load CA certificate from %s: %w", u.ServerCAPath, err)
 		}
 
 		certPool := x509.NewCertPool()
@@ -341,7 +341,7 @@ func (u URLSource) GetFile(ctx context.Context, filePath string, requestHeaders 
 		}
 	}
 	if err != nil {
-		return nil, FileState{}, fmt.Errorf("skipping %s: GET failed: %s", uri, err.Error())
+		return nil, FileState{}, fmt.Errorf("skipping %s: GET failed: %w", uri, err)
 	}
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNotModified {
