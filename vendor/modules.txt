@@ -23,7 +23,7 @@ github.com/hashicorp/golang-lru/v2/simplelru
 # github.com/jpillora/longestcommon v0.0.0-20161227235612-adb9d91ee629
 ## explicit
 github.com/jpillora/longestcommon
-# github.com/klauspost/compress v1.18.2
+# github.com/klauspost/compress v1.18.3
 ## explicit; go 1.23
 github.com/klauspost/compress
 github.com/klauspost/compress/fse
