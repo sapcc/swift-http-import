@@ -14,7 +14,7 @@ dockerfile:
     - CHECK_SKIPS_FUNCTIONAL_TEST=true
   extraBuildDirectives:
     # If ihe CI has supplied additional CA certificates, include them in the CA bundle
-    - 'COPY certs/*.crt /usr/local/share/ca-certificates/'
+    - 'COPY certs/* /usr/local/share/ca-certificates/'
     - 'RUN update-ca-certificates'
   extraIgnores:
     - examples/
