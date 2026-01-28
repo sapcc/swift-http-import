@@ -33,7 +33,7 @@ endif
 
 default: build-all
 
-functional-test:
+functional-test: build-all
 	./test/run.sh all
 
 CHECK_SKIPS_FUNCTIONAL_TEST ?= false
