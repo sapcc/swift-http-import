@@ -71,7 +71,7 @@ typos:
 #
 # But some CI systems may not have access to OpenStack credentials, so CHECK_SKIPS_FUNCTIONAL_TEST=true will allow those to skip the tests that they cannot run.
 verbatim: |
-  functional-test:
+  functional-test: build-all
     ./test/run.sh all
 
   CHECK_SKIPS_FUNCTIONAL_TEST ?= false
