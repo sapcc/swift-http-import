@@ -168,7 +168,7 @@ func (u *URLSource) Validate(name string) (result []error) {
 
 // Connect implements the Source interface.
 func (u *URLSource) Connect(_ context.Context, name string) error {
-	tlsConfig := &tls.Config{} //nolint:gosec // only used in HTTP client, where stdlib auto-chooses strong TLS versions
+	tlsConfig := &tls.Config{}
 
 	if u.ClientCertificatePath != "" {
 		// Load client cert
