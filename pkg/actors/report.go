@@ -122,6 +122,7 @@ func (r *Report) Run(ctx context.Context) {
 		gaugeU64 = func(bucket string, value uint64) {
 			if value > math.MaxInt64 {
 				logg.Error("statsd: value %d for bucket %q is out of range for int64", value, bucket)
+				return
 			}
 			gaugeI64(bucket, int64(value))
 		}
