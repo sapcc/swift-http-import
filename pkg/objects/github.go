@@ -137,7 +137,7 @@ func (s *GithubReleaseSource) ListAllFiles(ctx context.Context, out chan<- FileS
 			fs := FileSpec{
 				Path:         fmt.Sprintf("%s/%s", r.TagName, a.Name),
 				DownloadPath: a.DownloadURL,
-				LastModified: util.PointerTo(a.UpdatedAt),
+				LastModified: new(a.UpdatedAt),
 			}
 			out <- fs
 		}
@@ -189,7 +189,7 @@ func (s *GithubReleaseSource) GetFile(ctx context.Context, path string, requestH
 	if resp.ContentLength < 0 {
 		sizeBytes = nil
 	} else {
-		sizeBytes = util.PointerTo(util.AtLeastZero(resp.ContentLength))
+		sizeBytes = new(util.AtLeastZero(resp.ContentLength))
 	}
 
 	return resp.Body, FileState{
