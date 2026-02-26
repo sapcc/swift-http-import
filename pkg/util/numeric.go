@@ -11,8 +11,3 @@ func AtLeastZero[I interface{ int | int64 }](x I) uint64 {
 	}
 	return uint64(x)
 }
-
-// PointerTo constructs a pointer to a provided value.
-func PointerTo[T any](value T) *T {
-	return &value
-}
