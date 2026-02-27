@@ -9,8 +9,8 @@ require (
 	github.com/klauspost/compress v1.18.4
 	github.com/majewsky/gg v1.5.0
 	github.com/majewsky/schwift/v2 v2.0.0
-	github.com/sapcc/go-api-declarations v1.19.0
-	github.com/sapcc/go-bits v0.0.0-20260226170120-c20f89b66c3c
+	github.com/sapcc/go-api-declarations v1.20.0
+	github.com/sapcc/go-bits v0.0.0-20260227115921-50512683ebc4
 	github.com/ulikunitz/xz v0.5.15
 	golang.org/x/crypto v0.48.0
 	golang.org/x/net v0.51.0
