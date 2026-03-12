@@ -1,8 +1,8 @@
 # github.com/cactus/go-statsd-client/v6 v6.0.0
 ## explicit; go 1.13
 github.com/cactus/go-statsd-client/v6/statsd
-# github.com/gophercloud/gophercloud/v2 v2.11.0
-## explicit; go 1.25.7
+# github.com/gophercloud/gophercloud/v2 v2.11.1
+## explicit; go 1.25.0
 github.com/gophercloud/gophercloud/v2
 github.com/gophercloud/gophercloud/v2/openstack
 github.com/gophercloud/gophercloud/v2/openstack/identity/v2/tenants
@@ -47,7 +47,7 @@ github.com/majewsky/schwift/v2/internal/errext
 # github.com/sapcc/go-api-declarations v1.20.2
 ## explicit; go 1.24
 github.com/sapcc/go-api-declarations/bininfo
-# github.com/sapcc/go-bits v0.0.0-20260306103145-db6bddb66aec
+# github.com/sapcc/go-bits v0.0.0-20260312170110-034b497ebb7e
 ## explicit; go 1.26
 github.com/sapcc/go-bits/assert
 github.com/sapcc/go-bits/errext

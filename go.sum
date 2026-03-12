@@ -4,8 +4,8 @@ github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ3
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/gophercloud/gophercloud/v2 v2.11.0 h1:S0Dp8wPE4mSyv7D0/kWGHnkbuKbzHYm4lQh+FcRRDFM=
-github.com/gophercloud/gophercloud/v2 v2.11.0/go.mod h1:fai1ZgWxmROxYcEN3SKY0tQF3Uh0DDCAXU9q/xSQK6I=
+github.com/gophercloud/gophercloud/v2 v2.11.1 h1:jCs4vLH8sJgRqrPzqVfWgl7uI6JnIIlsgeIRM0uHjxY=
+github.com/gophercloud/gophercloud/v2 v2.11.1/go.mod h1:Rm0YvKQ4QYX2rY9XaDKnjRzSGwlG5ge4h6ABYnmkKQM=
 github.com/gophercloud/utils/v2 v2.0.0-20260107124036-1d7954eb9711 h1:LgYkb/jttJKwFwZHZjaT8zA/Ef4HMtrosABO/pnSaJI=
 github.com/gophercloud/utils/v2 v2.0.0-20260107124036-1d7954eb9711/go.mod h1:X6Plvu4Iot+ebr3g7tmw439sin+eGzDbO3tdjUOOP2I=
 github.com/hashicorp/golang-lru/v2 v2.0.7 h1:a+bsQ5rvGLjzHuww6tVxozPZFVghXaHOwFs4luLUK2k=
@@ -28,8 +28,8 @@ github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZb
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/sapcc/go-api-declarations v1.20.2 h1:GWqv8VgsF4k9id6N051AVTaEpcjT02APsOuz2yCvTPQ=
 github.com/sapcc/go-api-declarations v1.20.2/go.mod h1:eiRrXXUeQS5C/1kKn8/KMjk0Y0goUzgDQswj30rH0Zc=
-github.com/sapcc/go-bits v0.0.0-20260306103145-db6bddb66aec h1:Uv797QZSKBvgVdNwbYHzX+TMnPl3c7/a+x2BI9uy520=
-github.com/sapcc/go-bits v0.0.0-20260306103145-db6bddb66aec/go.mod h1:HfqXnCZz9QbG/i342+dsxIUNlFXI+o1+5EzkowBWD/k=
+github.com/sapcc/go-bits v0.0.0-20260312170110-034b497ebb7e h1:4wgkrfAlnL6ffM7HTNoHn1HrBBurCRR71WNOszdiDNQ=
+github.com/sapcc/go-bits v0.0.0-20260312170110-034b497ebb7e/go.mod h1:NZjMiGVm04U25vwR6ZWvMw0XOOnvS1jkmXpjiepOeUw=
 github.com/sergi/go-diff v1.4.0 h1:n/SP9D5ad1fORl+llWyN+D6qoUETXNZARKjyY2/KVCw=
 github.com/sergi/go-diff v1.4.0/go.mod h1:A0bzQcvG0E7Rwjx0REVgAGH58e96+X0MeOfepqsbeW4=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
