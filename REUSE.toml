@@ -148,6 +148,14 @@ SPDX-License-Identifier = "ISC"
 
 [[annotations]]
 path = [
+  "vendor/github.com/google/go-cmp/**",
+]
+precedence = "override"
+SPDX-FileCopyrightText = "Other"
+SPDX-License-Identifier = "BSD-3-Clause"
+
+[[annotations]]
+path = [
   "vendor/github.com/hashicorp/golang-lru/v2/**",
 ]
 precedence = "override"

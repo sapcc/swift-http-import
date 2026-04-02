@@ -35,7 +35,7 @@ github.com/klauspost/compress/zstd
 github.com/klauspost/compress/zstd/internal/xxhash
 # github.com/kr/text v0.2.0
 ## explicit
-# github.com/majewsky/gg v1.5.0
+# github.com/majewsky/gg v1.6.0
 ## explicit; go 1.24
 github.com/majewsky/gg/option
 # github.com/majewsky/schwift/v2 v2.0.0
@@ -47,7 +47,7 @@ github.com/majewsky/schwift/v2/internal/errext
 # github.com/sapcc/go-api-declarations v1.21.0
 ## explicit; go 1.24
 github.com/sapcc/go-api-declarations/bininfo
-# github.com/sapcc/go-bits v0.0.0-20260327094541-67aa124e8f0a
+# github.com/sapcc/go-bits v0.0.0-20260402121530-dccf194c4472
 ## explicit; go 1.26
 github.com/sapcc/go-bits/assert
 github.com/sapcc/go-bits/errext

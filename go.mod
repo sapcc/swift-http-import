@@ -7,10 +7,10 @@ require (
 	github.com/gophercloud/gophercloud/v2 v2.11.1
 	github.com/gophercloud/utils/v2 v2.0.0-20260107124036-1d7954eb9711
 	github.com/klauspost/compress v1.18.5
-	github.com/majewsky/gg v1.5.0
+	github.com/majewsky/gg v1.6.0
 	github.com/majewsky/schwift/v2 v2.0.0
 	github.com/sapcc/go-api-declarations v1.21.0
-	github.com/sapcc/go-bits v0.0.0-20260327094541-67aa124e8f0a
+	github.com/sapcc/go-bits v0.0.0-20260402121530-dccf194c4472
 	github.com/ulikunitz/xz v0.5.15
 	golang.org/x/crypto v0.49.0
 	golang.org/x/net v0.52.0
