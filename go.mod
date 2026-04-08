@@ -10,7 +10,7 @@ require (
 	github.com/majewsky/gg v1.6.0
 	github.com/majewsky/schwift/v2 v2.0.0
 	github.com/sapcc/go-api-declarations v1.21.0
-	github.com/sapcc/go-bits v0.0.0-20260402121530-dccf194c4472
+	github.com/sapcc/go-bits v0.0.0-20260407070756-5fae59f97b19
 	github.com/ulikunitz/xz v0.5.15
 	golang.org/x/crypto v0.49.0
 	golang.org/x/net v0.52.0
