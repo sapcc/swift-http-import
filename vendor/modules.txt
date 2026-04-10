@@ -1,7 +1,7 @@
 # github.com/cactus/go-statsd-client/v6 v6.0.0
 ## explicit; go 1.13
 github.com/cactus/go-statsd-client/v6/statsd
-# github.com/gophercloud/gophercloud/v2 v2.11.1
+# github.com/gophercloud/gophercloud/v2 v2.12.0
 ## explicit; go 1.25.0
 github.com/gophercloud/gophercloud/v2
 github.com/gophercloud/gophercloud/v2/openstack
@@ -12,8 +12,8 @@ github.com/gophercloud/gophercloud/v2/openstack/identity/v3/oauth1
 github.com/gophercloud/gophercloud/v2/openstack/identity/v3/tokens
 github.com/gophercloud/gophercloud/v2/openstack/utils
 github.com/gophercloud/gophercloud/v2/pagination
-# github.com/gophercloud/utils/v2 v2.0.0-20260107124036-1d7954eb9711
-## explicit; go 1.23.0
+# github.com/gophercloud/utils/v2 v2.0.0-20260409164906-cd2167a8681a
+## explicit; go 1.25.0
 github.com/gophercloud/utils/v2/client
 # github.com/hashicorp/golang-lru/v2 v2.0.7
 ## explicit; go 1.18
@@ -68,7 +68,7 @@ github.com/ulikunitz/xz
 github.com/ulikunitz/xz/internal/hash
 github.com/ulikunitz/xz/internal/xlog
 github.com/ulikunitz/xz/lzma
-# golang.org/x/crypto v0.49.0
+# golang.org/x/crypto v0.50.0
 ## explicit; go 1.25.0
 golang.org/x/crypto/cast5
 golang.org/x/crypto/openpgp
@@ -78,7 +78,7 @@ golang.org/x/crypto/openpgp/elgamal
 golang.org/x/crypto/openpgp/errors
 golang.org/x/crypto/openpgp/packet
 golang.org/x/crypto/openpgp/s2k
-# golang.org/x/net v0.52.0
+# golang.org/x/net v0.53.0
 ## explicit; go 1.25.0
 golang.org/x/net/html
 golang.org/x/net/html/atom
