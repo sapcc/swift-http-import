@@ -15,11 +15,11 @@ import (
 	"github.com/gophercloud/gophercloud/v2"
 	"github.com/gophercloud/gophercloud/v2/openstack"
 	"github.com/gophercloud/utils/v2/client"
-	"github.com/majewsky/schwift/v2"
-	"github.com/majewsky/schwift/v2/gopherschwift"
 	"github.com/sapcc/go-api-declarations/bininfo"
 	"github.com/sapcc/go-bits/logg"
 	"github.com/sapcc/go-bits/secrets"
+	"go.xyrillian.de/schwift/v2"
+	"go.xyrillian.de/schwift/v2/gopherschwift"
 )
 
 // SwiftLocation contains all parameters required to establish a Swift connection.

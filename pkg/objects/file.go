@@ -10,8 +10,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/majewsky/schwift/v2"
 	"github.com/sapcc/go-bits/logg"
+	"go.xyrillian.de/schwift/v2"
 
 	"github.com/sapcc/swift-http-import/pkg/util"
 )
