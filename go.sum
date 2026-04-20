@@ -24,8 +24,6 @@ github.com/kr/text v0.2.0 h1:5Nx0Ya0ZqY2ygV366QzturHI13Jq95ApcVaJBhpS+AY=
 github.com/kr/text v0.2.0/go.mod h1:eLer722TekiGuMkidMxC/pM04lWEeraHUUmBw8l2grE=
 github.com/majewsky/gg v1.6.0 h1:QyUP+a1YHlCRmcvAlyVhOnqdpeDQogmAygQaeGU0VPc=
 github.com/majewsky/gg v1.6.0/go.mod h1:KC7qUlln1VBY90OE0jXMNjXW2b9B4jJ1heYQ08OzeAg=
-github.com/majewsky/schwift/v2 v2.0.0 h1:Rgzv/18yMAej3bBZWoxYmS2lZMiCKD6P451dU8TyQtE=
-github.com/majewsky/schwift/v2 v2.0.0/go.mod h1:qqN4N7s2+jhwebBgxFZm/e2NOqDzNphwb7SnAIB5G+4=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/sapcc/go-api-declarations v1.21.0 h1:Ag6GXgJLTFdBDKmrJU4QFllQbgGSenSGeHpLuvuxeDk=
@@ -39,6 +37,8 @@ github.com/stretchr/testify v1.4.0 h1:2E4SXV/wtOkTonXsotYi4li6zVWxYlZuYNCXe9XRJy
 github.com/stretchr/testify v1.4.0/go.mod h1:j7eGeouHqKxXV5pUuKE4zz7dFj8WfuZ+81PSLYec5m4=
 github.com/ulikunitz/xz v0.5.15 h1:9DNdB5s+SgV3bQ2ApL10xRc35ck0DuIX/isZvIk+ubY=
 github.com/ulikunitz/xz v0.5.15/go.mod h1:nbz6k7qbPmH4IRqmfOplQw/tblSgqTqBwxkY0oWt/14=
+go.xyrillian.de/schwift/v2 v2.1.0 h1:KEnEJTdUbCXnoESUK/waaEiegXQs+L7WZquHOgbrGZw=
+go.xyrillian.de/schwift/v2 v2.1.0/go.mod h1:05JqPAQQzeRTPJtpUD7NciJpjpDhS57/MDEMrH5SJy0=
 golang.org/x/crypto v0.50.0 h1:zO47/JPrL6vsNkINmLoo/PH1gcxpls50DNogFvB5ZGI=
 golang.org/x/crypto v0.50.0/go.mod h1:3muZ7vA7PBCE6xgPX7nkzzjiUq87kRItoJQM1Yo8S+Q=
 golang.org/x/net v0.53.0 h1:d+qAbo5L0orcWAr0a9JweQpjXF19LMXJE8Ey7hwOdUA=

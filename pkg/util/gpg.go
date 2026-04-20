@@ -17,8 +17,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/majewsky/schwift/v2"
 	"github.com/sapcc/go-bits/logg"
+	"go.xyrillian.de/schwift/v2"
 
 	//nolint:staticcheck // We cannot switch to the Protonmail fork because we need support for old v3 signatures as found in SLES12 packages.
 	"golang.org/x/crypto/openpgp"
