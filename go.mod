@@ -5,8 +5,8 @@ go 1.26
 require (
 	github.com/cactus/go-statsd-client/v6 v6.0.0
 	github.com/gophercloud/gophercloud/v2 v2.12.0
-	github.com/gophercloud/utils/v2 v2.0.0-20260409164906-cd2167a8681a
-	github.com/klauspost/compress v1.18.5
+	github.com/gophercloud/utils/v2 v2.0.0-20260424064311-2eeed4ceb3e9
+	github.com/klauspost/compress v1.18.6
 	github.com/majewsky/gg v1.6.0
 	github.com/sapcc/go-api-declarations v1.21.0
 	github.com/sapcc/go-bits v0.0.0-20260423021225-fb5e4523b6c5
