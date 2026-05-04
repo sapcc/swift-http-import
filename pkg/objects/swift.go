@@ -262,7 +262,7 @@ func (s *SwiftLocation) ListAllFiles(ctx context.Context, out chan<- FileSpec) *
 	if err != nil {
 		return &ListEntriesError{
 			Location: string(s.ContainerName) + "/" + objectPath,
-			Message:  "GET failed",
+			Message:  "GET failed", //nolint:goconst // not worth it
 			Inner:    err,
 		}
 	}

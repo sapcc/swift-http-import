@@ -235,7 +235,7 @@ func (u URLSource) ListEntries(ctx context.Context, directoryPath string) ([]Fil
 	// retrieve directory listing
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, uri.String(), http.NoBody)
 	if err != nil {
-		return nil, &ListEntriesError{uri.String(), "GET failed", err}
+		return nil, &ListEntriesError{uri.String(), "GET failed", err} //nolint:goconst // not worth it
 	}
 	req.Header.Set("Accept", "text/html")
 	resp, err := http.DefaultClient.Do(req)
