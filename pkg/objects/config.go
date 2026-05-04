@@ -9,9 +9,9 @@ import (
 	"os"
 	"time"
 
-	. "github.com/majewsky/gg/option"
 	"github.com/sapcc/go-bits/regexpext"
 	"github.com/sapcc/go-bits/secrets"
+	. "go.xyrillian.de/gg/option"
 	"go.xyrillian.de/schwift/v2"
 	yaml "gopkg.in/yaml.v2"
 

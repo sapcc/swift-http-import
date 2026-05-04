@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	. "github.com/majewsky/gg/option"
 	"github.com/sapcc/go-bits/regexpext"
+	. "go.xyrillian.de/gg/option"
 )
 
 // Matcher determines if files shall be included or excluded in a transfer.
