@@ -12,8 +12,8 @@ require (
 	github.com/ulikunitz/xz v0.5.15
 	go.xyrillian.de/gg v1.7.0
 	go.xyrillian.de/schwift/v2 v2.1.0
-	golang.org/x/crypto v0.50.0
-	golang.org/x/net v0.53.0
+	golang.org/x/crypto v0.51.0
+	golang.org/x/net v0.54.0
 	gopkg.in/yaml.v2 v2.4.0
 	pault.ag/go/debian v0.19.0
 )
