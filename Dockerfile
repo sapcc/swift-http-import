@@ -43,7 +43,7 @@ RUN CHECK_SKIPS_FUNCTIONAL_TEST=true make -C /src static-check
 RUN chown -R 4200:4200 /src/ /go/
 USER 4200:4200
 RUN cd /src \
-  && git config --global --add safe.directory /src \
+  && { if test -d .git; then git config --global --add safe.directory /src; fi; } \
   && CHECK_SKIPS_FUNCTIONAL_TEST=true make build/cover.out
 
 ################################################################################
