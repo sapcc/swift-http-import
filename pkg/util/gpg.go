@@ -142,7 +142,7 @@ func (k *GPGKeyRing) verifyGPGSignature(ctx context.Context, message []byte, sig
 		foundKeys := k.EntityList.KeysById(issuerKeyID)
 		k.Mux.RUnlock()
 		if len(foundKeys) == 0 {
-			b, err := k.getPublicKey(ctx, fmt.Sprintf("%X", issuerKeyID))
+			b, err := k.getPublicKey(ctx, fmt.Sprintf("%016X", issuerKeyID))
 			if err != nil {
 				return err
 			}
