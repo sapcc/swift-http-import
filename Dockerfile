@@ -54,11 +54,15 @@ RUN addgroup -g 4200 appgroup \
   && adduser -h /home/appuser -s /sbin/nologin -G appgroup -D -u 4200 appuser
 
 ARG TARGETARCH
+RUN if [ -z "$TARGETARCH" ]; then \
+      echo 'This image must be built with BuildKit (otherwise the required variable $TARGETARCH will not be present). If you cannot enable BuildKit, pass it explicitly via --build-arg.' >&2; \
+      exit 1; \
+    fi
 # upgrade all installed packages to fix potential CVEs in advance
 # also remove apk package manager to hopefully remove dependency on OpenSSL 🤞
 RUN apk upgrade --no-cache --no-progress \
   && apk add --no-cache --no-progress tini tzdata \
-  && wget -qO /usr/bin/linkerd-await https://github.com/linkerd/linkerd-await/releases/download/release%2Fv0.2.7/linkerd-await-v0.2.7-$TARGETARCH \
+  && wget -qO /usr/bin/linkerd-await https://github.com/linkerd/linkerd-await/releases/download/release%2Fv0.3.2/linkerd-await-v0.3.2-$TARGETARCH \
   && chmod 755 /usr/bin/linkerd-await \
   && apk del --no-cache --no-progress apk-tools musl-utils
 
