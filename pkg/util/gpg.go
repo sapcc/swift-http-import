@@ -20,14 +20,10 @@ import (
 	"github.com/sapcc/go-bits/logg"
 	"go.xyrillian.de/schwift/v2"
 
-	//nolint:staticcheck // We cannot switch to the Protonmail fork because we need support for old v3 signatures as found in SLES12 packages.
-	"golang.org/x/crypto/openpgp"
-	//nolint:staticcheck // see above
-	"golang.org/x/crypto/openpgp/armor"
-	//nolint:staticcheck // see above
-	"golang.org/x/crypto/openpgp/clearsign"
-	//nolint:staticcheck // see above
-	"golang.org/x/crypto/openpgp/packet"
+	"github.com/ProtonMail/go-crypto/openpgp"
+	"github.com/ProtonMail/go-crypto/openpgp/armor"
+	"github.com/ProtonMail/go-crypto/openpgp/clearsign"
+	"github.com/ProtonMail/go-crypto/openpgp/packet"
 )
 
 // GPGKeyRing contains a list of openpgp Entities. It is used to verify different
@@ -131,8 +127,6 @@ func (k *GPGKeyRing) verifyGPGSignature(ctx context.Context, message []byte, sig
 		switch sig := p.(type) {
 		case *packet.Signature:
 			issuerKeyID = *sig.IssuerKeyId
-		case *packet.SignatureV3:
-			issuerKeyID = sig.IssuerKeyId
 		default:
 			return fmt.Errorf("invalid OpenPGP packet type: expected %q, got %T", "*packet.Signature", p)
 		}
@@ -162,7 +156,7 @@ func (k *GPGKeyRing) verifyGPGSignature(ctx context.Context, message []byte, sig
 	}
 
 	k.Mux.RLock()
-	_, err = openpgp.CheckDetachedSignature(k.EntityList, bytes.NewReader(message), bytes.NewReader(signatureBytes))
+	_, err = openpgp.CheckDetachedSignature(k.EntityList, bytes.NewReader(message), bytes.NewReader(signatureBytes), nil)
 	k.Mux.RUnlock()
 
 	return err
