@@ -62,7 +62,7 @@ RUN if [ -z "$TARGETARCH" ]; then \
 # also remove apk package manager to hopefully remove dependency on OpenSSL 🤞
 RUN apk upgrade --no-cache --no-progress \
   && apk add --no-cache --no-progress tini tzdata \
-  && wget -qO /usr/bin/linkerd-await https://github.com/linkerd/linkerd-await/releases/download/release%2Fv0.3.2/linkerd-await-v0.3.2-$TARGETARCH \
+  && wget -qO /usr/bin/linkerd-await https://github.com/linkerd/linkerd-await/releases/download/release%2Fv0.3.3/linkerd-await-v0.3.3-$TARGETARCH \
   && chmod 755 /usr/bin/linkerd-await \
   && apk del --no-cache --no-progress apk-tools musl-utils
 
