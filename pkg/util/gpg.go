@@ -62,7 +62,9 @@ func NewGPGKeyRing(ctx context.Context, cntr *schwift.Container, keyserverURLPat
 			for _, e := range el {
 				entityList = append(entityList, e)
 				if LogIndividualTransfers {
-					logg.Info("reusing cached GPG key: %s", obj.FullName())
+					for _, key := range el {
+						logg.Info("reusing cached GPG key %s from %s", fmt.Sprintf("%016X", key.PrimaryKey.KeyId), obj.FullName())
+					}
 				}
 			}
 			return nil
