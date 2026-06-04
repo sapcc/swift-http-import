@@ -9,9 +9,9 @@ require (
 	github.com/gophercloud/utils/v2 v2.0.0-20260424064311-2eeed4ceb3e9
 	github.com/klauspost/compress v1.18.6
 	github.com/sapcc/go-api-declarations v1.22.0
-	github.com/sapcc/go-bits v0.0.0-20260604095421-6bd206943957
+	github.com/sapcc/go-bits v0.0.0-20260604151206-e698d422ff96
 	github.com/ulikunitz/xz v0.5.15
-	go.xyrillian.de/gg v1.8.1
+	go.xyrillian.de/gg v1.9.0
 	go.xyrillian.de/schwift/v2 v2.1.0
 	golang.org/x/net v0.55.0
 	gopkg.in/yaml.v2 v2.4.0
