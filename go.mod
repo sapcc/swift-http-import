@@ -8,8 +8,8 @@ require (
 	github.com/gophercloud/gophercloud/v2 v2.12.0
 	github.com/gophercloud/utils/v2 v2.0.0-20260424064311-2eeed4ceb3e9
 	github.com/klauspost/compress v1.18.6
-	github.com/sapcc/go-api-declarations v1.22.0
-	github.com/sapcc/go-bits v0.0.0-20260604151206-e698d422ff96
+	github.com/sapcc/go-api-declarations v1.23.0
+	github.com/sapcc/go-bits v0.0.0-20260611141223-328f49772fed
 	github.com/ulikunitz/xz v0.5.15
 	go.xyrillian.de/gg v1.9.0
 	go.xyrillian.de/schwift/v2 v2.1.0
@@ -25,6 +25,6 @@ require (
 	github.com/kr/text v0.2.0 // indirect
 	github.com/sergi/go-diff v1.4.0 // indirect
 	golang.org/x/crypto v0.52.0 // indirect
-	golang.org/x/sys v0.45.0 // indirect
+	golang.org/x/sys v0.46.0 // indirect
 	pault.ag/go/topsort v0.1.1 // indirect
 )
