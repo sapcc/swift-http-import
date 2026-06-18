@@ -315,11 +315,15 @@ func (s *DebianSource) recursivelyListEntries(ctx context.Context, path string) 
 
 	for _, entry := range entries {
 		if entry.IsDirectory {
-			tmpFiles, lerr := s.recursivelyListEntries(ctx, entry.Path)
-			if lerr != nil {
-				return nil, lerr
+			if filepath.Base(path) == filepath.Base(entry.Path) {
+				logg.Info("skipping directory %s to avoid potential symlink loop", entry.Path)
+			} else {
+				tmpFiles, lerr := s.recursivelyListEntries(ctx, entry.Path)
+				if lerr != nil {
+					return nil, lerr
+				}
+				files = append(files, tmpFiles...)
 			}
-			files = append(files, tmpFiles...)
 		} else {
 			files = append(files, entry.Path)
 		}
