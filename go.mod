@@ -15,7 +15,7 @@ require (
 	go.xyrillian.de/schwift/v2 v2.1.0
 	golang.org/x/net v0.56.0
 	gopkg.in/yaml.v2 v2.4.0
-	pault.ag/go/debian v0.19.0
+	pault.ag/go/debian v0.21.0
 )
 
 require (
