@@ -6,7 +6,7 @@ package objects
 import (
 	"testing"
 
-	"github.com/sapcc/go-bits/assert"
+	"go.xyrillian.de/gg/assert"
 )
 
 // TestDebianReleasePackagesEntryRx tests the regular expression that is used to
