@@ -5,6 +5,7 @@
 [default.extend-words]
 transfered = "transfered"
 
+
 [files]
 extend-exclude = [
   "go.mod",
