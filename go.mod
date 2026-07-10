@@ -13,7 +13,7 @@ require (
 	github.com/ulikunitz/xz v0.5.15
 	go.xyrillian.de/gg v1.11.1
 	go.xyrillian.de/schwift/v2 v2.1.0
-	golang.org/x/net v0.56.0
+	golang.org/x/net v0.57.0
 	gopkg.in/yaml.v2 v2.4.0
 	pault.ag/go/debian v0.21.0
 )
@@ -24,8 +24,8 @@ require (
 	github.com/jpillora/longestcommon v0.0.0-20161227235612-adb9d91ee629 // indirect
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/kr/text v0.2.0 // indirect
-	golang.org/x/crypto v0.53.0 // indirect
-	golang.org/x/sys v0.46.0 // indirect
+	golang.org/x/crypto v0.54.0 // indirect
+	golang.org/x/sys v0.47.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
 	pault.ag/go/topsort v0.1.1 // indirect
 )

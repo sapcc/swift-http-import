@@ -106,7 +106,7 @@ go.xyrillian.de/schwift/v2
 go.xyrillian.de/schwift/v2/capabilities
 go.xyrillian.de/schwift/v2/gopherschwift
 go.xyrillian.de/schwift/v2/internal/errext
-# golang.org/x/crypto v0.53.0
+# golang.org/x/crypto v0.54.0
 ## explicit; go 1.25.0
 golang.org/x/crypto/argon2
 golang.org/x/crypto/blake2b
@@ -115,11 +115,11 @@ golang.org/x/crypto/cryptobyte
 golang.org/x/crypto/cryptobyte/asn1
 golang.org/x/crypto/hkdf
 golang.org/x/crypto/sha3
-# golang.org/x/net v0.56.0
+# golang.org/x/net v0.57.0
 ## explicit; go 1.25.0
 golang.org/x/net/html
 golang.org/x/net/html/atom
-# golang.org/x/sys v0.46.0
+# golang.org/x/sys v0.47.0
 ## explicit; go 1.25.0
 golang.org/x/sys/cpu
 # gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15
