@@ -1,20 +1,5 @@
-/******************************************************************************
-*
-*  Copyright 2018 Stefan Majewsky <majewsky@gmx.net>
-*
-*  Licensed under the Apache License, Version 2.0 (the "License");
-*  you may not use this file except in compliance with the License.
-*  You may obtain a copy of the License at
-*
-*      http://www.apache.org/licenses/LICENSE-2.0
-*
-*  Unless required by applicable law or agreed to in writing, software
-*  distributed under the License is distributed on an "AS IS" BASIS,
-*  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-*  See the License for the specific language governing permissions and
-*  limitations under the License.
-*
-******************************************************************************/
+// SPDX-FileCopyrightText: 2018 Stefan Majewsky <majewsky@gmx.net>
+// SPDX-License-Identifier: Apache-2.0
 
 package schwift
 
@@ -36,9 +21,11 @@ type Account struct {
 	baseURL string
 	name    string
 	// cache
-	headers   *AccountHeaders
-	caps      *Capabilities
-	capsMutex sync.Mutex
+	headers      *AccountHeaders
+	headersMutex sync.Mutex
+	caps         *Capabilities
+	modifyCaps   func(*Capabilities)
+	capsMutex    sync.Mutex
 }
 
 // IsEqualTo returns true if both Account instances refer to the same account.
@@ -95,16 +82,15 @@ func (a *Account) Backend() Backend {
 // has not been cached yet, a HEAD request is issued on the account.
 //
 // This operation fails with http.StatusNotFound if the account does not exist.
-//
-// WARNING: This method is not thread-safe. Calling it concurrently on the same
-// object results in undefined behavior.
 func (a *Account) Headers(ctx context.Context) (AccountHeaders, error) {
+	a.headersMutex.Lock()
+	defer a.headersMutex.Unlock()
 	if a.headers != nil {
 		return *a.headers, nil
 	}
 
 	resp, err := Request{
-		Method:            "HEAD",
+		Method:            http.MethodHead,
 		ExpectStatusCodes: []int{204},
 	}.Do(ctx, a.backend)
 	if err != nil {
@@ -123,10 +109,9 @@ func (a *Account) Headers(ctx context.Context) (AccountHeaders, error) {
 
 // Invalidate clears the internal cache of this Account instance. The next call
 // to Headers() on this instance will issue a HEAD request on the account.
-//
-// WARNING: This method is not thread-safe. Calling it concurrently on the same
-// object results in undefined behavior.
 func (a *Account) Invalidate() {
+	a.headersMutex.Lock()
+	defer a.headersMutex.Unlock()
 	a.headers = nil
 }
 
@@ -136,7 +121,7 @@ func (a *Account) Invalidate() {
 // A successful POST request implies Invalidate() since it may change metadata.
 func (a *Account) Update(ctx context.Context, headers AccountHeaders, opts *RequestOptions) error {
 	resp, err := Request{
-		Method:            "POST",
+		Method:            http.MethodPost,
 		Options:           cloneRequestOptions(opts, headers.Headers),
 		ExpectStatusCodes: []int{204},
 	}.Do(ctx, a.backend)
@@ -153,7 +138,7 @@ func (a *Account) Update(ctx context.Context, headers AccountHeaders, opts *Requ
 // A successful PUT request implies Invalidate() since it may change metadata.
 func (a *Account) Create(ctx context.Context, opts *RequestOptions) error {
 	resp, err := Request{
-		Method:            "PUT",
+		Method:            http.MethodPut,
 		Options:           opts,
 		ExpectStatusCodes: []int{201, 202},
 		DrainResponseBody: true,
@@ -207,9 +192,26 @@ func (a *Account) Capabilities(ctx context.Context) (Capabilities, error) {
 	if err != nil {
 		return caps, err
 	}
+	if a.modifyCaps != nil {
+		a.modifyCaps(&caps)
+	}
 
 	a.caps = &caps
 	return caps, nil
+}
+
+// ModifyReportedCapabilities allows the caller to tamper with the capabilities reported by [Account.Capabilities].
+// This is necessary when dealing with non-compliant server implementations that do not report their capabilities correctly
+// (e.g. Ceph does not report "tempurl.allowed_digests", which breaks [Object.TempURL]).
+//
+// This call impacts all calls to [Account.Capabilities] that are made after this call succeeds.
+// Calls to [Account.RawCapabilities] are not affected by this modification.
+// Calls to this method do not stack: If this method is called multiple times, only the last modification will take effect.
+func (a *Account) ModifyReportedCapabilities(modify func(*Capabilities)) {
+	a.capsMutex.Lock()
+	defer a.capsMutex.Unlock()
+	a.caps = nil // to force refetch+modify during next Capabilities() call
+	a.modifyCaps = modify
 }
 
 // RawCapabilities queries the GET /info endpoint of the Swift server providing
