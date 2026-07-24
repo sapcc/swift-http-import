@@ -89,8 +89,8 @@ github.com/sapcc/go-bits/osext
 github.com/sapcc/go-bits/regexpext
 github.com/sapcc/go-bits/secrets
 github.com/sapcc/go-bits/syncext
-# github.com/ulikunitz/xz v0.5.15
-## explicit; go 1.12
+# github.com/ulikunitz/xz v0.5.16
+## explicit; go 1.20
 github.com/ulikunitz/xz
 github.com/ulikunitz/xz/internal/hash
 github.com/ulikunitz/xz/internal/xlog
@@ -100,12 +100,11 @@ github.com/ulikunitz/xz/lzma
 go.xyrillian.de/gg/assert
 go.xyrillian.de/gg/internal/path
 go.xyrillian.de/gg/option
-# go.xyrillian.de/schwift/v2 v2.1.0
-## explicit; go 1.25.0
+# go.xyrillian.de/schwift/v2 v2.2.1
+## explicit; go 1.26
 go.xyrillian.de/schwift/v2
 go.xyrillian.de/schwift/v2/capabilities
 go.xyrillian.de/schwift/v2/gopherschwift
-go.xyrillian.de/schwift/v2/internal/errext
 # golang.org/x/crypto v0.54.0
 ## explicit; go 1.25.0
 golang.org/x/crypto/argon2

@@ -1,3 +1,18 @@
+# v2.2.1 (2026-07-21)
+
+Changes:
+
+- `Account.Headers` and `Container.Headers` are now thread-safe.
+- The minimum Go version is now 1.26.
+
+# v2.2.0 (2026-07-17)
+
+Changes:
+
+- Add `Account.ModifyReportedCapabilities()` to allow working around incorrect
+  capability reporting in Swift emulation of Ceph.
+- Bumped all dependencies to their latest versions.
+
 # v2.1.0 (2026-04-19)
 
 Changes:

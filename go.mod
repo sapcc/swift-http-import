@@ -10,9 +10,9 @@ require (
 	github.com/klauspost/compress v1.19.1
 	github.com/sapcc/go-api-declarations v1.24.0
 	github.com/sapcc/go-bits v0.0.0-20260723170232-89c8670b5841
-	github.com/ulikunitz/xz v0.5.15
+	github.com/ulikunitz/xz v0.5.16
 	go.xyrillian.de/gg v1.11.1
-	go.xyrillian.de/schwift/v2 v2.1.0
+	go.xyrillian.de/schwift/v2 v2.2.1
 	golang.org/x/net v0.57.0
 	gopkg.in/yaml.v2 v2.4.0
 	pault.ag/go/debian v0.21.0
