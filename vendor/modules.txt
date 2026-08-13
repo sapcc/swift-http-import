@@ -79,7 +79,7 @@ github.com/klauspost/compress/zstd/internal/xxhash
 # github.com/sapcc/go-api-declarations v1.24.0
 ## explicit; go 1.26
 github.com/sapcc/go-api-declarations/bininfo
-# github.com/sapcc/go-bits v0.0.0-20260807113723-c69b44460685
+# github.com/sapcc/go-bits v0.0.0-20260813170327-ea1a14435d35
 ## explicit; go 1.26
 github.com/sapcc/go-bits/errext
 github.com/sapcc/go-bits/httpext
@@ -105,7 +105,7 @@ go.xyrillian.de/gg/option
 go.xyrillian.de/schwift/v2
 go.xyrillian.de/schwift/v2/capabilities
 go.xyrillian.de/schwift/v2/gopherschwift
-# golang.org/x/crypto v0.54.0
+# golang.org/x/crypto v0.55.0
 ## explicit; go 1.25.0
 golang.org/x/crypto/argon2
 golang.org/x/crypto/blake2b
