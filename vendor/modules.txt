@@ -51,7 +51,7 @@ github.com/gophercloud/gophercloud/v2/openstack/identity/v3/oauth1
 github.com/gophercloud/gophercloud/v2/openstack/identity/v3/tokens
 github.com/gophercloud/gophercloud/v2/openstack/utils
 github.com/gophercloud/gophercloud/v2/pagination
-# github.com/gophercloud/utils/v2 v2.0.0-20260820140002-321c0f238d1a
+# github.com/gophercloud/utils/v2 v2.0.0-20260824073324-42b9474d09d4
 ## explicit; go 1.25.0
 github.com/gophercloud/utils/v2/client
 # github.com/hashicorp/golang-lru/v2 v2.0.7
@@ -79,8 +79,8 @@ github.com/klauspost/compress/zstd/internal/xxhash
 # github.com/sapcc/go-api-declarations v1.25.0
 ## explicit; go 1.26
 github.com/sapcc/go-api-declarations/bininfo
-# github.com/sapcc/go-bits v0.0.0-20260818140528-75bdd20c7867
-## explicit; go 1.26
+# github.com/sapcc/go-bits v0.0.0-20260827091731-7669cbdb53fb
+## explicit; go 1.27
 github.com/sapcc/go-bits/errext
 github.com/sapcc/go-bits/httpext
 github.com/sapcc/go-bits/logg
