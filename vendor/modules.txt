@@ -79,7 +79,7 @@ github.com/klauspost/compress/zstd/internal/xxhash
 # github.com/sapcc/go-api-declarations v1.25.0
 ## explicit; go 1.26
 github.com/sapcc/go-api-declarations/bininfo
-# github.com/sapcc/go-bits v0.0.0-20260903192122-1774475e70e3
+# github.com/sapcc/go-bits v0.0.0-20260907125021-ceb8c12b73ac
 ## explicit; go 1.27
 github.com/sapcc/go-bits/errext
 github.com/sapcc/go-bits/httpext
