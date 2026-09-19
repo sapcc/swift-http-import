@@ -5,13 +5,13 @@ go 1.27
 require (
 	github.com/ProtonMail/go-crypto v1.4.1
 	github.com/cactus/go-statsd-client/v6 v6.0.0
-	github.com/gophercloud/gophercloud/v2 v2.14.0
+	github.com/gophercloud/gophercloud/v2 v2.15.0
 	github.com/gophercloud/utils/v2 v2.0.0-20260824073324-42b9474d09d4
 	github.com/klauspost/compress v1.20.0
 	github.com/sapcc/go-api-declarations v1.25.0
 	github.com/sapcc/go-bits v0.0.0-20260908173957-572b68774a1c
-	github.com/ulikunitz/xz v0.5.16
-	go.xyrillian.de/gg v1.15.0
+	github.com/ulikunitz/xz v0.5.17
+	go.xyrillian.de/gg v1.16.0
 	go.xyrillian.de/schwift/v2 v2.2.1
 	golang.org/x/net v0.59.0
 	gopkg.in/yaml.v2 v2.4.0
