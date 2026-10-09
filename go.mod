@@ -13,7 +13,7 @@ require (
 	github.com/ulikunitz/xz v0.5.17
 	go.xyrillian.de/gg v1.16.0
 	go.xyrillian.de/schwift/v2 v2.2.1
-	golang.org/x/net v0.59.0
+	golang.org/x/net v0.60.0
 	gopkg.in/yaml.v2 v2.4.0
 	pault.ag/go/debian v0.21.0
 )
