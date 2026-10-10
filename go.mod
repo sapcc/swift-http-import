@@ -3,7 +3,7 @@ module github.com/sapcc/swift-http-import
 go 1.27
 
 require (
-	github.com/ProtonMail/go-crypto v1.5.1
+	github.com/ProtonMail/go-crypto v1.5.2
 	github.com/cactus/go-statsd-client/v6 v6.0.0
 	github.com/gophercloud/gophercloud/v2 v2.15.0
 	github.com/gophercloud/utils/v2 v2.0.0-20260922174841-b4759ea0529b
@@ -13,7 +13,7 @@ require (
 	github.com/ulikunitz/xz v0.5.17
 	go.xyrillian.de/gg v1.19.0
 	go.xyrillian.de/schwift/v2 v2.2.1
-	golang.org/x/net v0.60.0
+	golang.org/x/net v0.61.0
 	gopkg.in/yaml.v2 v2.4.0
 	pault.ag/go/debian v0.21.0
 )
@@ -24,8 +24,8 @@ require (
 	github.com/jpillora/longestcommon v0.0.0-20161227235612-adb9d91ee629 // indirect
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/kr/text v0.2.0 // indirect
-	golang.org/x/crypto v0.57.0 // indirect
-	golang.org/x/sys v0.48.0 // indirect
+	golang.org/x/crypto v0.58.0 // indirect
+	golang.org/x/sys v0.49.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
 	pault.ag/go/topsort v0.1.1 // indirect
 )
