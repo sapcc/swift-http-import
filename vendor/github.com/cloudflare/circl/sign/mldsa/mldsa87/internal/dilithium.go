@@ -49,7 +49,7 @@ type PublicKey struct {
 	// Cached values
 	t1p [common.PolyT1Size * K]byte
 	A   *Mat
-	tr  *[TRSize]byte
+	tr  [TRSize]byte
 }
 
 // PrivateKey is the type of Dilithium private keys.
@@ -88,10 +88,9 @@ func (sig *unpackedSignature) Pack(buf []byte) {
 //
 // Returns whether buf contains a properly packed signature.
 func (sig *unpackedSignature) Unpack(buf []byte) bool {
-	if len(buf) < SignatureSize {
-		return false
-	}
-	if NIST && len(buf) != SignatureSize {
+	// NOTE: Previously the Dilithium (but not ML-DSA) implementation accepted
+	// signatures with trailing data.
+	if len(buf) != SignatureSize {
 		return false
 	}
 	copy(sig.c[:], buf[:])
@@ -121,7 +120,6 @@ func (pk *PublicKey) Unpack(buf *[PublicKeySize]byte) {
 	pk.A.Derive(&pk.rho)
 
 	// tr = CRH(ρ ‖ t1) = CRH(pk)
-	pk.tr = new([TRSize]byte)
 	h := sha3.NewShake256()
 	_, _ = h.Write(buf[:])
 	_, _ = h.Read(pk.tr[:])
@@ -237,7 +235,7 @@ func NewKeyFromSeed(seed *[common.SeedSize]byte) (*PublicKey, *PrivateKey) {
 	_, _ = h.Read(sk.tr[:])
 
 	// Finish cache of public key
-	pk.tr = &sk.tr
+	pk.tr = sk.tr
 
 	return &pk, &sk
 }
@@ -477,7 +475,7 @@ func (sk *PrivateKey) Public() *PublicKey {
 	pk := &PublicKey{
 		rho: sk.rho,
 		A:   &sk.A,
-		tr:  &sk.tr,
+		tr:  sk.tr,
 	}
 	sk.computeT0andT1(&t0, &pk.t1)
 	pk.t1.PackT1(pk.t1p[:])
