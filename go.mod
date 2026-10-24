@@ -15,11 +15,11 @@ require (
 	go.xyrillian.de/schwift/v2 v2.2.1
 	golang.org/x/net v0.61.0
 	gopkg.in/yaml.v2 v2.4.0
-	pault.ag/go/debian v0.21.0
+	pault.ag/go/debian v0.21.1
 )
 
 require (
-	github.com/cloudflare/circl v1.6.3 // indirect
+	github.com/cloudflare/circl v1.6.5 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/jpillora/longestcommon v0.0.0-20161227235612-adb9d91ee629 // indirect
 	github.com/kr/pretty v0.1.0 // indirect
