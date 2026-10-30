@@ -151,7 +151,7 @@ golang.org/x/sys/cpu
 # gopkg.in/yaml.v2 v2.4.0
 ## explicit; go 1.15
 gopkg.in/yaml.v2
-# pault.ag/go/debian v0.21.1
+# pault.ag/go/debian v0.21.3
 ## explicit; go 1.26.0
 pault.ag/go/debian/control
 pault.ag/go/debian/dependency

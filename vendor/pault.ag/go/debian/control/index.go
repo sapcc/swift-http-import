@@ -60,39 +60,54 @@ type BinaryIndex struct {
 	DebugBuildIds []string `control:"Build-Ids" delim:" "`
 }
 
-// Parse the Conflicts Dependency relation on this package.
+// Parse the Conflicts dependency relation on this package.
 func (index *BinaryIndex) GetConflicts() dependency.Dependency {
 	return index.getOptionalDependencyField("Conflicts")
 }
 
-// Parse the Depends Dependency relation on this package.
+// Parse the Depends dependency relation on this package.
 func (index *BinaryIndex) GetDepends() dependency.Dependency {
 	return index.getOptionalDependencyField("Depends")
 }
 
-// Parse the Depends Suggests relation on this package.
+// Parse the Suggests dependency relation on this package.
 func (index *BinaryIndex) GetSuggests() dependency.Dependency {
 	return index.getOptionalDependencyField("Suggests")
 }
 
-// Parse the Depends Breaks relation on this package.
+// Parse the Breaks dependency relation on this package.
 func (index *BinaryIndex) GetBreaks() dependency.Dependency {
 	return index.getOptionalDependencyField("Breaks")
 }
 
-// Parse the Depends Replaces relation on this package.
+// Parse the Replaces dependency relation on this package.
 func (index *BinaryIndex) GetReplaces() dependency.Dependency {
 	return index.getOptionalDependencyField("Replaces")
 }
 
-// Parse the Depends Pre-Depends relation on this package.
+// Parse the Pre-Depends dependency relation on this package.
 func (index *BinaryIndex) GetPreDepends() dependency.Dependency {
 	return index.getOptionalDependencyField("Pre-Depends")
 }
 
-// Parse the Built-Depends relation on this package.
+// Parse the Built-Using dependency relation on this package.
 func (index *BinaryIndex) GetBuiltUsing() dependency.Dependency {
 	return index.getOptionalDependencyField("Built-Using")
+}
+
+// Parse the Recommends dependency relation on this package.
+func (index *BinaryIndex) GetRecommends() dependency.Dependency {
+	return index.getOptionalDependencyField("Recommends")
+}
+
+// Parse the Enhances dependency relation on this package.
+func (index *BinaryIndex) GetEnhances() dependency.Dependency {
+	return index.getOptionalDependencyField("Enhances")
+}
+
+// Parse the Provides dependency relation on this package.
+func (index *BinaryIndex) GetProvides() dependency.Dependency {
+	return index.getOptionalDependencyField("Provides")
 }
 
 // SourcePackage returns the Debian source package name from which this binary
@@ -175,19 +190,34 @@ type SourceIndex struct {
 	Section          string
 }
 
-// Parse the Depends Build-Depends relation on this package.
+// Parse the Build-Depends dependency relation on this package.
 func (index *SourceIndex) GetBuildDepends() dependency.Dependency {
 	return index.getOptionalDependencyField("Build-Depends")
 }
 
-// Parse the Depends Build-Depends-Arch relation on this package.
+// Parse the Build-Depends-Arch dependency relation on this package.
 func (index *SourceIndex) GetBuildDependsArch() dependency.Dependency {
 	return index.getOptionalDependencyField("Build-Depends-Arch")
 }
 
-// Parse the Depends Build-Depends-Indep relation on this package.
+// Parse the Build-Depends-Indep dependency relation on this package.
 func (index *SourceIndex) GetBuildDependsIndep() dependency.Dependency {
 	return index.getOptionalDependencyField("Build-Depends-Indep")
+}
+
+// Parse the Build-Conflicts dependency relation on this package.
+func (index *SourceIndex) GetBuildConflicts() dependency.Dependency {
+	return index.getOptionalDependencyField("Build-Conflicts")
+}
+
+// Parse the Build-Conflicts-Arch dependency relation on this package.
+func (index *SourceIndex) GetBuildConflictsArch() dependency.Dependency {
+	return index.getOptionalDependencyField("Build-Conflicts-Arch")
+}
+
+// Parse the Build-Conflicts-Indep dependency relation on this package.
+func (index *SourceIndex) GetBuildConflictsIndep() dependency.Dependency {
+	return index.getOptionalDependencyField("Build-Conflicts-Indep")
 }
 
 // Given a reader, parse out a list of BinaryIndex structs.
