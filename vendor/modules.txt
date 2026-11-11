@@ -124,7 +124,7 @@ go.xyrillian.de/gg/assert
 go.xyrillian.de/gg/internal/path
 go.xyrillian.de/gg/option
 go.xyrillian.de/gg/testcapture
-# go.xyrillian.de/schwift/v2 v2.2.1
+# go.xyrillian.de/schwift/v2 v2.2.2
 ## explicit; go 1.26
 go.xyrillian.de/schwift/v2
 go.xyrillian.de/schwift/v2/capabilities
