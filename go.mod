@@ -12,7 +12,7 @@ require (
 	github.com/sapcc/go-bits v0.0.0-20261029170309-6e36605dd3a1
 	github.com/ulikunitz/xz v0.5.17
 	go.xyrillian.de/gg v1.19.0
-	go.xyrillian.de/schwift/v2 v2.2.1
+	go.xyrillian.de/schwift/v2 v2.2.2
 	golang.org/x/net v0.62.0
 	gopkg.in/yaml.v2 v2.4.0
 	pault.ag/go/debian v0.21.3
