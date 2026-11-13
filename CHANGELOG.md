@@ -8,6 +8,9 @@ SPDX-License-Identifier: Apache-2.0
 Changes:
 - Removed the dependency on <https://github.com/google/go-github>.
   We now use our own code to interact with the GitHub API for listing releases.
+- While parsing metadata for Debian and Yum repositories,
+  we now do not hold the full uncompressed payload in memory anymore.
+  This significantly reduces peak memory usage esp. for large Yum repositories.
 
 ## v2.11.0 - 2025-11-21
 

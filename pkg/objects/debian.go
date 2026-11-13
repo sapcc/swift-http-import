@@ -4,7 +4,6 @@
 package objects
 
 import (
-	"bytes"
 	"context"
 	"io"
 	"path/filepath"
@@ -264,25 +263,10 @@ func (s *DebianSource) downloadAndParseDCF(ctx context.Context, path string, dat
 		return nil, uri, lerr
 	}
 
-	// if `buf` has the magic number for XZ, decompress before parsing as DCF
-	if bytes.HasPrefix(buf, xzMagicNumber) {
-		var err error
-		buf, err = decompressXZArchive(buf)
-		if err != nil {
-			return nil, uri, &ListEntriesError{Location: uri, Message: "cannot decompress xz stream", Inner: err}
-		}
+	reader, err := decompressFileTransparently(buf)
+	if err == nil {
+		err = control.Unmarshal(data, reader)
 	}
-
-	// if `buf` has the magic number for GZip, decompress before parsing as DCF
-	if bytes.HasPrefix(buf, gzipMagicNumber) {
-		var err error
-		buf, err = decompressGZipArchive(buf)
-		if err != nil {
-			return nil, uri, &ListEntriesError{Location: uri, Message: "cannot decompress gzip stream", Inner: err}
-		}
-	}
-
-	err := control.Unmarshal(data, bytes.NewReader(buf))
 	if err != nil {
 		return nil, uri, &ListEntriesError{
 			Location: uri,

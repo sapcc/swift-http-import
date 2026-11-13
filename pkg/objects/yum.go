@@ -4,7 +4,6 @@
 package objects
 
 import (
-	"bytes"
 	"context"
 	"encoding/xml"
 	"io"
@@ -217,34 +216,10 @@ func (s *YumSource) downloadAndParseXML(ctx context.Context, path string, data a
 		return nil, uri, lerr
 	}
 
-	// if `buf` has the magic number for GZip, decompress before parsing as XML
-	if bytes.HasPrefix(buf, gzipMagicNumber) {
-		var err error
-		buf, err = decompressGZipArchive(buf)
-		if err != nil {
-			return nil, uri, &ListEntriesError{Location: uri, Message: "cannot decompress gzip stream", Inner: err}
-		}
+	reader, err := decompressFileTransparently(buf)
+	if err == nil {
+		err = xml.NewDecoder(reader).Decode(data)
 	}
-
-	// if `buf` has the magic number for XZ, decompress before parsing as XML
-	if bytes.HasPrefix(buf, xzMagicNumber) {
-		var err error
-		buf, err = decompressXZArchive(buf)
-		if err != nil {
-			return nil, uri, &ListEntriesError{Location: uri, Message: "cannot decompress xz stream", Inner: err}
-		}
-	}
-
-	// if `buf` has the magic number for zstd, decompress before parsing as XML
-	if bytes.HasPrefix(buf, zstdMagicNumber) {
-		var err error
-		buf, err = decompressZSTDArchive(buf)
-		if err != nil {
-			return nil, uri, &ListEntriesError{Location: uri, Message: "cannot decompress zstd stream", Inner: err}
-		}
-	}
-
-	err := xml.Unmarshal(buf, data)
 	if err != nil {
 		return nil, uri, &ListEntriesError{
 			Location: uri,
